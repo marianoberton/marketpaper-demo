@@ -366,7 +366,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
 
   return (
     <div className="min-h-screen bg-gray-50/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <div className="mx-auto px-6 py-6 space-y-6">
         {/* Header mejorado */}
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <div className="flex items-center justify-between">
