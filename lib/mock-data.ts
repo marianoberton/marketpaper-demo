@@ -140,6 +140,20 @@ export const conversionMetrics = {
       { name: "Email", value: 10 },
       { name: "Referido", value: 8 }
     ],
+    conversion: [
+      { name: "Orgánico", value: 4.2 },
+      { name: "Directo", value: 3.8 },
+      { name: "Social", value: 2.5 },
+      { name: "Email", value: 4.8 },
+      { name: "Referido", value: 3.1 }
+    ],
+    aov: [
+      { name: "Orgánico", value: 4800 },
+      { name: "Directo", value: 4200 },
+      { name: "Social", value: 3900 },
+      { name: "Email", value: 5500 },
+      { name: "Referido", value: 4100 }
+    ],
     orders: [
       { name: "Orgánico", value: 38 },
       { name: "Directo", value: 15 },

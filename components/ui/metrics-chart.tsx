@@ -51,24 +51,24 @@ interface MetricsChartProps {
   formatterType?: FormatterType;
 }
 
-// Define a default color palette for funnel segments (Indigo)
-const FUNNEL_COLORS = [
-  "#6366F1", // indigo-500
-  "#818CF8", // indigo-400
-  "#A5B4FC", // indigo-300
-  "#C7D2FE", // indigo-200
-  "#E0E7FF", // indigo-100
-  "#EEF2FF", // indigo-50
+// FOMO Brand color palette for charts
+const FOMO_COLORS = [
+  "#FCCD12", // Signal Yellow
+  "#f97316", // Orange 500
+  "#0077B6", // Brilliant Blue
+  "#310629", // Plum
+  "#64748b", // Slate for additional data
+  "#94a3b8", // Light slate
 ];
 
-// Define a yellow color palette for funnel segments
-const FUNNEL_YELLOW_COLORS = [
-  "#d97706", // amber-600 (Added darker shade)
-  "#f59e0b", // amber-500
-  "#fcd34d", // amber-300
-  "#fef08a", // yellow-200
-  "#fef9c3", // yellow-100
-  "#fffbeb", // yellow-50
+// FOMO funnel colors (gradient from Signal Yellow to Plum)
+const FOMO_FUNNEL_COLORS = [
+  "#FCCD12", // Signal Yellow
+  "#f59e0b", // Amber 500
+  "#f97316", // Orange 500
+  "#0077B6", // Brilliant Blue
+  "#1e3a8a", // Blue 800
+  "#310629", // Plum
 ];
 
 // Helper function to get the appropriate formatter based on type
@@ -161,7 +161,7 @@ export function MetricsChart({
                   type="monotone"
                   dataKey={serie.key}
                   name={serie.name}
-                  stroke={serie.color ?? "#8884d8"}
+                  stroke={serie.color ?? FOMO_COLORS[0]}
                   strokeWidth={2}
                   dot={false}
                   activeDot={{ r: 6, strokeWidth: 0 }}
@@ -194,8 +194,8 @@ export function MetricsChart({
                   type="monotone"
                   dataKey={serie.key}
                   name={serie.name}
-                  stroke={serie.color ?? "#8884d8"}
-                  fill={serie.color ?? "#8884d8"}
+                  stroke={serie.color ?? FOMO_COLORS[0]}
+                  fill={serie.color ?? FOMO_COLORS[0]}
                   fillOpacity={0.1}
                 />
               ))}
@@ -225,7 +225,7 @@ export function MetricsChart({
                   key={serie.key}
                   dataKey={serie.key}
                   name={serie.name}
-                  fill={serie.color ?? "#8884d8"}
+                  fill={serie.color ?? FOMO_COLORS[0]}
                   radius={[4, 4, 0, 0]}
                 />
               ))}
@@ -277,7 +277,7 @@ export function MetricsChart({
                     }}
                  />
                  {chartDataWithContext.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={FUNNEL_YELLOW_COLORS[index % FUNNEL_YELLOW_COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={FOMO_FUNNEL_COLORS[index % FOMO_FUNNEL_COLORS.length]} />
                  ))} 
               </Funnel>
             </FunnelChart>

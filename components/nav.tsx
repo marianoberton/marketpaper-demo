@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useLayout } from "@/components/layout-context";
 import { 
   BarChart3,
   LineChart,
@@ -19,7 +20,8 @@ import {
   Clock,
   Server,
   BookUser,
-  Linkedin
+  Linkedin,
+  Briefcase
 } from "lucide-react";
 
 const links = [
@@ -34,10 +36,13 @@ const links = [
   { name: "Email", href: "/email", icon: MailIcon },
   { name: "Proveedores", href: "/providers", icon: Users },
   { name: "Técnico", href: "/technical", icon: Server },
+  { name: "Workspace", href: "/workspace", icon: Briefcase },
+  { name: "Demo Content", href: "/demo-content", icon: Zap },
 ];
 
 export function Nav() {
   const pathname = usePathname();
+  const { isCollapsed } = useLayout();
 
   return (
     <div className="group flex h-full flex-col gap-4 py-2">
@@ -50,20 +55,23 @@ export function Nav() {
             <Link
               key={link.name}
               href={link.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium ${
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ${
                 isActive 
-                  ? "bg-accent" 
-                  : "transparent hover:bg-accent/50"
-              }`}
+                  ? "bg-signal-yellow text-slate-900 shadow-md" 
+                  : "transparent hover:bg-brilliant-blue hover:text-white hover:shadow-sm"
+              } ${isCollapsed ? "justify-center" : ""}`}
+              title={isCollapsed ? link.name : undefined}
             >
-              <LinkIcon className="h-5 w-5" />
-              <span>{link.name}</span>
+              <LinkIcon className="h-5 w-5 flex-shrink-0" />
+              {!isCollapsed && <span>{link.name}</span>}
             </Link>
           );
         })}
       </nav>
-      <div className="mt-auto p-4">
-        <ThemeToggle />
+      <div className={`mt-auto border-t ${isCollapsed ? "p-2" : "p-4"}`}>
+        <div className={isCollapsed ? "flex justify-center" : ""}>
+          <ThemeToggle />
+        </div>
       </div>
     </div>
   );

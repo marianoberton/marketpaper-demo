@@ -1,0 +1,260 @@
+import { createClient } from '@/utils/supabase/client'
+
+// Configuración de storage para el módulo de construcción
+export const STORAGE_BUCKETS = {
+  CONSTRUCTION_DOCUMENTS: 'construction-documents',
+  PROJECT_IMAGES: 'project-images'
+} as const
+
+// Tipos para documentos
+export interface DocumentUpload {
+  file: File
+  projectId: string
+  sectionName: string
+  description?: string
+}
+
+export interface ProjectDocument {
+  id: string
+  project_id: string
+  section_name: string
+  filename: string
+  original_filename: string
+  file_url: string
+  file_size: number
+  mime_type: string
+  description?: string
+  uploaded_by: string
+  created_at: string
+}
+
+// Función para subir documentos de proyecto
+export async function uploadProjectDocument(uploadData: DocumentUpload): Promise<ProjectDocument> {
+  const supabase = createClient()
+  
+  // Verificar que el usuario esté autenticado
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
+    throw new Error('Usuario no autenticado')
+  }
+
+  // Generar nombre único para el archivo
+  const fileExt = uploadData.file.name.split('.').pop()
+  const fileName = `${uploadData.projectId}/${uploadData.sectionName}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+
+  try {
+    // Subir archivo a Supabase Storage
+    const { data: storageData, error: storageError } = await supabase.storage
+      .from(STORAGE_BUCKETS.CONSTRUCTION_DOCUMENTS)
+      .upload(fileName, uploadData.file, {
+        cacheControl: '3600',
+        upsert: false
+      })
+
+    if (storageError) {
+      console.error('Storage error:', storageError)
+      throw new Error('Error al subir el archivo')
+    }
+
+    // Obtener URL pública del archivo
+    const { data: { publicUrl } } = supabase.storage
+      .from(STORAGE_BUCKETS.CONSTRUCTION_DOCUMENTS)
+      .getPublicUrl(fileName)
+
+    // Guardar registro en la base de datos
+    const { data: document, error: dbError } = await supabase
+      .from('project_documents')
+      .insert({
+        project_id: uploadData.projectId,
+        section_name: uploadData.sectionName,
+        filename: fileName,
+        original_filename: uploadData.file.name,
+        file_url: publicUrl,
+        file_size: uploadData.file.size,
+        mime_type: uploadData.file.type,
+        description: uploadData.description,
+        uploaded_by: user.id
+      })
+      .select()
+      .single()
+
+    if (dbError) {
+      // Si hay error en la DB, intentar eliminar el archivo subido
+      await supabase.storage
+        .from(STORAGE_BUCKETS.CONSTRUCTION_DOCUMENTS)
+        .remove([fileName])
+      
+      console.error('Database error:', dbError)
+      throw new Error('Error al guardar la información del documento')
+    }
+
+    return document
+
+  } catch (error) {
+    console.error('Upload error:', error)
+    throw error
+  }
+}
+
+// Función para obtener documentos de un proyecto
+export async function getProjectDocuments(projectId: string): Promise<ProjectDocument[]> {
+  const supabase = createClient()
+  
+  const { data: documents, error } = await supabase
+    .from('project_documents')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching documents:', error)
+    throw new Error('Error al cargar los documentos')
+  }
+
+  return documents || []
+}
+
+// Función para eliminar un documento
+export async function deleteProjectDocument(documentId: string): Promise<void> {
+  const supabase = createClient()
+  
+  // Obtener información del documento antes de eliminarlo
+  const { data: document, error: fetchError } = await supabase
+    .from('project_documents')
+    .select('filename')
+    .eq('id', documentId)
+    .single()
+
+  if (fetchError) {
+    throw new Error('Documento no encontrado')
+  }
+
+  // Eliminar archivo del storage
+  const { error: storageError } = await supabase.storage
+    .from(STORAGE_BUCKETS.CONSTRUCTION_DOCUMENTS)
+    .remove([document.filename])
+
+  if (storageError) {
+    console.error('Storage delete error:', storageError)
+    // Continuar con la eliminación de la DB aunque falle el storage
+  }
+
+  // Eliminar registro de la base de datos
+  const { error: dbError } = await supabase
+    .from('project_documents')
+    .delete()
+    .eq('id', documentId)
+
+  if (dbError) {
+    console.error('Database delete error:', dbError)
+    throw new Error('Error al eliminar el documento')
+  }
+}
+
+// Función para subir imagen de proyecto
+export async function uploadProjectImage(projectId: string, file: File): Promise<string> {
+  const supabase = createClient()
+  
+  // Validar que sea una imagen
+  if (!file.type.startsWith('image/')) {
+    throw new Error('El archivo debe ser una imagen')
+  }
+
+  // Validar tamaño (máximo 10MB)
+  if (file.size > 10 * 1024 * 1024) {
+    throw new Error('La imagen no debe superar los 10MB')
+  }
+
+  // Generar nombre único para la imagen
+  const fileExt = file.name.split('.').pop()
+  const timestamp = Date.now()
+  const randomId = Math.random().toString(36).substring(2)
+  const fileName = `${projectId}/cover-${timestamp}-${randomId}.${fileExt}`
+
+  try {
+    // Subir imagen a Supabase Storage
+    const { data: storageData, error: storageError } = await supabase.storage
+      .from(STORAGE_BUCKETS.PROJECT_IMAGES)
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      })
+
+    if (storageError) {
+      console.error('Storage error:', storageError)
+      throw new Error('Error al subir la imagen: ' + storageError.message)
+    }
+
+    // Obtener URL pública de la imagen
+    const { data: { publicUrl } } = supabase.storage
+      .from(STORAGE_BUCKETS.PROJECT_IMAGES)
+      .getPublicUrl(fileName)
+
+    return publicUrl
+
+  } catch (error) {
+    console.error('Image upload error:', error)
+    throw error
+  }
+}
+
+// Función para validar tipos de archivo permitidos
+export function validateFileType(file: File, allowedTypes: string[]): boolean {
+  return allowedTypes.some(type => {
+    if (type.endsWith('/*')) {
+      return file.type.startsWith(type.slice(0, -1))
+    }
+    return file.type === type
+  })
+}
+
+// Función para formatear tamaño de archivo
+export function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 Bytes'
+  
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+// Tipos de archivo permitidos por sección
+export const ALLOWED_FILE_TYPES = {
+  'Planos de Proyecto e Instalaciones': [
+    'image/*', 
+    'application/pdf',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ],
+  'Documentación Municipal y Gestoría': [
+    'application/pdf',
+    'image/*',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ],
+  'Servicios Públicos': [
+    'application/pdf',
+    'image/*',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ],
+  'Profesionales Intervinientes': [
+    'application/pdf',
+    'image/*'
+  ],
+  'Seguros y Documentación Administrativa': [
+    'application/pdf',
+    'image/*',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ],
+  'Pagos y Comprobantes': [
+    'application/pdf',
+    'image/*',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  ]
+} as const 

@@ -1,21 +1,32 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Concert_One, Space_Grotesk, Manrope } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { LayoutProvider } from "@/components/layout-context";
+import { GeistSans } from 'geist/font/sans'
+import { Toaster } from 'sonner'
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const concertOne = Concert_One({
+  variable: "--font-concert",
   subsets: ["latin"],
+  weight: ["400"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-heading",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const manrope = Manrope({
+  variable: "--font-body",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "E-commerce Dashboard",
-  description: "An integrated dashboard for e-commerce analytics",
+  title: "FOMO Dashboard",
+  description: "Dashboard integral de e-commerce con análisis avanzado",
 };
 
 export default function RootLayout({
@@ -24,17 +35,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html lang="es" suppressHydrationWarning>
+      <body className={`${concertOne.variable} ${spaceGrotesk.variable} ${manrope.variable} antialiased font-body ${GeistSans.className}`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <LayoutProvider>
+            {children}
+          </LayoutProvider>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

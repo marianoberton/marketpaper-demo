@@ -6,14 +6,14 @@ import { cva, type VariantProps } from "class-variance-authority";
 import * as LucideIcons from "lucide-react";
 
 const statsCardVariants = cva(
-  "transition-all",
+  "transition-all duration-300 hover:shadow-lg hover:-translate-y-1 group",
   {
     variants: {
       status: {
-        default: "",
-        success: "border-green-500 dark:border-green-500",
-        warning: "border-yellow-500 dark:border-yellow-500",
-        danger: "border-red-500 dark:border-red-500",
+        default: "border-l-4 border-l-muted-foreground/20 bg-gradient-to-r from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50",
+        success: "border-l-4 border-l-emerald-500 bg-gradient-to-r from-emerald-50/30 to-white dark:from-emerald-950/20 dark:to-gray-900",
+        warning: "border-l-4 border-l-amber-500 bg-gradient-to-r from-amber-50/30 to-white dark:from-amber-950/20 dark:to-gray-900",
+        danger: "border-l-4 border-l-red-500 bg-gradient-to-r from-red-50/30 to-white dark:from-red-950/20 dark:to-gray-900",
       },
     },
     defaultVariants: {
@@ -52,47 +52,72 @@ export function StatsCard({
   // Dynamically render the icon if iconName is provided
   const IconComponent = iconName ? (LucideIcons as any)[iconName] : null;
 
+  const getIconColor = () => {
+    switch (status) {
+      case "success": return "text-emerald-500 group-hover:text-emerald-600";
+      case "warning": return "text-amber-500 group-hover:text-amber-600";
+      case "danger": return "text-red-500 group-hover:text-red-600";
+      default: return "text-brilliant-blue group-hover:text-brilliant-blue/80";
+    }
+  };
+
   return (
     <Card className={cn(statsCardVariants({ status }), className)}>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium break-words">
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
+        <CardTitle className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
           {title}
           {tooltip && (
             <span 
-              className="ml-1 cursor-help text-muted-foreground" 
+              className="ml-2 cursor-help text-muted-foreground/60 hover:text-brilliant-blue transition-colors text-xs" 
               title={tooltip}
             >
-              ℹ️
+              💡
             </span>
           )}
         </CardTitle>
-        {IconComponent && <IconComponent className="h-4 w-4 text-muted-foreground" />}
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        {description && (
-          <p className="text-xs text-muted-foreground">{description}</p>
+        {IconComponent && (
+          <div className="p-2 rounded-lg bg-white/50 dark:bg-gray-800/50 border border-gray-200/50 dark:border-gray-700/50">
+            <IconComponent className={cn("h-5 w-5 transition-colors", getIconColor())} />
+          </div>
         )}
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="text-3xl font-bold text-foreground group-hover:text-brilliant-blue transition-colors">
+          {value}
+        </div>
+        
+        {description && (
+          <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+        )}
+        
         {trend && (
-          <div className="mt-1 flex items-center">
+          <div className="flex items-center space-x-2">
             <span
               className={cn(
-                "mr-1 text-xs",
-                trend.isUpward ? "text-green-500" : "text-red-500"
+                "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium transition-all",
+                trend.isUpward 
+                  ? "text-emerald-700 bg-emerald-100 dark:text-emerald-300 dark:bg-emerald-900/30 shadow-sm" 
+                  : "text-red-700 bg-red-100 dark:text-red-300 dark:bg-red-900/30 shadow-sm"
               )}
             >
-              {trend.isUpward ? "↑" : "↓"} {Math.abs(trend.value)}%
+              {trend.isUpward ? "↗️" : "↘️"} {Math.abs(trend.value)}%
             </span>
             <span className="text-xs text-muted-foreground">vs anterior</span>
           </div>
         )}
+        
         {benchmark && (
-          <p className="mt-1 text-xs text-muted-foreground">Meta: {benchmark}</p>
+          <div className="pt-2 border-t border-gray-200/50 dark:border-gray-700/50">
+            <p className="text-xs text-brilliant-blue font-medium">
+              🎯 Meta: {benchmark}
+            </p>
+          </div>
         )}
       </CardContent>
+      
       {footer && (
         <CardFooter className="pt-0">
-          <p className="text-xs text-muted-foreground">{footer}</p>
+          <p className="text-xs text-muted-foreground italic">{footer}</p>
         </CardFooter>
       )}
     </Card>
