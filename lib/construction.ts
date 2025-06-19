@@ -277,6 +277,59 @@ export async function createNewClient(companyId: string, clientData: CreateClien
   return data
 }
 
+// Función para actualizar un cliente
+export async function updateClient(clientId: string, clientData: Partial<CreateClientData>): Promise<Client> {
+  const supabase = createClient()
+  
+  const { data, error } = await supabase
+    .from('clients')
+    .update({
+      ...clientData,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', clientId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating client:', error)
+    throw new Error('Error al actualizar el cliente')
+  }
+
+  return data
+}
+
+// Función para eliminar un cliente
+export async function deleteClient(clientId: string): Promise<void> {
+  const supabase = createClient()
+  
+  // Verificar si el cliente tiene proyectos asociados
+  const { data: projects, error: projectsError } = await supabase
+    .from('projects')
+    .select('id')
+    .eq('client_id', clientId)
+    .limit(1)
+
+  if (projectsError) {
+    console.error('Error checking client projects:', projectsError)
+    throw new Error('Error al verificar proyectos del cliente')
+  }
+
+  if (projects && projects.length > 0) {
+    throw new Error('No se puede eliminar el cliente porque tiene proyectos asociados')
+  }
+
+  const { error } = await supabase
+    .from('clients')
+    .delete()
+    .eq('id', clientId)
+
+  if (error) {
+    console.error('Error deleting client:', error)
+    throw new Error('Error al eliminar el cliente')
+  }
+}
+
 // Función para obtener las etapas de proyecto de una compañía
 export async function getCompanyProjectStages(companyId: string): Promise<ProjectStage[]> {
   const supabase = createClient()

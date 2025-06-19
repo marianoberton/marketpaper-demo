@@ -276,6 +276,60 @@ export default function ConstruccionClientPage() {
     }
   }
 
+  const handleUpdateClient = async (clientId: string, clientData: Partial<CreateClientData>) => {
+    try {
+      setError(null)
+      
+      const response = await fetch('/api/workspace/construction/clients', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: clientId, ...clientData }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Error al actualizar el cliente')
+      }
+
+      const data = await response.json()
+      
+      // Actualizar el cliente en la lista
+      setClients(prev => prev.map(client => 
+        client.id === clientId ? data.client : client
+      ))
+      
+    } catch (error: any) {
+      console.error('Error updating client:', error)
+      setError(error.message || 'Error al actualizar el cliente')
+      throw error // Re-lanzar el error para que el componente lo maneje
+    }
+  }
+
+  const handleDeleteClient = async (clientId: string) => {
+    try {
+      setError(null)
+      
+      const response = await fetch(`/api/workspace/construction/clients?id=${clientId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Error al eliminar el cliente')
+      }
+      
+      // Remover el cliente de la lista
+      setClients(prev => prev.filter(client => client.id !== clientId))
+      
+    } catch (error: any) {
+      console.error('Error deleting client:', error)
+      setError(error.message || 'Error al eliminar el cliente')
+      throw error // Re-lanzar el error para que el componente lo maneje
+    }
+  }
+
   const handleProjectStageChange = async (projectId: string, newStage: string) => {
     try {
       setError(null)
@@ -574,6 +628,8 @@ export default function ConstruccionClientPage() {
             <ClientManagement 
               clients={clients}
               onCreateClient={handleCreateClient}
+              onUpdateClient={handleUpdateClient}
+              onDeleteClient={handleDeleteClient}
             />
           </TabsContent>
         </Tabs>

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { 
   User, 
   Plus, 
@@ -20,7 +21,9 @@ import {
   Building, 
   FileText,
   UserCheck,
-  Calendar
+  Calendar,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react'
 import { Client, CreateClientData } from '@/lib/construction'
 
@@ -28,12 +31,15 @@ interface ClientManagementProps {
   clients: Client[]
   onCreateClient: (clientData: CreateClientData) => Promise<void>
   onUpdateClient?: (clientId: string, clientData: Partial<CreateClientData>) => Promise<void>
+  onDeleteClient?: (clientId: string) => Promise<void>
 }
 
-export default function ClientManagement({ clients, onCreateClient, onUpdateClient }: ClientManagementProps) {
+export default function ClientManagement({ clients, onCreateClient, onUpdateClient, onDeleteClient }: ClientManagementProps) {
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [formData, setFormData] = useState<CreateClientData>({
     name: '',
     email: '',
@@ -129,6 +135,21 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
         delete newErrors[field]
         return newErrors
       })
+    }
+  }
+
+  const handleDeleteClient = async () => {
+    if (!clientToDelete || !onDeleteClient) return
+    
+    setIsDeleting(true)
+    try {
+      await onDeleteClient(clientToDelete.id)
+      setClientToDelete(null)
+    } catch (error) {
+      console.error('Error deleting client:', error)
+      // Aquí podrías mostrar un toast o mensaje de error
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -302,14 +323,27 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
                           <p className="text-sm text-muted-foreground">Cliente</p>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => startEdit(client)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => startEdit(client)}
+                          title="Editar cliente"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        {onDeleteClient && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setClientToDelete(client)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            title="Eliminar cliente"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </CardTitle>
                   </CardHeader>
                   
@@ -394,6 +428,42 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
           )}
         </>
       )}
+
+      {/* Diálogo de confirmación de eliminación */}
+      <Dialog open={!!clientToDelete} onOpenChange={() => setClientToDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              Confirmar Eliminación
+            </DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas eliminar el cliente{' '}
+              <span className="font-semibold">{clientToDelete?.name}</span>?
+              <br />
+              <br />
+              Esta acción no se puede deshacer. Si el cliente tiene proyectos asociados, 
+              no podrá ser eliminado.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setClientToDelete(null)}
+              disabled={isDeleting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteClient}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Eliminando...' : 'Eliminar Cliente'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 
