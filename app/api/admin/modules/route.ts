@@ -1,13 +1,13 @@
 import { createClient } from '@/utils/supabase/server'
 import { NextResponse } from 'next/server'
-import { is_super_admin } from '@/lib/super-admin'
+import { isSuperAdmin } from '@/lib/super-admin'
 
 // GET all modules
 export async function GET() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user || !(await is_super_admin(user.id))) {
+  if (!user || !(await isSuperAdmin(user.id))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user || !(await is_super_admin(user.id))) {
+  if (!user || !(await isSuperAdmin(user.id))) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

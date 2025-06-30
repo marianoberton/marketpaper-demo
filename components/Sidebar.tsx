@@ -12,65 +12,62 @@ import {
   BarChart3, 
   Settings,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Building2,
+  Hammer
 } from 'lucide-react'
-import { usePermissions } from '@/app/providers/CompanyProvider'
 
 const navigation = [
   {
     name: 'Dashboard',
     href: '/workspace/dashboard',
     icon: LayoutDashboard,
-    permission: 'read'
   },
   {
     name: 'CRM',
     icon: Users,
-    permission: 'read',
     children: [
       {
         name: 'Leads',
         href: '/workspace/crm/leads',
         icon: UserPlus,
-        permission: 'read_leads'
       },
       {
         name: 'Contactos',
         href: '/workspace/crm/contacts',
         icon: Users,
-        permission: 'read_contacts'
       },
       {
         name: 'Pipeline',
         href: '/workspace/crm/pipeline',
         icon: BarChart3,
-        permission: 'read_pipeline'
       },
       {
         name: 'Actividades',
         href: '/workspace/crm/activities',
         icon: Activity,
-        permission: 'read_activities'
       }
     ]
+  },
+  {
+    name: 'Construcción',
+    href: '/workspace/construccion',
+    icon: Hammer,
   },
   {
     name: 'Analytics',
     href: '/workspace/analytics',
     icon: BarChart3,
-    permission: 'read_analytics'
   },
   {
     name: 'Configuración',
     href: '/workspace/settings',
     icon: Settings,
-    permission: 'admin'
   }
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { hasPermission } = usePermissions()
   const [expandedItems, setExpandedItems] = useState<string[]>(['CRM'])
 
   const toggleExpanded = (name: string) => {
@@ -82,11 +79,6 @@ export function Sidebar() {
   }
 
   const renderNavItem = (item: any, level = 0) => {
-    // Verificar permisos
-    if (!hasPermission(item.permission)) {
-      return null
-    }
-
     const isExpanded = expandedItems.includes(item.name)
     const hasChildren = item.children && item.children.length > 0
     const isActive = item.href ? pathname === item.href : false

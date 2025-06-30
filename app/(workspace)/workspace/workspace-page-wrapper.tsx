@@ -4,7 +4,7 @@ import { WorkspaceLayoutWithProvider } from '../workspace-layout-with-provider';
 
 interface WorkspacePageWrapperProps {
   children: React.ReactNode;
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 export async function WorkspacePageWrapper({ children, searchParams }: WorkspacePageWrapperProps) {

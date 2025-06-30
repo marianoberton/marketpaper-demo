@@ -1,6 +1,6 @@
 'use client'
 
-import { useCompany } from '@/app/providers/CompanyProvider'
+import { useWorkspace } from '@/components/workspace-context'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -12,21 +12,21 @@ import { Building2, Users, Calendar, Settings } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 export default function CompanySettingsPage() {
-  const { currentCompany, userProfile, refreshCompanies } = useCompany()
+  const { companyName, companyId, userRole, userName, isLoading } = useWorkspace()
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState('')
   const [error, setError] = useState('')
 
   const [formData, setFormData] = useState({
-    name: currentCompany?.name || '',
-    domain: currentCompany?.domain || '',
-    billing_email: currentCompany?.billing_email || '',
-    timezone: currentCompany?.timezone || ''
+    name: companyName || '',
+    domain: '',
+    billing_email: '',
+    timezone: ''
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!currentCompany) return
+    if (!companyId) return
 
     setLoading(true)
     setError('')
@@ -42,12 +42,11 @@ export default function CompanySettingsPage() {
           timezone: formData.timezone,
           updated_at: new Date().toISOString()
         })
-        .eq('id', currentCompany.id)
+        .eq('id', companyId)
 
       if (error) throw error
 
       setSuccess('Información de empresa actualizada exitosamente')
-      await refreshCompanies()
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -55,7 +54,22 @@ export default function CompanySettingsPage() {
     }
   }
 
-  if (!currentCompany) {
+  if (isLoading) {
+    return (
+      <div className="space-y-6 p-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-32 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!companyName) {
     return (
       <div className="p-6">
         <Card>
@@ -84,9 +98,9 @@ export default function CompanySettingsPage() {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{currentCompany.name}</div>
+            <div className="text-2xl font-bold">{companyName}</div>
             <p className="text-xs text-muted-foreground">
-              Slug: {currentCompany.slug}
+              ID: {companyId}
             </p>
           </CardContent>
         </Card>
@@ -98,8 +112,8 @@ export default function CompanySettingsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              <Badge variant={userProfile?.role === 'owner' ? 'default' : 'secondary'}>
-                {userProfile?.role}
+              <Badge variant={userRole === 'owner' ? 'default' : 'secondary'}>
+                {userRole || 'member'}
               </Badge>
             </div>
           </CardContent>
@@ -107,12 +121,12 @@ export default function CompanySettingsPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Creada</CardTitle>
+            <CardTitle className="text-sm font-medium">Usuario</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {new Date(currentCompany.created_at).toLocaleDateString()}
+              {userName || 'Usuario'}
             </div>
           </CardContent>
         </Card>
@@ -203,15 +217,15 @@ export default function CompanySettingsPage() {
           <div className="grid gap-4 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">ID de Empresa:</span>
-              <span className="font-mono">{currentCompany.id}</span>
+              <span className="font-mono">{companyId}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Plan:</span>
-              <Badge variant="outline">{currentCompany.plan || 'Free'}</Badge>
+              <Badge variant="outline">{companyName || 'Free'}</Badge>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Última actualización:</span>
-              <span>{new Date(currentCompany.updated_at).toLocaleString()}</span>
+              <span>{new Date(companyName || '').toLocaleString()}</span>
             </div>
           </div>
         </CardContent>

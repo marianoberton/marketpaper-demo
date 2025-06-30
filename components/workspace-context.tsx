@@ -77,11 +77,9 @@ export function WorkspaceProvider({
 
 export function useWorkspace() {
   const context = useContext(WorkspaceContext)
-  
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useWorkspace must be used within a WorkspaceProvider')
   }
-  
   return context
 }
 
