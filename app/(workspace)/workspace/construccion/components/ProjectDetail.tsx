@@ -40,6 +40,7 @@ interface ProjectDetailProps {
   onBack: () => void
   onStageChange: (projectId: string, newStage: string) => void
   onProjectUpdate?: (updatedProject: Project) => void
+  onDeleteProject?: (projectId: string) => void
 }
 
 // Verificaciones con opciones de carga de documentos
@@ -113,7 +114,7 @@ const mockDocuments = [
   }
 ]
 
-export default function ProjectDetail({ project, onBack, onStageChange, onProjectUpdate }: ProjectDetailProps) {
+export default function ProjectDetail({ project, onBack, onStageChange, onProjectUpdate, onDeleteProject }: ProjectDetailProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editedProject, setEditedProject] = useState(project)
   const [documents, setDocuments] = useState(mockDocuments)
@@ -370,18 +371,18 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
         {/* Header mejorado */}
         <div className="bg-white rounded-lg shadow-sm border p-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4">
               <Button variant="outline" onClick={onBack}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Volver a Proyectos
-              </Button>
+          Volver a Proyectos
+        </Button>
               <Separator orientation="vertical" className="h-8" />
-              <div>
+        <div>
                 <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
                 <p className="text-lg text-gray-600">{project.dgro_file_number}</p>
-              </div>
-            </div>
-            
+        </div>
+      </div>
+
             <div className="flex items-center gap-3">
               <Badge className={`${getStageColor(project.current_stage || '')} text-white px-4 py-2 text-sm`}>
                 {project.current_stage}
@@ -400,6 +401,17 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                   Guardar
                 </Button>
               )}
+              {onDeleteProject && (
+                <Button 
+                  onClick={() => onDeleteProject(project.id)}
+                  variant="destructive"
+                  size="lg"
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Eliminar
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -413,7 +425,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Datos del proyecto */}
             <div className="lg:col-span-2">
-              <Card>
+          <Card>
                 <CardHeader>
                   <CardTitle className="text-xl flex items-center gap-2">
                     <Building className="h-5 w-5" />
@@ -433,13 +445,13 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                               dgro_file_number: e.target.value
                             }))}
                             className="mt-1"
-                          />
-                        ) : (
+                  />
+                ) : (
                           <p className="font-semibold text-lg">{project.dgro_file_number}</p>
-                        )}
-                      </div>
+                )}
+              </div>
                       
-                      <div>
+                <div>
                         <Label className="text-sm font-medium text-muted-foreground">Dirección</Label>
                         {isEditing ? (
                           <Input
@@ -453,9 +465,9 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                         ) : (
                           <p className="font-semibold">{project.address}</p>
                         )}
-                      </div>
+                </div>
                       
-                      <div>
+                <div>
                         <Label className="text-sm font-medium text-muted-foreground">Superficie a construir</Label>
                         {isEditing ? (
                           <Input
@@ -470,9 +482,9 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                         ) : (
                           <p className="font-semibold">{project.surface?.toLocaleString()} m²</p>
                         )}
-                      </div>
+                </div>
                       
-                      <div>
+                <div>
                         <Label className="text-sm font-medium text-muted-foreground">Constructor</Label>
                         {isEditing ? (
                           <Input
@@ -486,11 +498,11 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                         ) : (
                           <p className="font-semibold">{project.builder}</p>
                         )}
-                      </div>
-                    </div>
+                </div>
+                </div>
 
                     <div className="space-y-4">
-                      <div>
+                <div>
                         <Label className="text-sm font-medium text-muted-foreground">Tipo de obra</Label>
                         {isEditing ? (
                           <Select
@@ -513,9 +525,9 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                         ) : (
                           <p className="font-semibold">{project.project_type}</p>
                         )}
-                      </div>
+                </div>
                       
-                      <div>
+                <div>
                         <Label className="text-sm font-medium text-muted-foreground">Tipo de permiso</Label>
                         {isEditing ? (
                           <Select
@@ -538,18 +550,18 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                         ) : (
                           <p className="font-semibold">{project.project_use}</p>
                         )}
-                      </div>
+                </div>
                       
-                      <div>
+                <div>
                         <Label className="text-sm font-medium text-muted-foreground">Estado del trámite</Label>
                         <div className="mt-1">
                           <Badge className={`${getStatusColor(project.permit_status || '')} text-white`}>
                             {project.permit_status || 'Pendiente'}
-                          </Badge>
-                        </div>
+                  </Badge>
+                </div>
                       </div>
                       
-                      <div>
+                <div>
                         <Label className="text-sm font-medium text-muted-foreground">Estado de la Boleta</Label>
                         <div className="mt-1">
                           <Badge className="bg-green-500 text-white">Pagado</Badge>
@@ -559,10 +571,10 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                   </div>
                 </CardContent>
               </Card>
-            </div>
+                </div>
 
             {/* Imagen del proyecto */}
-            <div>
+                <div>
               <Card className="h-full">
                 <CardContent className="p-0">
                   <div className="relative h-80 rounded-lg overflow-hidden bg-gray-100">
@@ -654,8 +666,8 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                           {stage}
                         </Button>
                       ))}
-                    </div>
-                  </div>
+                </div>
+                </div>
                 ))}
               </div>
             </CardContent>
@@ -768,10 +780,10 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                               <Upload className="h-3 w-3 mr-1" />
                               Cargar Doc.
                             </Button>
-                          </div>
+                        </div>
                         </div>
                       )}
-                    </div>
+              </div>
                   </Card>
                 ))}
               </div>
@@ -779,13 +791,13 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
           </Card>
 
           {/* Documentación del Proyecto - Vista unificada */}
-          <Card>
-            <CardHeader>
+            <Card>
+              <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <FileText className="h-4 w-4" />
                 Documentación del Proyecto
                 <Badge variant="outline" className="ml-2">{documents.length} documentos</Badge>
-              </CardTitle>
+                </CardTitle>
               <div className="flex gap-2">
                 <input
                   type="file"
@@ -832,7 +844,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                     </>
                   )}
                 </Button>
-              </div>
+                </div>
             </CardHeader>
             <CardContent>
               {!tableExists && (
@@ -853,8 +865,8 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                   <div className="mt-3 p-2 bg-yellow-100 rounded text-xs font-mono text-yellow-800">
                     DROP TABLE IF EXISTS project_documents; CREATE TABLE project_documents (...);
                   </div>
-                </div>
-              )}
+                  </div>
+                )}
               {loading ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
@@ -898,10 +910,10 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                             <div className="flex items-center gap-2">
                               <Button size="sm" variant="outline" onClick={() => handleViewDocument(doc)}>
                                 <Eye className="h-4 w-4" />
-                              </Button>
+              </Button>
                               <Button size="sm" variant="outline" onClick={() => handleDownloadDocument(doc)}>
                                 <Download className="h-4 w-4" />
-                              </Button>
+              </Button>
                               <Button 
                                 size="sm" 
                                 variant="outline"
@@ -909,7 +921,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                                 className="text-red-600 hover:text-red-700"
                               >
                                 <Trash2 className="h-4 w-4" />
-                              </Button>
+              </Button>
                             </div>
                           </div>
                         ))}
@@ -934,7 +946,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3">
                   <div className="p-3 bg-blue-100 rounded-full">
                     <User className="h-6 w-6 text-blue-600" />
                   </div>
@@ -1050,6 +1062,6 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
         </div>
       </div>
     </div>
-  </div>
+    </div>
   )
-}
+} 

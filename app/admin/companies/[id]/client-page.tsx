@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { 
   Building2, 
   Users, 
@@ -21,9 +23,12 @@ import {
   AlertTriangle,
   PlusCircle,
   MoreHorizontal,
-  ArrowRight
+  ArrowRight,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { UserFormDialog } from '@/components/admin/UserFormDialog'
 import {
   Table,
@@ -41,6 +46,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { deleteUserAction } from './actions'
+import { createClient } from '@/utils/supabase/client'
+import { toast } from 'sonner'
 
 // Re-using interfaces from the original page
 interface Company {
@@ -59,6 +66,7 @@ interface Company {
   monthly_price: number
   trial_ends_at?: string
   features: string[]
+  logo_url?: string
 }
 
 interface CompanyUser {
@@ -111,6 +119,10 @@ export default function CompanyDetailsClient({
   const [isUserFormOpen, setIsUserFormOpen] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null);
   const [userToEdit, setUserToEdit] = useState<CompanyUser | null>(null);
+  
+  // Logo upload state
+  const [isUploading, setIsUploading] = useState(false)
+  const [logoFile, setLogoFile] = useState<File | null>(null)
 
   // Helper functions from the original page
   const formatCurrency = (amount: number) => {
@@ -206,6 +218,91 @@ export default function CompanyDetailsClient({
     if (percentage >= 90) return 'bg-red-500'
     if (percentage >= 75) return 'bg-yellow-500'
     return 'bg-green-500'
+  }
+
+  // Logo upload functions
+  const handleLogoUpload = async (file: File) => {
+    if (!company) return
+    
+    setIsUploading(true)
+    try {
+      console.log('🔧 Starting logo upload for company:', company.id)
+      console.log('📁 File details:', {
+        name: file.name,
+        size: file.size,
+        type: file.type
+      })
+      
+      // Create form data for API call
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      console.log('📡 Calling API route for upload...')
+      
+      // Call our API route instead of direct Supabase call
+      const response = await fetch(`/api/admin/companies/${company.id}/logo`, {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`)
+      }
+      
+      const result = await response.json()
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Upload failed')
+      }
+      
+      console.log('✅ Upload successful:', result)
+      
+      // Update local state with the new logo URL
+      setCompany({ ...company, logo_url: result.logoUrl })
+      toast.success('Logo actualizado exitosamente')
+      
+    } catch (error) {
+      console.error('❌ Logo upload failed:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido al subir el logo'
+      toast.error(errorMessage)
+    } finally {
+      setIsUploading(false)
+      setLogoFile(null)
+    }
+  }
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      console.log('📁 File selected:', {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        sizeInMB: (file.size / 1024 / 1024).toFixed(2)
+      })
+      
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/svg+xml', 'image/webp', 'image/gif']
+      if (!validTypes.includes(file.type)) {
+        console.error('❌ Invalid file type:', file.type)
+        toast.error(`Formato no válido: ${file.type}. Use JPEG, PNG, SVG, WebP o GIF`)
+        e.target.value = '' // Clear the input
+        return
+      }
+      
+      // Validate file size (5MB)
+      const maxSize = 5 * 1024 * 1024 // 5MB
+      if (file.size > maxSize) {
+        console.error('❌ File too large:', file.size, 'bytes')
+        toast.error(`El archivo es muy grande: ${(file.size / 1024 / 1024).toFixed(2)}MB. Máximo permitido: 5MB`)
+        e.target.value = '' // Clear the input
+        return
+      }
+      
+      console.log('✅ File validation passed')
+      setLogoFile(file)
+    }
   }
 
   if (!company) {
@@ -408,6 +505,152 @@ export default function CompanyDetailsClient({
                 </CardContent>
             </Card>
         </TabsContent>
+        
+        <TabsContent value="apikeys">
+          <Card>
+            <CardHeader>
+              <CardTitle>API Keys</CardTitle>
+              <CardDescription>Gestiona las claves API de la empresa</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500 text-center py-8">Funcionalidad de API Keys por implementar</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="usage">
+          <Card>
+            <CardHeader>
+              <CardTitle>Uso y Facturación</CardTitle>
+              <CardDescription>Estadísticas de uso y costos</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500 text-center py-8">Funcionalidad de facturación por implementar</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="settings">
+          <div className="space-y-6">
+            {/* Logo Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5" />
+                  Logo de la Empresa
+                </CardTitle>
+                <CardDescription>
+                  Configura el logo que se mostrará en el workspace de la empresa
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Current Logo Display */}
+                <div className="flex items-center gap-6">
+                  <div className="flex-shrink-0">
+                    <Label className="text-sm font-medium">Logo Actual:</Label>
+                    <div className="mt-2 w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                      {company.logo_url ? (
+                        <Image
+                          src={company.logo_url}
+                          alt={`Logo de ${company.name}`}
+                          width={120}
+                          height={120}
+                          className="max-w-full max-h-full object-contain rounded-lg"
+                        />
+                      ) : (
+                        <div className="text-center">
+                          <ImageIcon className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-500">Sin logo</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 space-y-4">
+                    <div>
+                      <Label htmlFor="logo-upload" className="text-sm font-medium">
+                        Subir Nuevo Logo
+                      </Label>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Formatos: JPEG, PNG, SVG, WebP, GIF. Tamaño máximo: 5MB
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <Input
+                        id="logo-upload"
+                        type="file"
+                        accept="image/jpeg,image/png,image/svg+xml,image/webp,image/gif"
+                        onChange={handleFileChange}
+                        disabled={isUploading}
+                        className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      />
+                      {logoFile && (
+                        <Button 
+                          onClick={() => handleLogoUpload(logoFile)}
+                          disabled={isUploading}
+                          className="flex items-center gap-2"
+                        >
+                          {isUploading ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              Subiendo...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4" />
+                              Subir Logo
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                    
+                    {logoFile && (
+                      <div className="p-3 bg-blue-50 rounded-lg">
+                        <p className="text-sm font-medium text-blue-900">
+                          Archivo seleccionado: {logoFile.name}
+                        </p>
+                        <p className="text-sm text-blue-700">
+                          Tamaño: {(logoFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Preview in Workspace */}
+                {company.logo_url && (
+                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                    <Label className="text-sm font-medium">Vista Previa en Workspace:</Label>
+                    <div className="mt-2 flex items-center gap-3 p-3 bg-white rounded border">
+                      <Image
+                        src={company.logo_url}
+                        alt={`Logo de ${company.name}`}
+                        width={32}
+                        height={32}
+                        className="object-contain"
+                      />
+                      <span className="font-logo text-xl font-bold text-blue-600">{company.name}</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            {/* Other Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Configuración General</CardTitle>
+                <CardDescription>Configuraciones adicionales de la empresa</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-500 text-center py-8">Configuraciones adicionales por implementar</p>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+        
         {/* Other tabs content... */}
       </Tabs>
       <UserFormDialog

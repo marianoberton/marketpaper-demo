@@ -6,10 +6,9 @@ const nextConfig: NextConfig = {
   async redirects() {
     return []
   },
-  // Mejorar rendimiento en desarrollo
-  onDemandEntries: {
-    maxInactiveAge: 25 * 1000,
-    pagesBufferLength: 2,
+  // Configuración de indicadores de desarrollo
+  devIndicators: {
+    position: 'bottom-right',
   },
   images: {
     remotePatterns: [

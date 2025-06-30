@@ -1,33 +1,46 @@
 import { createClient } from '@/utils/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { getCurrentUser } from '@/lib/auth-server'
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
     
-    // Por ahora trabajamos como super admin - simplificamos sin autenticación específica
-    // TODO: Implementar lógica de usuarios por compañía más adelante
+    // Obtener el usuario actual y su company_id
+    const currentUser = await getCurrentUser()
     
-    // Obtener company_id de los parámetros de la URL
-    const { searchParams } = new URL(request.url)
-    const companyId = searchParams.get('company_id')
-    
-    // Si no hay company_id, usar la primera compañía disponible (modo desarrollo)
-    let targetCompanyId = companyId
-    
-    if (!targetCompanyId) {
-      const { data: companies } = await supabase
-        .from('companies')
-        .select('id')
-        .limit(1)
-      
-      if (companies && companies.length > 0) {
-        targetCompanyId = companies[0].id
-      }
+    if (!currentUser) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
     }
 
-    if (!targetCompanyId) {
-      return NextResponse.json({ error: 'No se encontró una compañía' }, { status: 400 })
+    // Determinar el company_id a usar
+    let targetCompanyId: string
+
+    if (currentUser.role === 'super_admin') {
+      // Super admin puede ver cualquier empresa especificada, o la primera disponible
+      const { searchParams } = new URL(request.url)
+      const companyId = searchParams.get('company_id')
+      
+      if (companyId) {
+        targetCompanyId = companyId
+      } else {
+        const { data: companies } = await supabase
+          .from('companies')
+          .select('id')
+          .limit(1)
+        
+        if (companies && companies.length > 0) {
+          targetCompanyId = companies[0].id
+        } else {
+          return NextResponse.json({ error: 'No se encontró una compañía' }, { status: 400 })
+        }
+      }
+    } else {
+      // Usuarios regulares solo pueden ver su propia empresa
+      if (!currentUser.company_id) {
+        return NextResponse.json({ error: 'Usuario sin empresa asignada' }, { status: 400 })
+      }
+      targetCompanyId = currentUser.company_id
     }
 
     // Obtener clientes de la compañía
@@ -53,6 +66,13 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
     
+    // Obtener el usuario actual y su company_id
+    const currentUser = await getCurrentUser()
+    
+    if (!currentUser) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+    }
+
     // Obtener datos del cliente del cuerpo de la petición
     const clientData = await request.json()
 
@@ -61,22 +81,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'El nombre del cliente es requerido' }, { status: 400 })
     }
 
-    // Obtener company_id del cuerpo o usar la primera compañía disponible
-    let targetCompanyId = clientData.company_id
-    
-    if (!targetCompanyId) {
-      const { data: companies } = await supabase
-        .from('companies')
-        .select('id')
-        .limit(1)
-      
-      if (companies && companies.length > 0) {
-        targetCompanyId = companies[0].id
-      }
-    }
+    // Determinar el company_id a usar
+    let targetCompanyId: string
 
-    if (!targetCompanyId) {
-      return NextResponse.json({ error: 'No se encontró una compañía' }, { status: 400 })
+    if (currentUser.role === 'super_admin') {
+      // Super admin puede crear en cualquier empresa especificada
+      targetCompanyId = clientData.company_id || currentUser.company_id
+      
+      if (!targetCompanyId) {
+        const { data: companies } = await supabase
+          .from('companies')
+          .select('id')
+          .limit(1)
+        
+        if (companies && companies.length > 0) {
+          targetCompanyId = companies[0].id
+        } else {
+          return NextResponse.json({ error: 'No se encontró una compañía' }, { status: 400 })
+        }
+      }
+    } else {
+      // Usuarios regulares solo pueden crear en su propia empresa
+      if (!currentUser.company_id) {
+        return NextResponse.json({ error: 'Usuario sin empresa asignada' }, { status: 400 })
+      }
+      targetCompanyId = currentUser.company_id
     }
 
     // Crear el cliente

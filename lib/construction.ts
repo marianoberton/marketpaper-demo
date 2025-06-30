@@ -218,6 +218,33 @@ export async function updateProject(projectData: UpdateProjectData): Promise<Pro
   return data as Project
 }
 
+// Función para eliminar un proyecto
+export async function deleteProject(projectId: string): Promise<void> {
+  const supabase = createClient()
+  
+  // Verificar que el proyecto existe
+  const { data: project, error: fetchError } = await supabase
+    .from('projects')
+    .select('id, name')
+    .eq('id', projectId)
+    .single()
+
+  if (fetchError || !project) {
+    throw new Error('Proyecto no encontrado')
+  }
+
+  // Eliminar el proyecto (las eliminaciones en cascada se encargarán de las dependencias)
+  const { error: deleteError } = await supabase
+    .from('projects')
+    .delete()
+    .eq('id', projectId)
+
+  if (deleteError) {
+    console.error('Error deleting project:', deleteError)
+    throw new Error('Error al eliminar el proyecto')
+  }
+}
+
 // Función para actualizar el estado de un proyecto
 export async function updateProjectStage(projectId: string, newStage: string, notes?: string): Promise<void> {
   const supabase = createClient()

@@ -1,12 +1,13 @@
 'use client'
 
 import { WorkspaceLayout } from '@/components/workspace-layout'
-import { WorkspaceProvider } from '@/components/workspace-context'
+import { WorkspaceProvider, useIsSuperAdmin } from '@/components/workspace-context'
 
 interface Company {
   id: string
   name: string
   features: string[]
+  logo_url?: string
 }
 
 interface WorkspaceLayoutWithProviderProps {
@@ -14,6 +15,20 @@ interface WorkspaceLayoutWithProviderProps {
   initialCompanyData: Company | null
   fetchError?: string | null
   availableModules?: any[]
+}
+
+// Componente interno que usa el hook de super admin
+function WorkspaceLayoutWithSuperAdminCheck({ children }: { children: React.ReactNode }) {
+  const { isSuperAdmin, loading } = useIsSuperAdmin()
+  
+  // Mientras carga, no mostrar el back link por seguridad
+  const showBackLink = !loading && isSuperAdmin
+  
+  return (
+    <WorkspaceLayout showBackLink={showBackLink}>
+      {children}
+    </WorkspaceLayout>
+  )
 }
 
 export function WorkspaceLayoutWithProvider({ 
@@ -40,6 +55,7 @@ export function WorkspaceLayoutWithProvider({
   const companyFeatures = initialCompanyData?.features || []
   const companyName = initialCompanyData?.name
   const companyId = initialCompanyData?.id
+  const companyLogoUrl = initialCompanyData?.logo_url
   const isLoading = !initialCompanyData; // True if no data was passed from server
 
   return (
@@ -47,12 +63,13 @@ export function WorkspaceLayoutWithProvider({
       companyFeatures={companyFeatures}
       companyId={companyId}
       companyName={companyName}
+      companyLogoUrl={companyLogoUrl}
       isLoading={isLoading}
       availableModules={availableModules || []}
     >
-      <WorkspaceLayout showBackLink={true}>
+      <WorkspaceLayoutWithSuperAdminCheck>
         {children}
-      </WorkspaceLayout>
+      </WorkspaceLayoutWithSuperAdminCheck>
     </WorkspaceProvider>
   )
 } 

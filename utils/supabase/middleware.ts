@@ -61,29 +61,65 @@ export async function updateSession(request: NextRequest) {
 
   // If user is logged in and tries to access login, register, or the root page, redirect them
   if (user && (pathname === '/login' || pathname === '/register' || pathname === '/')) {
-    // Check if the user is a super admin
-    const { data: superAdmin } = await supabase
-      .from('super_admins')
-      .select('id')
-      .eq('user_id', user.id)
-      .single()
+    try {
+      // First check if user is super admin
+      const { data: superAdmin } = await supabase
+        .from('super_admins')
+        .select('id, status')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .single()
 
-    if (superAdmin) {
-      return NextResponse.redirect(new URL('/admin', request.url))
+      if (superAdmin) {
+        console.log('Middleware: User is super admin, redirecting to /admin')
+        return NextResponse.redirect(new URL('/admin', request.url))
+      }
+
+      // Get user profile to determine role and company
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('role, company_id, status')
+        .eq('id', user.id)
+        .single()
+
+      if (profile) {
+        console.log('Middleware: Profile found:', profile)
+        // Redirect based on role and company
+        if (profile.company_id && profile.status === 'active') {
+          console.log('Middleware: User has active company, redirecting to /workspace with company_id')
+          const workspaceUrl = new URL('/workspace', request.url)
+          workspaceUrl.searchParams.set('company_id', profile.company_id)
+          return NextResponse.redirect(workspaceUrl)
+        } else {
+          console.log('Middleware: User needs setup, redirecting to /setup')
+          return NextResponse.redirect(new URL('/setup', request.url))
+        }
+      } else {
+        console.log('Middleware: No profile found, redirecting to /setup')
+        // User doesn't have a profile, redirect to setup
+        return NextResponse.redirect(new URL('/setup', request.url))
+      }
+    } catch (error) {
+      console.error('Middleware: Error checking user status:', error)
+      // On error, redirect to setup to let user fix their profile
+      return NextResponse.redirect(new URL('/setup', request.url))
     }
-    
-    // For regular users, redirect to the main page, which handles company selection.
-    return NextResponse.redirect(new URL('/', request.url))
   }
 
   // Define protected routes
-  const protectedRoutes = ['/workspace', '/admin', '/setup', '/fix-user']
+  const protectedRoutes = ['/workspace', '/admin']
+  const setupRoutes = ['/setup', '/debug-supabase']
 
   // If user is not logged in and tries to access a protected route, redirect to login
   if (!user && protectedRoutes.some(route => pathname.startsWith(route))) {
     const redirectUrl = new URL('/login', request.url)
     redirectUrl.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(redirectUrl)
+  }
+
+  // Allow access to setup and debug pages even if there are profile issues
+  if (setupRoutes.some(route => pathname.startsWith(route))) {
+    return response
   }
 
   return response

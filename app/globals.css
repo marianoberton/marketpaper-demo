@@ -185,4 +185,19 @@
   .scrollbar-hide::-webkit-scrollbar { 
     display: none;  /* Safari and Chrome */
   }
+  
+  /* Ocultar indicadores de desarrollo de Next.js */
+  #__next-build-watcher,
+  #__vercel-live-feedback,
+  [data-nextjs-toast-wrapper],
+  [data-nextjs-dialog-overlay],
+  .__next-dev-overlay {
+    display: none !important;
+    z-index: -1 !important;
+  }
+  
+  /* Asegurar que nada interfiera con botones en la esquina superior derecha */
+  .next-dev-overlay {
+    display: none !important;
+  }
 }

@@ -7,8 +7,10 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Building, Users, Search, Filter, Calendar, MapPin, User, Eye, BarChart3, TrendingUp, Clock, CheckCircle } from 'lucide-react'
+import { Plus, Building, Users, Search, Filter, Calendar, MapPin, User, Eye, BarChart3, TrendingUp, Clock, CheckCircle, Trash2 } from 'lucide-react'
 import Image from 'next/image'
+import { PageHeader } from '@/components/page-header'
+import { useWorkspace } from '@/components/workspace-context'
 
 // Importar tipos y componentes
 import { Project, Client, ProjectStage, CreateProjectData, CreateClientData, mockProjectStages } from '@/lib/construction'
@@ -105,6 +107,7 @@ export default function ConstruccionClientPage() {
   const [filterClient, setFilterClient] = useState('all')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const workspace = useWorkspace()
 
   // Cargar datos reales desde las APIs
   useEffect(() => {
@@ -116,7 +119,11 @@ export default function ConstruccionClientPage() {
     try {
       setError(null)
       
-      const response = await fetch('/api/workspace/construction/clients')
+      const url = workspace.companyId 
+        ? `/api/workspace/construction/clients?company_id=${workspace.companyId}`
+        : '/api/workspace/construction/clients'
+      
+      const response = await fetch(url)
       
       if (!response.ok) {
         throw new Error('Error al cargar los clientes')
@@ -135,7 +142,11 @@ export default function ConstruccionClientPage() {
       setLoading(true)
       setError(null)
       
-      const response = await fetch('/api/workspace/construction/projects')
+      const url = workspace.companyId 
+        ? `/api/workspace/construction/projects?company_id=${workspace.companyId}`
+        : '/api/workspace/construction/projects'
+      
+      const response = await fetch(url)
       
       if (!response.ok) {
         throw new Error('Error al cargar los proyectos')
@@ -381,6 +392,49 @@ export default function ConstruccionClientPage() {
     setSelectedProject(updatedProject)
   }
 
+  const handleDeleteProject = async (projectId: string) => {
+    try {
+      setError(null)
+      
+      const project = projects.find(p => p.id === projectId)
+      if (!project) return
+      
+      // Confirmación antes de eliminar
+      const confirmed = window.confirm(
+        `¿Estás seguro de que quieres eliminar el proyecto "${project.name}"?\n\n` +
+        'Esta acción no se puede deshacer. Se eliminarán también todos los documentos asociados.'
+      )
+      
+      if (!confirmed) return
+      
+      const response = await fetch(`/api/workspace/construction/projects?id=${projectId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Error al eliminar el proyecto')
+      }
+      
+      const data = await response.json()
+      
+      // Remover el proyecto de la lista
+      setProjects(prev => prev.filter(project => project.id !== projectId))
+      
+      // Si era el proyecto seleccionado, volver a la lista
+      if (selectedProject?.id === projectId) {
+        setSelectedProject(null)
+      }
+      
+      // Mostrar mensaje de éxito
+      alert(data.message || 'Proyecto eliminado exitosamente')
+      
+    } catch (error: any) {
+      console.error('Error deleting project:', error)
+      setError(error.message || 'Error al eliminar el proyecto')
+    }
+  }
+
   // Vista de detalle de proyecto
   if (selectedProject) {
     return (
@@ -389,260 +443,266 @@ export default function ConstruccionClientPage() {
         onBack={() => setSelectedProject(null)}
         onStageChange={handleProjectStageChange}
         onProjectUpdate={handleProjectUpdate}
+        onDeleteProject={handleDeleteProject}
       />
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
-      <div className="mx-auto px-6 py-6 space-y-6">
-        {/* Mostrar errores si los hay */}
-        {error && (
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="p-4">
-              <p className="text-red-600 text-sm">{error}</p>
+    <div className="flex-1 space-y-6 p-6">
+      {/* Header Profesional */}
+      <PageHeader
+        title="Construcción"
+        description="Gestión integral de proyectos de construcción y gestoría municipal"
+        accentColor="blue"
+      />
+      
+      {/* Botón Nuevo Proyecto */}
+      <div className="flex justify-end">
+        <Button 
+          onClick={() => setShowCreateModal(true)} 
+          size="lg" 
+          className="bg-gradient-to-r from-brilliant-blue to-plum hover:from-brilliant-blue/90 hover:to-plum/90 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+        >
+          <Plus className="h-5 w-5 mr-2" />
+          Nuevo Proyecto
+        </Button>
+      </div>
+
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="text-red-600">⚠️</div>
+              <div>
+                <h3 className="font-semibold text-red-900">Error de conexión</h3>
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Métricas de resumen */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-700">Total Proyectos</CardTitle>
+            <Building className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-900">{totalProjects}</div>
+            <p className="text-xs text-blue-600">Cartera completa</p>
+          </CardContent>
+        </Card>
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-700">En Obra</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-900">{projectsInProgress}</div>
+            <p className="text-xs text-green-600">En construcción activa</p>
+          </CardContent>
+        </Card>
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-700">En Permisos</CardTitle>
+            <Clock className="h-4 w-4 text-yellow-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-900">{projectsInPermits}</div>
+            <p className="text-xs text-yellow-600">Gestión en trámite</p>
+          </CardContent>
+        </Card>
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-700">Finalizados</CardTitle>
+            <CheckCircle className="h-4 w-4 text-emerald-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-gray-900">{projectsCompleted}</div>
+            <p className="text-xs text-emerald-600">Obras terminadas</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="projects" className="flex items-center gap-2">
+            <Building className="h-4 w-4" />
+            Proyectos
+          </TabsTrigger>
+          <TabsTrigger value="clients" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Clientes <span className="text-xs bg-gray-200 px-1.5 py-0.5 rounded-full ml-1">{clients.length}</span>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="projects" className="space-y-6">
+          {/* Búsqueda y filtros */}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex flex-col lg:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Buscar por nombre, dirección o N° expediente..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                
+                <div className="flex gap-2">
+                  <Select value={filterStage} onValueChange={setFilterStage}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Todas las etapas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas las etapas</SelectItem>
+                      {projectStages.map((stage) => (
+                        <SelectItem key={stage.id} value={stage.name}>
+                          {stage.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filterClient} onValueChange={setFilterClient}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Todos los clientes" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos los clientes</SelectItem>
+                      {clients.map((client) => (
+                        <SelectItem key={client.id} value={client.id}>
+                          {client.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </CardContent>
           </Card>
-        )}
 
-        {/* Header principal mejorado */}
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight text-gray-900">Construcción</h1>
-              <p className="text-gray-600 mt-1">
-                Gestión integral de proyectos de construcción y gestoría municipal
-              </p>
-            </div>
-            <Button onClick={() => setShowCreateModal(true)} size="lg" className="shadow-md">
-              <Plus className="h-5 w-5 mr-2" />
-              Nuevo Proyecto
-            </Button>
-          </div>
-        </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="projects" className="flex items-center gap-2">
-              <Building className="h-4 w-4" />
-              Proyectos
-            </TabsTrigger>
-            <TabsTrigger value="clients" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Clientes {loading ? '(Cargando...)' : `(${clients.length})`}
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="projects" className="space-y-6">
-            {/* Estadísticas principales */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Total Proyectos</p>
-                      <h3 className="text-3xl font-bold text-blue-600">{totalProjects}</h3>
-                    </div>
-                    <div className="p-3 bg-blue-100 rounded-full">
-                      <BarChart3 className="h-6 w-6 text-blue-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">En Obra</p>
-                      <h3 className="text-3xl font-bold text-green-600">{projectsInProgress}</h3>
-                    </div>
-                    <div className="p-3 bg-green-100 rounded-full">
-                      <TrendingUp className="h-6 w-6 text-green-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">En Permisos</p>
-                      <h3 className="text-3xl font-bold text-yellow-600">{projectsInPermits}</h3>
-                    </div>
-                    <div className="p-3 bg-yellow-100 rounded-full">
-                      <Clock className="h-6 w-6 text-yellow-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Finalizados</p>
-                      <h3 className="text-3xl font-bold text-emerald-600">{projectsCompleted}</h3>
-                    </div>
-                    <div className="p-3 bg-emerald-100 rounded-full">
-                      <CheckCircle className="h-6 w-6 text-emerald-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Búsqueda y filtros */}
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex flex-col lg:flex-row gap-4">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input
-                      placeholder="Buscar por nombre, dirección o N° expediente..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+          {/* Grid de proyectos */}
+          {filteredProjects.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProjects.map((project) => (
+                <Card key={project.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group">
+                  <div className="relative h-48 overflow-hidden">
+                    <Image
+                      src={project.cover_image_url || '/placeholder-project.jpg'}
+                      alt={project.name}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Select value={filterStage} onValueChange={setFilterStage}>
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Todas las etapas" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todas las etapas</SelectItem>
-                        {projectStages.map((stage) => (
-                          <SelectItem key={stage.id} value={stage.name}>
-                            {stage.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Select value={filterClient} onValueChange={setFilterClient}>
-                      <SelectTrigger className="w-48">
-                        <SelectValue placeholder="Todos los clientes" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todos los clientes</SelectItem>
-                        {clients.map((client) => (
-                          <SelectItem key={client.id} value={client.id}>
-                            {client.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Grid de proyectos */}
-            {filteredProjects.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProjects.map((project) => (
-                  <Card key={project.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group">
-                    <div className="relative h-48 overflow-hidden">
-                      <Image
-                        src={project.cover_image_url || '/placeholder-project.jpg'}
-                        alt={project.name}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute top-3 right-3">
-                        <Badge className={`${getStageColor(project.current_stage || '')} text-white`}>
-                          {project.current_stage}
-                        </Badge>
-                      </div>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    <div className="absolute top-3 right-3">
+                      <Badge className={`${getStageColor(project.current_stage || '')} text-white`}>
+                        {project.current_stage}
+                      </Badge>
                     </div>
-                    
-                    <CardContent className="p-6">
-                      <div className="space-y-3">
-                        <div>
-                          <h3 className="font-semibold text-lg leading-tight">{project.name}</h3>
-                          <p className="text-sm text-muted-foreground">{project.dgro_file_number}</p>
-                        </div>
-                        
-                        <div className="space-y-2 text-sm">
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">{project.address}</span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <Building className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">
-                              Superficie: <span className="font-medium">{project.surface?.toLocaleString()} m²</span>
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">{project.architect}</span>
-                          </div>
-                          
-                          <div className="pt-2">
-                            <p className="font-medium text-sm">{project.builder}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                    
-                    <div className="px-6 pb-6">
-                      <Button 
-                        className="w-full" 
-                        onClick={() => setSelectedProject(project)}
+                    <div className="absolute top-3 left-3">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="h-8 w-8 p-0 bg-red-600/80 hover:bg-red-700 backdrop-blur-sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteProject(project.id)
+                        }}
+                        title="Eliminar proyecto"
                       >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Ver Detalle
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <Building className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No se encontraron proyectos</h3>
-                  <p className="text-muted-foreground mb-6">
-                    {searchTerm || filterStage !== 'all' || filterClient !== 'all' 
-                      ? 'Intenta ajustar los filtros de búsqueda' 
-                      : 'Comienza creando tu primer proyecto de construcción'
-                    }
-                  </p>
-                  <Button onClick={() => setShowCreateModal(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Crear Primer Proyecto
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                  </div>
+                  
+                  <CardContent className="p-6">
+                    <div className="space-y-3">
+                      <div>
+                        <h3 className="font-semibold text-lg leading-tight">{project.name}</h3>
+                        <p className="text-sm text-muted-foreground">{project.dgro_file_number}</p>
+                      </div>
+                      
+                      <div className="space-y-2 text-sm">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">{project.address}</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Building className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">
+                            Superficie: <span className="font-medium">{project.surface?.toLocaleString()} m²</span>
+                          </span>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-muted-foreground">{project.architect}</span>
+                        </div>
+                        
+                        <div className="pt-2">
+                          <p className="font-medium text-sm">{project.builder}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                  
+                  <div className="px-6 pb-6">
+                    <Button 
+                      className="w-full" 
+                      onClick={() => setSelectedProject(project)}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Ver Detalle
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Building className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No se encontraron proyectos</h3>
+                <p className="text-muted-foreground mb-6">
+                  {searchTerm || filterStage !== 'all' || filterClient !== 'all' 
+                    ? 'Intenta ajustar los filtros de búsqueda' 
+                    : 'Comienza creando tu primer proyecto de construcción'
+                  }
+                </p>
+                <Button onClick={() => setShowCreateModal(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Crear Primer Proyecto
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
 
-          <TabsContent value="clients">
-            <ClientManagement 
-              clients={clients}
-              onCreateClient={handleCreateClient}
-              onUpdateClient={handleUpdateClient}
-              onDeleteClient={handleDeleteClient}
-            />
-          </TabsContent>
-        </Tabs>
+        <TabsContent value="clients">
+          <ClientManagement 
+            clients={clients}
+            onCreateClient={handleCreateClient}
+            onUpdateClient={handleUpdateClient}
+            onDeleteClient={handleDeleteClient}
+          />
+        </TabsContent>
+      </Tabs>
 
-        {/* Modal de creación */}
-        <CreateProjectModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          onSubmit={handleCreateProject}
-          clients={clients}
-          projectStages={projectStages}
-        />
-      </div>
+      {/* Modal de creación */}
+      <CreateProjectModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreateProject}
+        clients={clients}
+        projectStages={projectStages}
+      />
     </div>
   )
 }

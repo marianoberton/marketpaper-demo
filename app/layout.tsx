@@ -39,7 +39,7 @@ export default function RootLayout({
       <body className={`${concertOne.variable} ${spaceGrotesk.variable} ${manrope.variable} antialiased font-body ${GeistSans.className}`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="light"
           enableSystem
           disableTransitionOnChange
         >

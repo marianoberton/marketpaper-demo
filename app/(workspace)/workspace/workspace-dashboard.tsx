@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { PageHeader } from '@/components/page-header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -14,7 +16,8 @@ import Link from 'next/link'
 import { useWorkspace } from '@/components/workspace-context'
 
 export function WorkspaceDashboard() {
-  const { companyFeatures, companyId, companyName, isLoading } = useWorkspace()
+  const { companyFeatures, companyId, companyName, isLoading, userName } = useWorkspace()
+  const router = useRouter()
 
   console.log('🎯 WorkspaceDashboard - Context data:', {
     companyId,
@@ -23,6 +26,48 @@ export function WorkspaceDashboard() {
     featuresCount: companyFeatures.length,
     isLoading
   })
+
+  // Redirigir automáticamente si solo hay 1 módulo activo
+  useEffect(() => {
+    if (!isLoading && companyFeatures.length === 1 && companyId) {
+      const singleModule = companyFeatures[0]
+      console.log('🚀 Solo 1 módulo activo, redirigiendo a:', singleModule)
+      
+      // Mapear el nombre del módulo a su ruta
+      const moduleRoutes: { [key: string]: string } = {
+        'construccion': '/workspace/construccion',
+        'crm': '/workspace/crm',
+        'projects': '/workspace/projects',
+        'analytics': '/workspace/analytics',
+        'team': '/workspace/team',
+        'calendar': '/workspace/calendar',
+        'documents': '/workspace/documents',
+        'knowledge': '/workspace/knowledge',
+        'bots': '/workspace/bots',
+        'expenses': '/workspace/expenses',
+        'marketing': '/workspace/marketing',
+        'sales': '/workspace/sales',
+        'settings': '/workspace/settings'
+      }
+      
+      const targetRoute = moduleRoutes[singleModule]
+      if (targetRoute) {
+        router.replace(`${targetRoute}?company_id=${companyId}`)
+      }
+    }
+  }, [isLoading, companyFeatures, companyId, router])
+
+  // Si estamos redirigiendo (solo 1 módulo), mostrar loading
+  if (!isLoading && companyFeatures.length === 1) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Redirigiendo al módulo de construcción...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex-1 space-y-6 p-6">
@@ -36,71 +81,100 @@ export function WorkspaceDashboard() {
       ) : companyName ? (
         <>
           <PageHeader
-            title={`Workspace de ${companyName}`}
-            description={`Gestiona tu trabajo con los módulos habilitados. ${companyFeatures.length} módulos disponibles.`}
+            title={`Bienvenida a ${companyName}`}
+            description={`Plataforma especializada en gestión de proyectos de construcción. Gestiona obras, permisos y clientes desde un solo lugar.`}
             accentColor="blue"
           />
           
-          {/* Company Info */}
-          <Card className="bg-green-50 border-green-200">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <Building2 className="h-5 w-5 text-green-600" />
+          {/* Welcome Message */}
+          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-brilliant-blue to-plum rounded-full flex items-center justify-center">
+                  <Building2 className="h-6 w-6 text-white" />
                 </div>
-                <div>
-                  <h3 className="font-semibold text-green-900">Empresa: {companyName}</h3>
-                  <p className="text-sm text-green-700">
-                    Módulos activos: {companyFeatures.join(', ') || 'Ninguno'}
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-blue-900">¡Hola{userName ? ` ${userName.split(' ')[0]}` : ''}! Tu plataforma de construcción está lista</h3>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Empresa: <strong>{companyName}</strong> • Especializada en Construcción • Gestión integral de obras
                   </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-blue-900">1</div>
+                  <div className="text-xs text-blue-600">Módulo activo</div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Métricas de Demostración */}
+          {/* Métricas de Construcción */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
+            <Card className="hover:shadow-md transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Contactos</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium text-gray-700">Proyectos Activos</CardTitle>
+                <Briefcase className="h-4 w-4 text-blue-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">2,847</div>
-                <p className="text-xs text-muted-foreground">+12% desde el mes pasado</p>
+                <div className="text-2xl font-bold text-gray-900">2</div>
+                <p className="text-xs text-green-600 font-medium">✓ Ambos en AVO 1</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="hover:shadow-md transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Ingresos</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium text-gray-700">Presupuesto Total</CardTitle>
+                <DollarSign className="h-4 w-4 text-green-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">€18,450</div>
-                <p className="text-xs text-muted-foreground">+5% vs mes anterior</p>
+                <div className="text-2xl font-bold text-gray-900">€100.5M</div>
+                <p className="text-xs text-blue-600">Valor de cartera actual</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="hover:shadow-md transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Proyectos</CardTitle>
-                <Briefcase className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium text-gray-700">Clientes</CardTitle>
+                <Users className="h-4 w-4 text-purple-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">15</div>
-                <p className="text-xs text-muted-foreground">3 próximos a vencer</p>
+                <div className="text-2xl font-bold text-gray-900">2</div>
+                <p className="text-xs text-gray-600">SG Construcción</p>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="hover:shadow-md transition-shadow">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Módulos</CardTitle>
-                <Building2 className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium text-gray-700">Superficie Total</CardTitle>
+                <Building2 className="h-4 w-4 text-orange-600" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{companyFeatures.length}</div>
-                <p className="text-xs text-muted-foreground">Funcionalidades activas</p>
+                <div className="text-2xl font-bold text-gray-900">242.5k</div>
+                <p className="text-xs text-gray-600">m² en desarrollo</p>
               </CardContent>
             </Card>
           </div>
+
+          {/* Acceso al Módulo de Construcción */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold text-gray-900">Área de Trabajo</CardTitle>
+              <CardDescription>Accede directamente al módulo de gestión de construcción</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-1">
+                <Button 
+                  asChild 
+                  size="lg"
+                  className="h-24 flex flex-col gap-3 bg-gradient-to-r from-brilliant-blue to-plum hover:from-brilliant-blue/90 hover:to-plum/90 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  <Link href={`/workspace/construccion?company_id=${companyId}`}>
+                    <Building2 className="h-10 w-10" />
+                    <div className="text-center">
+                      <div className="text-lg font-semibold">Módulo de Construcción</div>
+                      <div className="text-sm opacity-90">Gestión completa de proyectos y obras</div>
+                    </div>
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </>
       ) : (
         <>

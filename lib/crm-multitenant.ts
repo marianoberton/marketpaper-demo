@@ -469,6 +469,7 @@ export async function getCurrentCompany(companyIdFromQuery: string) {
       id,
       name,
       features,
+      logo_url,
       template:client_templates (available_features)
     `)
     .eq('id', companyIdFromQuery)
@@ -493,6 +494,7 @@ export async function getCurrentCompany(companyIdFromQuery: string) {
     id: company.id,
     name: company.name,
     features: finalFeatures,
+    logo_url: company.logo_url,
   };
 }
 

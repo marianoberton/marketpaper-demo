@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ContentViewToggle } from "@/components/content-view-toggle";
-import { Download, RefreshCw, Plus } from "lucide-react";
+import { RefreshCw, Plus } from "lucide-react";
 
 interface PageHeaderProps {
   title: string;
@@ -15,7 +14,7 @@ interface PageHeaderProps {
 export function PageHeader({
   title,
   description,
-  showExport = true,
+  showExport = false,
   showRefresh = true,
   showAdd = false,
   customActions,
@@ -43,7 +42,6 @@ export function PageHeader({
       </div>
       
       <div className="flex gap-3">
-        <ContentViewToggle />
         {customActions}
         
         {showAdd && (
@@ -57,13 +55,6 @@ export function PageHeader({
           <Button variant="outline" size="sm" className="hover:bg-brilliant-blue hover:text-white transition-colors">
             <RefreshCw className="h-4 w-4 mr-2" />
             Actualizar
-          </Button>
-        )}
-        
-        {showExport && (
-          <Button variant="default" size="sm" className="bg-gradient-to-r from-signal-yellow to-orange-500 hover:from-signal-yellow/90 hover:to-orange-500/90 text-slate-900 font-medium">
-            <Download className="h-4 w-4 mr-2" />
-            Exportar
           </Button>
         )}
       </div>
