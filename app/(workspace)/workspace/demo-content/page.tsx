@@ -3,7 +3,7 @@ import { WorkspacePageWrapper } from '../workspace-page-wrapper'
 export default async function DemoContentPage({
   searchParams,
 }: {
-  searchParams: { [key:string]: string | string[] | undefined }
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   return (
     <WorkspacePageWrapper searchParams={searchParams}>

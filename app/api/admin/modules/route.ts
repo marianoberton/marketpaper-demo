@@ -4,7 +4,7 @@ import { isSuperAdmin } from '@/lib/super-admin'
 
 // GET all modules
 export async function GET() {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user || !(await isSuperAdmin(user.id))) {
@@ -29,7 +29,7 @@ export async function GET() {
 
 // POST a new module
 export async function POST(request: Request) {
-  const supabase = createClient()
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user || !(await isSuperAdmin(user.id))) {

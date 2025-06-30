@@ -9,10 +9,11 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const companyId = params.id
+    const resolvedParams = await params
+    const companyId = resolvedParams.id
     
     console.log('🔧 API: Starting logo upload for company:', companyId)
     

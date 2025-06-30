@@ -8,13 +8,14 @@ import CompanyDetailsClient from './client-page'
 import { notFound } from 'next/navigation'
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default async function CompanyDetailsPage({ params }: PageProps) {
-  const companyId = params.id
+  const resolvedParams = await params
+  const companyId = resolvedParams.id
 
   try {
     const [companyData, usersData, apiKeysData, statsData] = await Promise.all([

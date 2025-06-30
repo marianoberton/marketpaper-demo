@@ -4,7 +4,7 @@ import BotsClientPage from './client-page'
 export default async function BotsPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined }
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   return (
     <WorkspacePageWrapper searchParams={searchParams}>
