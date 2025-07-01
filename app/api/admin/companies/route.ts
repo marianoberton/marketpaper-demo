@@ -112,29 +112,49 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Company ID is required' }, { status: 400 })
     }
 
-    const { client_template_id } = await request.json()
-    if (!client_template_id) {
-      return NextResponse.json({ error: 'Template ID is required' }, { status: 400 })
+    const requestBody = await request.json()
+    const { client_template_id, status, ...otherUpdates } = requestBody
+
+    // Prepare update data
+    const updateData: any = { ...otherUpdates }
+    
+    // Handle template ID mapping (frontend sends client_template_id, DB uses template_id)
+    if (client_template_id !== undefined) {
+      updateData.template_id = client_template_id || null
+    }
+
+    // Handle status updates
+    if (status !== undefined) {
+      updateData.status = status
+      updateData.updated_at = new Date().toISOString()
     }
 
     const { data, error } = await supabase
       .from('companies')
-      .update({ template_id: client_template_id })
+      .update(updateData)
       .eq('id', companyId)
       .select(`
         *,
         client_templates!template_id (
-          name
+          name,
+          category
         )
       `)
       .single()
 
     if (error) {
-      console.error('Error updating company template:', error)
+      console.error('Error updating company:', error)
       return NextResponse.json({ error: 'Failed to update company' }, { status: 500 })
     }
 
-    return NextResponse.json(data)
+    // Transform response to match frontend expectations
+    const transformedData = {
+      ...data,
+      client_template_id: data.template_id,
+      template_name: data.client_templates?.name || null
+    }
+
+    return NextResponse.json(transformedData)
   } catch (error) {
     console.error('API PUT Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

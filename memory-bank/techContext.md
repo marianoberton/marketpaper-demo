@@ -1,36 +1,127 @@
 # Contexto Técnico
-## FOMO Platform - Stack y Configuración
+## FOMO Platform - Stack Optimizado y Configuración de Producción
 
-### Stack Tecnológico Actual
+### Stack Tecnológico Actual (Optimizado)
 
 #### **Frontend Core**
-- **Next.js 15.3.1 (Turbopack)**: App Router, Server Components, Streaming, Turbopack como bundler por defecto
-- **TypeScript**: Strict mode, tipos avanzados
-- **Tailwind CSS**: Utility-first, custom design tokens
-- **React 18**: Concurrent features, Suspense
+- **Next.js 15.3.1 (Turbopack)**: App Router, Server Components, configuración optimizada
+- **TypeScript**: Strict mode, arquitectura cliente/servidor separada
+- **Tailwind CSS**: Utility-first con tokens FOMO personalizados
+- **React 18**: Concurrent features, Suspense, optimizado para performance
 
 #### **UI/UX Libraries**
 - **Shadcn/ui**: Base component library
 - **Lucide React**: Icon system
-- **Recharts**: Data visualization
+- **Recharts**: Data visualization para analytics
 - **Class Variance Authority**: Component variants
-- **Tailwind Merge**: Dynamic class composition
+- **Tailwind Merge**: Dynamic class composition optimizado
 
-#### **State Management**
-- **React Context**: Global state management
-- **Local Storage**: Persistence layer
-- **Custom hooks**: Business logic encapsulation
+#### **Autenticación y Backend**
+- **Supabase**: Database, Authentication, RLS, Storage
+- **PostgreSQL**: Base de datos principal con Row Level Security
+- **Custom Auth Layer**: Separación cliente/servidor para Next.js 15+
 
-### Dependencias Actuales
+### Configuración Optimizada Actual
 
-#### **Production Dependencies**
+#### **Next.js Configuration (Actualizada)**
+```typescript
+// next.config.ts - Optimizada para Next.js 15+
+import type { NextConfig } from 'next';
+
+const nextConfig: NextConfig = {
+  experimental: {
+    turbo: {
+      rules: {
+        '*.svg': ['@svgr/webpack']
+      }
+    }
+  },
+  images: {
+    domains: ['localhost', 'fomo-platform.com']
+  }
+  // Configuraciones deprecadas removidas:
+  // - appDir (innecesario en Next.js 15)
+  // - buildActivity (deprecado)
+  // - onDemandEntries (deprecado)
+};
+
+export default nextConfig;
+```
+
+#### **Arquitectura de Autenticación Optimizada**
+```typescript
+// lib/auth-types.ts - Tipos compartidos y constantes
+export interface User {
+  id: string;
+  email: string;
+  role: 'super_admin' | 'company_owner' | 'company_member';
+  company_id?: string;
+}
+
+// lib/auth-client.ts - Para componentes cliente
+export const getUser = async (): Promise<User | null> => {
+  // Usa supabase browser client
+  const supabase = createClientComponentClient();
+  // ... implementación cliente
+};
+
+// lib/auth-server.ts - Para API routes y Server Components
+export const getUser = async (): Promise<User | null> => {
+  // Usa supabase server client con cookies()
+  const supabase = createServerComponentClient({ cookies });
+  // ... implementación servidor
+};
+```
+
+#### **Sistema de Branding FOMO**
+```typescript
+// Tokens de diseño FOMO implementados
+const fomoDesignSystem = {
+  colors: {
+    signal: '#FCCD12',      // Amarillo FOMO
+    brilliant: '#0077B6',   // Azul FOMO
+    orange: '#f97316',      // Naranja corporativo
+    plum: '#310629'         // Morado oscuro
+  },
+  logos: {
+    main: '/Logo-fomo.svg',
+    sizes: {
+      header: '96x96px',      // Optimizado
+      sidebar: '80x80px',     // Optimizado  
+      collapsed: '56x56px',   // Optimizado
+      mobile: '56x56px'       // Añadido
+    }
+  },
+  fonts: {
+    logo: ['Concert One', 'cursive'],
+    heading: ['Space Grotesk', 'sans-serif'],
+    body: ['Manrope', 'sans-serif']
+  }
+};
+```
+
+### Dependencias de Producción Actuales
+
+#### **Core Dependencies**
 ```json
 {
   "next": "^15.3.1",
-  "react": "^18.0.0",
+  "react": "^18.0.0", 
   "typescript": "^5.0.0",
   "tailwindcss": "^3.0.0",
-  "@radix-ui/react-*": "^1.0.0",
+  "@supabase/supabase-js": "^2.39.0",
+  "@supabase/ssr": "^0.1.0"
+}
+```
+
+#### **UI/UX Dependencies**
+```json
+{
+  "@radix-ui/react-dialog": "^1.0.5",
+  "@radix-ui/react-dropdown-menu": "^2.0.6",
+  "@radix-ui/react-select": "^2.0.0",
+  "@radix-ui/react-switch": "^1.0.3",
+  "@radix-ui/react-tabs": "^1.0.4",
   "lucide-react": "^0.300.0",
   "recharts": "^2.8.0",
   "class-variance-authority": "^0.7.0",
@@ -51,266 +142,185 @@
 }
 ```
 
-### Arquitectura de Expansión
-
-#### **Nuevas Dependencias Requeridas**
-
-##### **Multi-tenant Support**
-```json
-{
-  "@auth0/nextjs-auth0": "^3.0.0",
-  "jose": "^5.0.0",
-  "iron-session": "^8.0.0"
-}
-```
-
-##### **Database & ORM**
-```json
-{
-  "prisma": "^5.0.0",
-  "@prisma/client": "^5.0.0",
-  "postgres": "^3.4.0"
-}
-```
-
-##### **AI Integration**
-```json
-{
-  "openai": "^4.0.0",
-  "@langchain/core": "^0.1.0",
-  "ai": "^3.0.0",
-  "zod": "^3.22.0"
-}
-```
-
-##### **Real-time Features**
-```json
-{
-  "socket.io": "^4.7.0",
-  "socket.io-client": "^4.7.0",
-  "@vercel/kv": "^1.0.0"
-}
-```
-
-##### **API & Validation**
-```json
-{
-  "trpc": "^10.0.0",
-  "@trpc/server": "^10.0.0",
-  "@trpc/client": "^10.0.0",
-  "@trpc/react-query": "^10.0.0",
-  "@tanstack/react-query": "^5.0.0"
-}
-```
-
-### Configuración del Proyecto
-
-#### **Next.js Configuration**
-```typescript
-// next.config.ts
-const nextConfig = {
-  experimental: {
-    appDir: true,
-    serverComponentsExternalPackages: ['prisma']
-  },
-  images: {
-    domains: ['localhost', 'fomo-platform.com']
-  },
-  env: {
-    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
-    DATABASE_URL: process.env.DATABASE_URL,
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY
-  }
-};
-```
-
-#### **TypeScript Configuration**
-```json
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["dom", "dom.iterable", "ES6"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "incremental": true,
-    "plugins": [{ "name": "next" }],
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./*"],
-      "@/components/*": ["./components/*"],
-      "@/lib/*": ["./lib/*"],
-      "@/modules/*": ["./modules/*"],
-      "@/types/*": ["./types/*"]
-    }
-  }
-}
-```
-
-#### **Tailwind Configuration**
-```typescript
-// tailwind.config.ts
-const config = {
-  content: [
-    './pages/**/*.{ts,tsx}',
-    './components/**/*.{ts,tsx}',
-    './app/**/*.{ts,tsx}',
-    './modules/**/*.{ts,tsx}',
-    './src/**/*.{ts,tsx}'
-  ],
-  theme: {
-    extend: {
-      colors: {
-        'signal-yellow': '#FCCD12',
-        'brilliant-blue': '#0077B6',
-        'orange-500': '#f97316',
-        'plum': '#310629'
-      },
-      fontFamily: {
-        'logo': ['Concert One', 'cursive'],
-        'heading': ['Space Grotesk', 'sans-serif'],
-        'body': ['Manrope', 'sans-serif']
-      }
-    }
-  },
-  plugins: [require('tailwindcss-animate')]
-};
-```
-
-### Estructura de Directorios Expandida
+### Estructura de Proyecto Optimizada
 
 ```
 fomo-platform/
 ├── app/                          # Next.js App Router
-│   ├── (analytics)/             # Analytics module routes
-│   ├── (workspace)/             # Workspace module routes  
-│   ├── api/                     # API routes
-│   └── globals.css              # Global styles
-├── components/                   # Shared components
-│   ├── ui/                      # Base UI components
-│   ├── analytics/               # Analytics-specific
-│   ├── workspace/               # Workspace-specific
-│   └── shared/                  # Cross-module components
-├── lib/                         # Utilities and configurations
-│   ├── auth/                    # Authentication logic
-│   ├── db/                      # Database utilities
-│   ├── ai/                      # AI integration
-│   └── utils/                   # General utilities
-├── modules/                     # Feature modules
-│   ├── analytics/               # Analytics module
-│   ├── workspace/               # Workspace module
-│   ├── ai-workers/              # AI workers module
-│   └── multi-tenant/            # Multi-tenant core
-├── types/                       # TypeScript definitions
-│   ├── analytics.ts
-│   ├── workspace.ts
-│   ├── ai.ts
-│   └── tenant.ts
-├── prisma/                      # Database schema
-│   ├── schema.prisma
-│   └── migrations/
-└── memory-bank/                 # Project documentation
-    ├── projectbrief.md
-    ├── productContext.md
-    ├── systemPatterns.md
-    ├── techContext.md
-    ├── activeContext.md
-    └── progress.md
+│   ├── (workspace)/              # Workspace routes con layout
+│   │   └── workspace/
+│   │       ├── construccion/     # Módulo completamente funcional
+│   │       ├── crm/              # Módulos preparados
+│   │       └── page.tsx          # Dashboard principal
+│   ├── admin/                    # Panel administrativo
+│   ├── api/                      # API routes
+│   │   ├── auth/                 # Autenticación
+│   │   ├── admin/                # Admin endpoints
+│   │   └── workspace/            # Workspace APIs
+│   ├── login/                    # Login con branding FOMO
+│   ├── register/                 # Registro empresarial
+│   ├── page.tsx                  # Landing FOMO optimizada
+│   └── globals.css               # Estilos globales
+├── lib/                          # Librerías y utilidades
+│   ├── auth-client.ts            # NUEVO: Auth para cliente
+│   ├── auth-server.ts            # NUEVO: Auth para servidor  
+│   ├── auth-types.ts             # NUEVO: Tipos compartidos
+│   ├── construction.ts           # Módulo construcción
+│   ├── supabase.ts               # Clientes Supabase
+│   └── utils.ts                  # Utilidades generales
+├── components/                   # Componentes reutilizables
+│   ├── ui/                       # Componentes base (shadcn/ui)
+│   ├── admin/                    # Componentes admin
+│   ├── Header.tsx                # Header con logos optimizados
+│   ├── Sidebar.tsx               # Sidebar con branding FOMO
+│   └── workspace-layout.tsx      # Layout workspace
+├── memory-bank/                  # Documentación del proyecto
+├── public/                       # Assets estáticos
+│   └── Logo-fomo.svg             # Logo oficial FOMO
+└── supabase/                     # Configuración base de datos
+    └── migrations/               # Migraciones aplicadas
 ```
 
-### Variables de Entorno
+### Optimizaciones Técnicas Implementadas
 
-#### **Development Environment**
-```env
-# Database
-DATABASE_URL="postgresql://..."
-DIRECT_URL="postgresql://..."
+#### **Resolución de Errores Next.js 15**
+```typescript
+// ANTES: Error en componentes cliente
+import { cookies } from 'next/headers'; // ❌ Error en cliente
 
-# Authentication
-NEXTAUTH_SECRET="..."
-NEXTAUTH_URL="http://localhost:3000"
+// DESPUÉS: Separación limpia
+// En componentes cliente
+import { getUser } from '@/lib/auth-client';
 
-# AI Services
-OPENAI_API_KEY="sk-..."
-ANTHROPIC_API_KEY="..."
-
-# Multi-tenant
-TENANT_DATABASE_PREFIX="fomo_"
-DEFAULT_TENANT_ID="default"
-
-# Feature Flags
-ENABLE_WORKSPACE_MODULE="true"
-ENABLE_AI_WORKERS="false"
-ENABLE_MULTI_TENANT="false"
+// En API routes y Server Components  
+import { getUser } from '@/lib/auth-server';
 ```
 
-### Herramientas de Desarrollo
+#### **Configuración Sin Warnings**
+```typescript
+// Removidas configuraciones deprecadas:
+// ❌ appDir: true          (innecesario en Next.js 15)
+// ❌ buildActivity: false  (deprecado)
+// ❌ onDemandEntries      (deprecado)
 
-#### **Code Quality**
-- **ESLint**: Linting con reglas Next.js
-- **Prettier**: Formateo de código
-- **Husky**: Git hooks
-- **Lint-staged**: Pre-commit checks
+// ✅ Configuración limpia y moderna
+const nextConfig: NextConfig = {
+  experimental: {
+    turbo: { rules: { '*.svg': ['@svgr/webpack'] } }
+  }
+};
+```
 
-#### **Testing**
-- **Jest**: Unit testing
-- **React Testing Library**: Component testing
-- **Playwright**: E2E testing
-- **MSW**: API mocking
+#### **Performance y Caching**
+- **Turbopack**: Bundler por defecto más rápido
+- **Server Components**: Maximizar rendering del servidor
+- **Dynamic Imports**: Carga lazy de módulos pesados
+- **Image Optimization**: Next.js Image component optimizado
 
-#### **Development Tools**
-- **Storybook**: Component documentation
-- **Prisma Studio**: Database management
-- **Next.js DevTools**: Performance monitoring
+### Base de Datos y Backend
 
-### Consideraciones de Performance
+#### **Supabase Configuration**
+```sql
+-- Estructura multi-tenant implementada
+CREATE TABLE companies (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  domain TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-#### **Bundle Optimization**
-- **Turbopack** como bundler por defecto (Next.js 15+)
-- **Code splitting** por módulos
-- **Dynamic imports** para features opcionales
-- **Tree shaking** automático
-- **Image optimization** con Next.js
+CREATE TABLE user_profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id),
+  email TEXT NOT NULL,
+  role TEXT CHECK (role IN ('super_admin', 'company_owner', 'company_member')),
+  company_id UUID REFERENCES companies(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-#### **Caching Strategy**
-- **Static generation** para páginas públicas
-- **ISR** para contenido dinámico
-- **Client-side caching** con React Query
-- **CDN** para assets estáticos
+-- RLS habilitado para aislamiento de datos
+ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+```
 
-### Deployment Configuration
+#### **API Architecture**
+```typescript
+// Estructura de APIs organizada
+app/api/
+├── auth/                    # Autenticación
+│   ├── users/route.ts      # Gestión usuarios
+│   └── company/route.ts    # Info empresa
+├── admin/                  # Endpoints admin
+│   ├── companies/route.ts  # CRUD empresas
+│   └── users/route.ts      # Gestión usuarios
+└── workspace/              # APIs workspace
+    └── construction/       # Módulo construcción
+        ├── projects/route.ts
+        ├── clients/route.ts
+        └── documents/route.ts
+```
 
-#### **Vercel Configuration**
+### Seguridad y Autenticación
+
+#### **Multi-tenant Security**
+- **Row Level Security**: Aislamiento automático por empresa
+- **JWT con claims**: Validación granular de permisos
+- **Server-side validation**: Verificación en cada API call
+- **Type-safe authentication**: TypeScript estricto en auth
+
+#### **Error Handling**
+```typescript
+// Manejo consistente de errores
+export async function handleApiError(error: unknown) {
+  console.error('API Error:', error);
+  return NextResponse.json(
+    { error: 'Internal server error' },
+    { status: 500 }
+  );
+}
+```
+
+### Desarrollo y Deployment
+
+#### **Environment Variables**
+```bash
+# .env.local (Producción)
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+NEXTAUTH_SECRET=your_secret
+```
+
+#### **Scripts de Desarrollo**
 ```json
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "installCommand": "npm install",
-  "framework": "nextjs",
-  "functions": {
-    "app/api/**/*.ts": {
-      "maxDuration": 30
-    }
+  "scripts": {
+    "dev": "next dev --turbo",
+    "build": "next build", 
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit"
   }
 }
 ```
 
-#### **Docker Configuration**
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-RUN npm run build
-EXPOSE 3000
-CMD ["npm", "start"]
-``` 
+### Estado Técnico Actual
+
+#### **Estabilidad** ✅
+- **Sin errores**: Aplicación funciona sin errores en consola
+- **Configuración limpia**: Sin warnings de deprecación
+- **Performance optimizada**: Turbopack + configuración moderna
+- **Type safety**: TypeScript estricto en toda la aplicación
+
+#### **Escalabilidad** ✅ 
+- **Multi-tenant**: Arquitectura empresarial robusta
+- **Modular**: Fácil agregar nuevos módulos
+- **API-first**: Backend preparado para integraciones
+- **Component system**: UI reutilizable y consistente
+
+#### **Mantenibilidad** ✅
+- **Código limpio**: Separación de responsabilidades clara
+- **Documentación**: Memory bank actualizado
+- **Testing ready**: Estructura preparada para tests
+- **Monitoring**: Logs y error tracking implementados
+
+**Estado Técnico**: Sistema robusto, optimizado y listo para producción con configuración moderna de Next.js 15+ y arquitectura escalable multi-tenant. 

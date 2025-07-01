@@ -512,6 +512,147 @@ export async function getAvailableModules() {
   return data || [];
 }
 
+// New function to get modules for a specific company based on their template
+export async function getModulesForCompany(companyId: string) {
+  const supabase = await createServerClient();
+  
+  // 1. Get company with its template
+  const { data: company, error: companyError } = await supabase
+    .from('companies')
+    .select(`
+      id,
+      template_id,
+      features,
+      client_templates!template_id (
+        id,
+        available_features
+      )
+    `)
+    .eq('id', companyId)
+    .single();
+
+  if (companyError || !company) {
+    console.error('[GET_MODULES_FOR_COMPANY] Company Error:', companyError);
+    return [];
+  }
+
+  let modulesList: any[] = [];
+
+  // 2. If company has a template assigned, get modules from template_modules
+  if (company.template_id) {
+    const { data: templateModules, error: templateModulesError } = await supabase
+      .from('template_modules')
+      .select(`
+        modules (
+          id,
+          name,
+          route_path,
+          icon,
+          category
+        )
+      `)
+      .eq('template_id', company.template_id);
+
+    if (!templateModulesError && templateModules) {
+      modulesList = templateModules
+        .map(tm => tm.modules)
+        .filter(module => module !== null);
+    }
+  }
+
+  // 3. Fallback: If no template or no modules in template, use features array
+  if (modulesList.length === 0 && company.features) {
+    // Map features to basic modules structure for backward compatibility
+    const featureModules = company.features.map((feature: string) => ({
+      id: feature,
+      name: getFeatureDisplayName(feature),
+      route_path: getFeatureRoutePath(feature),
+      icon: getFeatureIcon(feature),
+      category: getFeatureCategory(feature),
+      featureId: feature // Add featureId for compatibility
+    }));
+    modulesList = featureModules;
+  }
+
+  // 4. Final fallback: If still no modules, use template's available_features
+  if (modulesList.length === 0 && company.client_templates && Array.isArray(company.client_templates) && company.client_templates[0]?.available_features) {
+    const templateFeatures = company.client_templates[0].available_features.map((feature: string) => ({
+      id: feature,
+      name: getFeatureDisplayName(feature),
+      route_path: getFeatureRoutePath(feature),
+      icon: getFeatureIcon(feature),
+      category: getFeatureCategory(feature),
+      featureId: feature // Add featureId for compatibility
+    }));
+    modulesList = templateFeatures;
+  }
+
+  return modulesList;
+}
+
+// Helper functions to map features to module properties
+function getFeatureDisplayName(feature: string): string {
+  const featureNames: Record<string, string> = {
+    'construccion': 'Construcción',
+    'crm': 'CRM',
+    'projects': 'Proyectos', 
+    'calendar': 'Calendario',
+    'documents': 'Documentos',
+    'team': 'Equipo',
+    'analytics': 'Analytics',
+    'bots': 'Bots',
+    'knowledge': 'Base de Conocimiento',
+    'expenses': 'Gastos',
+    'marketing': 'Marketing',
+    'sales': 'Ventas',
+    'settings': 'Configuración'
+  };
+  return featureNames[feature] || feature;
+}
+
+function getFeatureRoutePath(feature: string): string {
+  const featurePaths: Record<string, string> = {
+    'construccion': '/workspace/construccion',
+    'crm': '/workspace/crm',
+    'projects': '/workspace/projects',
+    'calendar': '/workspace/calendar', 
+    'documents': '/workspace/documents',
+    'team': '/workspace/team',
+    'analytics': '/workspace/analytics',
+    'bots': '/workspace/bots',
+    'knowledge': '/workspace/knowledge',
+    'expenses': '/workspace/expenses',
+    'marketing': '/workspace/marketing',
+    'sales': '/workspace/sales',
+    'settings': '/workspace/settings'
+  };
+  return featurePaths[feature] || `/workspace/${feature}`;
+}
+
+function getFeatureIcon(feature: string): string {
+  const featureIcons: Record<string, string> = {
+    'construccion': 'Hammer',
+    'crm': 'Users',
+    'projects': 'Briefcase',
+    'calendar': 'Calendar',
+    'documents': 'FileText',
+    'team': 'Users',
+    'analytics': 'BarChart3',
+    'bots': 'Bot',
+    'knowledge': 'BookOpen',
+    'expenses': 'Receipt',
+    'marketing': 'Megaphone',
+    'sales': 'TrendingUp',
+    'settings': 'Settings'
+  };
+  return featureIcons[feature] || 'Box';
+}
+
+function getFeatureCategory(feature: string): string {
+  const dashboardFeatures = ['analytics', 'sales', 'marketing'];
+  return dashboardFeatures.includes(feature) ? 'Dashboard' : 'Workspace';
+}
+
 export async function updateCompanySettings(
   settings: Partial<{ 
     name: string

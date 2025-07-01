@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { PlusCircle, Edit, Trash2, Box, ServerCrash, PackageSearch } from 'lucide-react'
+import { PlusCircle, Key, Copy, Trash2, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { PageHeader } from '@/components/page-header'
+import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import {
   Dialog,
@@ -13,7 +14,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -25,128 +25,177 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-interface Module {
-  id?: string
+interface ApiKey {
+  id: string
   name: string
-  route_path: string
-  icon: string
-  category: 'Dashboard' | 'Workspace'
+  key: string
+  permissions: string[]
+  created_at: string
+  last_used?: string
+  is_active: boolean
 }
 
-export default function ModulesPage() {
-  const [modules, setModules] = useState<Module[]>([])
+export default function ApiKeysPage() {
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [currentModule, setCurrentModule] = useState<Partial<Module>>({})
+  const [currentKey, setCurrentKey] = useState<Partial<ApiKey>>({})
+  const [showKeys, setShowKeys] = useState<{ [key: string]: boolean }>({})
 
   useEffect(() => {
-    const fetchModules = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch('/api/admin/templates');
-        if (!response.ok) throw new Error('Failed to fetch initial data');
-        const data = await response.json();
-        // La API devuelve un objeto { templates: [], availableModules: [] }
-        setModules(data.availableModules || []);
-      } catch (error) {
-        toast.error('Error al cargar los módulos.');
-        console.error(error);
-      } finally {
-        setIsLoading(false);
+    // Mock data for now - replace with actual API call
+    const mockApiKeys: ApiKey[] = [
+      {
+        id: '1',
+        name: 'Webhook Integration',
+        key: 'sk_live_51234567890abcdef',
+        permissions: ['read', 'write'],
+        created_at: '2024-01-15',
+        last_used: '2024-01-20',
+        is_active: true
+      },
+      {
+        id: '2', 
+        name: 'Mobile App API',
+        key: 'sk_live_98765432109876543',
+        permissions: ['read'],
+        created_at: '2024-01-10',
+        is_active: true
       }
-    };
-    fetchModules();
+    ];
+    
+    setApiKeys(mockApiKeys);
+    setIsLoading(false);
   }, []);
 
-  const handleSaveModule = async () => {
-    if (!currentModule.name || !currentModule.route_path || !currentModule.category || !currentModule.icon) {
-      toast.error('Todos los campos son obligatorios.')
+  const handleCreateApiKey = async () => {
+    if (!currentKey.name) {
+      toast.error('El nombre es obligatorio.')
       return;
     }
     
     try {
-      const response = await fetch('/api/admin/templates', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Action': 'Create-Module', // Custom header for our workaround
-        },
-        body: JSON.stringify(currentModule),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save module');
-      }
-
-      const newModule = await response.json();
+      // Generate a mock API key - in real implementation, this would be done server-side
+      const newKey: ApiKey = {
+        id: Date.now().toString(),
+        name: currentKey.name,
+        key: `sk_live_${Math.random().toString(36).substring(2, 32)}`,
+        permissions: currentKey.permissions || ['read'],
+        created_at: new Date().toISOString().split('T')[0],
+        is_active: true
+      };
       
-      setModules(prev => [...prev, newModule]);
+      setApiKeys(prev => [...prev, newKey]);
       
-      toast.success(`Módulo "${newModule.name}" guardado.`)
+      toast.success(`API Key "${newKey.name}" creada.`)
       setIsDialogOpen(false)
-      setCurrentModule({})
+      setCurrentKey({})
 
     } catch (error: any) {
-      toast.error(error.message || 'No se pudo guardar el módulo.');
+      toast.error('No se pudo crear la API key.');
       console.error(error);
     }
   }
   
-  const handleOpenDialog = (module: Partial<Module> | null = null) => {
-    setCurrentModule(module || {});
+  const handleOpenDialog = () => {
+    setCurrentKey({});
     setIsDialogOpen(true);
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('API Key copiada al portapapeles');
+  }
+
+  const toggleKeyVisibility = (keyId: string) => {
+    setShowKeys(prev => ({
+      ...prev,
+      [keyId]: !prev[keyId]
+    }));
+  }
+
+  const maskKey = (key: string) => {
+    if (key.length <= 8) return key;
+    return key.substring(0, 8) + '...';
   }
 
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
-        title="Gestor de Módulos Dinámicos"
-        description="Crea y administra los módulos que estarán disponibles en la plataforma para asignar a los templates."
-        accentColor="blue"
+        title="Gestión de API Keys"
+        description="Administra las claves API para integraciones y acceso programático a la plataforma."
+        accentColor="plum"
       />
       
       <div className="flex justify-end">
-        <Button onClick={() => handleOpenDialog()}>
+        <Button onClick={handleOpenDialog}>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Crear Módulo
+          Crear API Key
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Módulos Disponibles</CardTitle>
+          <CardTitle>API Keys Activas</CardTitle>
           <CardDescription>
-            Estos son los módulos que puedes asignar a los diferentes templates de clientes.
+            Gestiona las claves de acceso para integraciones externas y automatizaciones.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="divide-y divide-border">
-            {!isLoading && modules.length === 0 && (
+            {!isLoading && apiKeys.length === 0 && (
               <div className="py-12 flex flex-col items-center justify-center text-center">
-                <PackageSearch className="h-12 w-12 text-muted-foreground" />
-                <h3 className="text-xl font-semibold mt-4">No hay módulos dinámicos</h3>
+                <Key className="h-12 w-12 text-muted-foreground" />
+                <h3 className="text-xl font-semibold mt-4">No hay API Keys</h3>
                 <p className="text-muted-foreground mt-2">
-                  Crea tu primer módulo para poder asignarlo a un template.
+                  Crea tu primera API key para habilitar integraciones.
                 </p>
               </div>
             )}
-            {modules.map(module => (
-              <div key={module.id} className="flex items-center justify-between py-4">
-                <div className="flex items-center gap-4">
-                  <Box className="h-8 w-8 text-muted-foreground" />
-                  <div>
-                    <p className="font-semibold">{module.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Ruta: {module.route_path} | Categoría: {module.category} | Icono: {module.icon}
-                    </p>
+            {apiKeys.map(apiKey => (
+              <div key={apiKey.id} className="flex items-center justify-between py-4">
+                <div className="flex items-center gap-4 flex-1">
+                  <Key className="h-8 w-8 text-muted-foreground" />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-semibold">{apiKey.name}</p>
+                      <Badge variant={apiKey.is_active ? "default" : "secondary"}>
+                        {apiKey.is_active ? 'Activa' : 'Inactiva'}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span>
+                        {showKeys[apiKey.id] ? apiKey.key : maskKey(apiKey.key)}
+                      </span>
+                      <span>•</span>
+                      <span>Permisos: {apiKey.permissions.join(', ')}</span>
+                      {apiKey.last_used && (
+                        <>
+                          <span>•</span>
+                          <span>Último uso: {new Date(apiKey.last_used).toLocaleDateString('es-ES')}</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="icon" onClick={() => handleOpenDialog(module)}>
-                    <Edit className="h-4 w-4" />
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => toggleKeyVisibility(apiKey.id)}
+                    title={showKeys[apiKey.id] ? 'Ocultar key' : 'Mostrar key'}
+                  >
+                    {showKeys[apiKey.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
-                  <Button variant="destructive" size="icon">
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={() => copyToClipboard(apiKey.key)}
+                    title="Copiar API key"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                  <Button variant="destructive" size="icon" title="Eliminar API key">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -159,39 +208,41 @@ export default function ModulesPage() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>{currentModule.id ? 'Editar Módulo' : 'Crear Nuevo Módulo'}</DialogTitle>
+            <DialogTitle>Crear Nueva API Key</DialogTitle>
             <DialogDescription>
-              Completa los detalles del módulo. Estos se usarán para mostrarlo en el sidebar.
+              La API key se generará automáticamente. Guárdala en un lugar seguro ya que no podrás verla nuevamente.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">Nombre</Label>
-              <Input id="name" value={currentModule.name || ''} onChange={(e) => setCurrentModule(p => ({ ...p, name: e.target.value }))} className="col-span-3" placeholder="Ej: Gestión Documental" />
+              <Input 
+                id="name" 
+                value={currentKey.name || ''} 
+                onChange={(e) => setCurrentKey(p => ({ ...p, name: e.target.value }))} 
+                className="col-span-3" 
+                placeholder="Ej: Webhook Integration" 
+              />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="route_path" className="text-right">Ruta</Label>
-              <Input id="route_path" value={currentModule.route_path || ''} onChange={(e) => setCurrentModule(p => ({ ...p, route_path: e.target.value }))} className="col-span-3" placeholder="Ej: /documentos" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="icon" className="text-right">Icono</Label>
-              <Input id="icon" value={currentModule.icon || ''} onChange={(e) => setCurrentModule(p => ({ ...p, icon: e.target.value }))} className="col-span-3" placeholder="Ej: FileText (de lucide-react)" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="category" className="text-right">Categoría</Label>
-              <Select onValueChange={(value: 'Dashboard' | 'Workspace') => setCurrentModule(p => ({ ...p, category: value }))} value={currentModule.category}>
+              <Label htmlFor="permissions" className="text-right">Permisos</Label>
+              <Select 
+                onValueChange={(value) => setCurrentKey(p => ({ ...p, permissions: [value] }))} 
+                defaultValue="read"
+              >
                 <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Selecciona una categoría" />
+                  <SelectValue placeholder="Selecciona permisos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Dashboard">Dashboard</SelectItem>
-                  <SelectItem value="Workspace">Workspace</SelectItem>
+                  <SelectItem value="read">Solo lectura</SelectItem>
+                  <SelectItem value="write">Lectura y escritura</SelectItem>
+                  <SelectItem value="admin">Administrador</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit" onClick={handleSaveModule}>Guardar Módulo</Button>
+            <Button type="submit" onClick={handleCreateApiKey}>Crear API Key</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

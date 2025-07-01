@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -27,7 +27,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+// Tabs eliminado - ya no se usan pestañas para dashboard/workspace legacy
 
 interface ClientTemplate {
   id: string
@@ -57,30 +57,8 @@ interface Module {
 
 type TemplateFormData = Omit<ClientTemplate, 'id' | 'created_at'>
 
-// Definir módulos disponibles
-const DASHBOARD_MODULES = [
-  { id: 'overview', name: 'Vista General', description: 'Resumen general de métricas' },
-  { id: 'analytics', name: 'Analytics', description: 'Análisis detallado de datos' },
-  { id: 'sales', name: 'Ventas', description: 'Métricas de ventas y conversión' },
-  { id: 'marketing', name: 'Marketing', description: 'Campañas y rendimiento de marketing' },
-  { id: 'crm', name: 'CRM Dashboard', description: 'Resumen de CRM y contactos' },
-  { id: 'financial', name: 'Financiero', description: 'Métricas financieras y rentabilidad' },
-  { id: 'technical', name: 'Técnico', description: 'Métricas técnicas y rendimiento' },
-  { id: 'team', name: 'Equipo', description: 'Rendimiento del equipo' }
-]
-
-const WORKSPACE_MODULES = [
-  { id: 'crm', name: 'CRM', description: 'Gestión completa de clientes' },
-  { id: 'projects', name: 'Proyectos', description: 'Gestión de proyectos' },
-  { id: 'calendar', name: 'Calendario', description: 'Calendario y citas' },
-  { id: 'documents', name: 'Documentos', description: 'Gestión de documentos' },
-  { id: 'team', name: 'Equipo', description: 'Gestión de equipo' },
-  { id: 'analytics', name: 'Analytics', description: 'Análisis de workspace' },
-  { id: 'bots', name: 'Bots', description: 'Automatización y bots' },
-  { id: 'knowledge', name: 'Base de Conocimiento', description: 'Gestión de conocimiento' },
-  { id: 'expenses', name: 'Gastos', description: 'Gestión de gastos' },
-  { id: 'settings', name: 'Configuración', description: 'Configuración del workspace' }
-]
+// Las constantes DASHBOARD_MODULES y WORKSPACE_MODULES se han eliminado 
+// porque ahora usamos solo módulos dinámicos desde la base de datos
 
 interface TemplateDialogProps {
   isOpen: boolean
@@ -148,15 +126,7 @@ const MemoizedTemplateDialog = React.memo(({ isOpen, onClose, onSave, template, 
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleModuleChange = (type: 'dashboard' | 'workspace', moduleId: string, checked: boolean) => {
-    const key = `${type}_modules` as const
-    setFormData(prev => ({
-      ...prev,
-      [key]: checked
-        ? [...prev[key], moduleId]
-        : prev[key].filter(id => id !== moduleId)
-    }))
-  }
+  // handleModuleChange eliminado - ya no se usan módulos dashboard/workspace legacy
 
   const handleDynamicModuleChange = (moduleId: string, checked: boolean) => {
     setFormData(prev => ({
@@ -181,7 +151,7 @@ const MemoizedTemplateDialog = React.memo(({ isOpen, onClose, onSave, template, 
           <DialogHeader className="sticky top-0 bg-white z-10 pb-4">
             <DialogTitle>{isEdit ? 'Editar Plantilla' : 'Nueva Plantilla'}</DialogTitle>
             <DialogDescription>
-              Configura los módulos del dashboard y workspace que tendrá esta plantilla
+              Configura los módulos que estarán disponibles para las empresas con esta plantilla
             </DialogDescription>
           </DialogHeader>
 
@@ -289,38 +259,51 @@ const MemoizedTemplateDialog = React.memo(({ isOpen, onClose, onSave, template, 
               </div>
             </div>
 
-            {/* Configuración de módulos */}
-            <Tabs defaultValue="dashboard" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-                <TabsTrigger value="workspace">Workspace</TabsTrigger>
-                <TabsTrigger value="dynamic">Módulos Dinámicos</TabsTrigger>
-              </TabsList>
-              <TabsContent value="dashboard">
-                <ModuleSelector
-                  title="Módulos del Dashboard"
-                  modules={DASHBOARD_MODULES}
-                  selected={formData.dashboard_modules}
-                  onChange={(id, checked) => handleModuleChange('dashboard', id, checked)}
-                />
-              </TabsContent>
-              <TabsContent value="workspace">
-                <ModuleSelector
-                  title="Módulos del Workspace"
-                  modules={WORKSPACE_MODULES}
-                  selected={formData.workspace_modules}
-                  onChange={(id, checked) => handleModuleChange('workspace', id, checked)}
-                />
-              </TabsContent>
-              <TabsContent value="dynamic">
-                <ModuleSelector
-                  title="Módulos Dinámicos"
-                  modules={availableModules}
-                  selected={formData.modules}
-                  onChange={handleDynamicModuleChange}
-                />
-              </TabsContent>
-            </Tabs>
+            {/* Configuración de módulos por categoría */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Módulos Asignados</CardTitle>
+                <CardDescription>
+                  Selecciona los módulos que estarán disponibles para las empresas con esta plantilla
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Módulos Dashboard */}
+                <div>
+                  <h3 className="text-lg font-medium mb-3 text-blue-700">📊 Módulos Dashboard</h3>
+                  <ModuleSelector
+                    title="Dashboard"
+                    modules={availableModules.filter(m => m.category === 'Dashboard')}
+                    selected={formData.modules}
+                    onChange={handleDynamicModuleChange}
+                  />
+                </div>
+                
+                {/* Módulos Workspace */}
+                <div>
+                  <h3 className="text-lg font-medium mb-3 text-green-700">🏢 Módulos Workspace</h3>
+                  <ModuleSelector
+                    title="Workspace"
+                    modules={availableModules.filter(m => m.category === 'Workspace')}
+                    selected={formData.modules}
+                    onChange={handleDynamicModuleChange}
+                  />
+                </div>
+                
+                {/* Resumen de selección */}
+                <div className="pt-4 border-t">
+                  <h4 className="font-medium text-gray-700 mb-2">Resumen de Selección:</h4>
+                  <div className="flex gap-4 text-sm">
+                    <span className="text-blue-600">
+                      📊 Dashboard: {availableModules.filter(m => m.category === 'Dashboard' && formData.modules.includes(m.id)).length} módulos
+                    </span>
+                    <span className="text-green-600">
+                      🏢 Workspace: {availableModules.filter(m => m.category === 'Workspace' && formData.modules.includes(m.id)).length} módulos
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="is_active"
@@ -598,18 +581,63 @@ export default function TemplatesPage() {
                     <div className="flex justify-between text-sm"><span className="text-gray-600">Máx. usuarios:</span><span className="font-medium">{template.max_users}</span></div>
                     <div className="flex justify-between text-sm"><span className="text-gray-600">Máx. contactos:</span><span className="font-medium">{template.max_contacts.toLocaleString()}</span></div>
                   </div>
-                  <div className="mt-4">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Dashboard ({template.dashboard_modules.length})</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {template.dashboard_modules.slice(0, 3).map((moduleId) => (<Badge key={moduleId} variant="outline" className="text-xs">{DASHBOARD_MODULES.find(m => m.id === moduleId)?.name || moduleId}</Badge>))}
-                      {template.dashboard_modules.length > 3 && (<Badge variant="outline" className="text-xs">+{template.dashboard_modules.length - 3} más</Badge>)}
+                  <div className="mt-4 space-y-3">
+                    {/* Dashboard Modules */}
+                    <div>
+                      <h4 className="text-sm font-medium text-blue-700 mb-1 flex items-center gap-1">
+                        📊 Dashboard 
+                        ({availableModules.filter(m => m.category === 'Dashboard' && template.modules?.includes(m.id)).length})
+                      </h4>
+                      <div className="flex flex-wrap gap-1">
+                        {(() => {
+                          const dashboardModules = availableModules.filter(m => m.category === 'Dashboard' && template.modules?.includes(m.id));
+                          return dashboardModules.length > 0 ? (
+                            <>
+                              {dashboardModules.slice(0, 2).map((module) => (
+                                <Badge key={module.id} variant="outline" className="text-xs text-blue-700 border-blue-200">
+                                  {module.name}
+                                </Badge>
+                              ))}
+                              {dashboardModules.length > 2 && (
+                                <Badge variant="outline" className="text-xs text-blue-700 border-blue-200">
+                                  +{dashboardModules.length - 2} más
+                                </Badge>
+                              )}
+                            </>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">Sin módulos dashboard</Badge>
+                          );
+                        })()}
+                      </div>
                     </div>
-                  </div>
-                  <div className="mt-3">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">Workspace ({template.workspace_modules.length})</h4>
-                    <div className="flex flex-wrap gap-1">
-                      {template.workspace_modules.slice(0, 3).map((moduleId) => (<Badge key={moduleId} variant="secondary" className="text-xs">{WORKSPACE_MODULES.find(m => m.id === moduleId)?.name || moduleId}</Badge>))}
-                      {template.workspace_modules.length > 3 && (<Badge variant="secondary" className="text-xs">+{template.workspace_modules.length - 3} más</Badge>)}
+                    
+                    {/* Workspace Modules */}
+                    <div>
+                      <h4 className="text-sm font-medium text-green-700 mb-1 flex items-center gap-1">
+                        🏢 Workspace 
+                        ({availableModules.filter(m => m.category === 'Workspace' && template.modules?.includes(m.id)).length})
+                      </h4>
+                      <div className="flex flex-wrap gap-1">
+                        {(() => {
+                          const workspaceModules = availableModules.filter(m => m.category === 'Workspace' && template.modules?.includes(m.id));
+                          return workspaceModules.length > 0 ? (
+                            <>
+                              {workspaceModules.slice(0, 2).map((module) => (
+                                <Badge key={module.id} variant="secondary" className="text-xs text-green-700 bg-green-50 border-green-200">
+                                  {module.name}
+                                </Badge>
+                              ))}
+                              {workspaceModules.length > 2 && (
+                                <Badge variant="secondary" className="text-xs text-green-700 bg-green-50 border-green-200">
+                                  +{workspaceModules.length - 2} más
+                                </Badge>
+                              )}
+                            </>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">Sin módulos workspace</Badge>
+                          );
+                        })()}
+                      </div>
                     </div>
                   </div>
                   <div className="mt-4 pt-3 border-t flex items-center justify-between">

@@ -17,7 +17,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  UserPlus
+  UserPlus,
+  Package
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -52,15 +53,15 @@ const navigation = [
     badge: null
   },
   {
-    name: 'Usuarios',
-    href: '/admin/users',
-    icon: Users,
+    name: 'Módulos',
+    href: '/admin/modules',
+    icon: Package,
     badge: null
   },
   {
-    name: 'Solicitudes',
-    href: '/admin/registration-requests',
-    icon: UserPlus,
+    name: 'Usuarios',
+    href: '/admin/users',
+    icon: Users,
     badge: null
   },
   {

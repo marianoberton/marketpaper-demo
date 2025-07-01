@@ -9,13 +9,15 @@ import { useLayout } from "@/components/layout-context";
 import { 
   LayoutDashboard, Users, TrendingUp, Megaphone, FileText, Calendar, 
   Building2, BookOpen, Bot, Receipt, Settings, HandCoins, Target, BarChart3,
-  MessageSquare, Zap, PieChart, Briefcase, Share2, MousePointer, Mail, Eye, Cpu
+  MessageSquare, Zap, PieChart, Briefcase, Share2, MousePointer, Mail, Eye, Cpu,
+  Package, Box, Database, Code, Layout, Info, Hammer, DollarSign, CreditCard
 } from "lucide-react";
 
 const ICONS: { [key: string]: React.ElementType } = {
   LayoutDashboard, Users, TrendingUp, Megaphone, FileText, Calendar, 
   Building2, BookOpen, Bot, Receipt, Settings, HandCoins, Target, BarChart3,
-  MessageSquare, Zap, PieChart, Briefcase, Share2, MousePointer, Mail, Eye, Cpu
+  MessageSquare, Zap, PieChart, Briefcase, Share2, MousePointer, Mail, Eye, Cpu,
+  Package, Box, Database, Code, Layout, Info, Hammer, DollarSign, CreditCard
 };
 
 export function WorkspaceNav() {

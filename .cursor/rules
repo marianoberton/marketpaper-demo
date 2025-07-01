@@ -1,0 +1,138 @@
+# FOMO Platform - Project Intelligence & Rules
+
+## 🎯 Current Project Status
+**PRODUCTION-READY PLATFORM** - Professional, stable system ready for client demos
+
+## 🚨 Critical Technical Patterns
+
+### Authentication Architecture (CRITICAL)
+```typescript
+// NEVER import next/headers in client components
+// Use this separation pattern:
+
+// lib/auth-client.ts - For client components
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+
+// lib/auth-server.ts - For API routes & Server Components  
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+
+// lib/auth-types.ts - Shared types and constants
+```
+
+### Next.js 15+ Configuration
+```typescript
+// next.config.ts - Clean configuration without deprecations
+const nextConfig: NextConfig = {
+  experimental: {
+    turbo: { rules: { '*.svg': ['@svgr/webpack'] } }
+  }
+  // REMOVED: appDir, buildActivity, onDemandEntries (deprecated)
+};
+```
+
+## 🎨 FOMO Branding Standards
+
+### Logo Sizing (Optimized)
+- Header: 96x96px (optimal visibility)
+- Sidebar expanded: 80x80px 
+- Sidebar collapsed: 56x56px
+- Mobile: 56x56px
+- Landing page: 140x58px (triple size for impact)
+
+### Brand Implementation
+- **Primary Brand**: "FOMO Platform" (NOT MarketPaper Demo)
+- **Logo File**: `/public/Logo-fomo.svg` (official)
+- **Color Scheme**: Signal yellow (#FCCD12), Brilliant blue (#0077B6)
+- **Copy Style**: Professional, modern, corporate
+
+## 📋 User Experience Patterns
+
+### Landing Page Strategy
+- **Simple & Focused**: Login-centric, no complex information
+- **Professional Copy**: "Una forma moderna de trabajar. Tu workspace inteligente está aquí"
+- **Value Props**: "🚀 Trabajo moderno + Colaboración inteligente"
+- **No Demo References**: Clean, production-ready presentation
+
+### Registration Flow
+- **Enterprise Fields**: Name, email, company, phone
+- **Process Explanation**: Visual steps for transparency
+- **Professional Mock**: "24h processing" alert for demos
+- **Consistent Branding**: FOMO throughout entire flow
+
+## 🛠️ Development Workflow
+
+### File Organization
+```
+lib/
+├── auth-client.ts     # Client component functions
+├── auth-server.ts     # Server/API functions
+├── auth-types.ts      # Shared interfaces
+└── construction.ts    # Module-specific logic
+```
+
+### Component Patterns
+- **Consistent Branding**: FOMO logo and colors everywhere
+- **Professional Styling**: Corporate-grade UI components
+- **Error-Free Experience**: No console errors visible to users
+- **Responsive Design**: Works on all device sizes
+
+## 📊 Success Metrics
+
+### Technical Stability ✅
+- Zero console errors
+- No Next.js warnings
+- Clean TypeScript compilation
+- Optimal performance
+
+### Professional Presentation ✅
+- Consistent FOMO branding
+- Corporate-grade interfaces
+- Complete user flows
+- Demo-ready stability
+
+## 🎯 Current Business State
+
+### Ready for Client Demos
+- **Complete functionality**: Construction module fully operational
+- **Professional presentation**: FOMO branding throughout
+- **Stable system**: No technical errors
+- **Real business value**: Actual workflow management
+
+### Module Success Pattern (Construction)
+- **Database-backed**: Real PostgreSQL with RLS
+- **Full CRUD**: Complete lifecycle management
+- **Professional UI**: Corporate design standards
+- **Multi-tenant**: Company isolation working
+
+## 🔄 Next Session Priorities
+
+### Minor Pending Items
+1. **Registration Management**: Define where form submissions go
+2. **Admin Logout**: Add logout button to admin header
+3. **Lead Workflow**: Complete solicitation management system
+
+### Strategic Opportunities
+1. **Client Demos**: System ready for real client presentations
+2. **Module Expansion**: Use construction module as template
+3. **Professional Services**: Ready for service delivery
+
+## 💡 Key Learnings
+
+### What Works
+- **Clear separation**: Client/server auth patterns prevent errors
+- **Professional branding**: Consistent FOMO implementation creates trust
+- **Real functionality**: Construction module proves platform viability
+- **Clean configuration**: Modern Next.js setup prevents warnings
+
+### Critical Success Factors
+- **Technical stability**: No errors = professional credibility
+- **Brand consistency**: FOMO everywhere builds confidence
+- **Real value**: Working modules demonstrate genuine utility
+- **Clean presentation**: Demo-ready system enables sales
+
+## 🎯 Platform Identity
+
+**FOMO Platform** is now a production-ready, professionally branded enterprise platform that combines analytics with operational tools. The construction module serves as proof-of-concept and template for future industry-specific modules.
+
+**Current Status**: Ready for professional client demos and early customer acquisition. 

@@ -372,14 +372,19 @@ export async function getAllCompanies(filters?: {
     .from('companies')
     .select(`
       *,
-      client_template:client_templates!companies_template_id_fkey (name)
+      client_template:client_templates!companies_template_id_fkey (
+        id,
+        name,
+        category,
+        monthly_price
+      )
     `)
 
   if (filters?.status) query = query.eq('status', filters.status)
   if (filters?.plan) query = query.eq('plan', filters.plan)
   if (filters?.created_by) query = query.eq('created_by', filters.created_by)
 
-  const { data, error } = await query.order('created_at', {
+  const { data: companies, error } = await query.order('created_at', {
     ascending: false,
   })
 
@@ -387,7 +392,26 @@ export async function getAllCompanies(filters?: {
     console.error('Error fetching companies:', error)
     throw new Error('Could not fetch companies.')
   }
-  return data || []
+
+  // Get user counts for each company
+  const companiesWithUserCounts = await Promise.all(
+    (companies || []).map(async (company) => {
+      const { count: userCount } = await supabaseAdmin
+        .from('user_profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', company.id)
+        .eq('status', 'active')
+
+      return {
+        ...company,
+        current_users: userCount || 0,
+        template_id: company.template_id,
+        client_template: company.client_template
+      }
+    })
+  )
+
+  return companiesWithUserCounts
 }
 
 export async function updateCompanyConfiguration(companyId: string, updates: {

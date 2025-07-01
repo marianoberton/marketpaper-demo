@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import { Bell, Search, LogOut, User, Settings, Command } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,6 +25,7 @@ export function Header() {
   }, [])
 
   const getCurrentUser = async () => {
+    const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
     if (session?.user) {
       setUser(session.user)
@@ -32,6 +33,7 @@ export function Header() {
   }
 
   const handleSignOut = async () => {
+    const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/login')
   }
