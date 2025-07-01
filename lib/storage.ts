@@ -28,6 +28,25 @@ export interface ProjectDocument {
   created_at: string
 }
 
+// Tipos para el manejo de archivos
+export interface UploadFileResult {
+  success: boolean
+  data?: {
+    path: string
+    publicUrl: string
+  }
+  error?: string
+}
+
+export interface FileUploadOptions {
+  bucket: string
+  folder?: string
+  filename?: string
+  contentType?: string
+  cacheControl?: string
+  upsert?: boolean
+}
+
 // Función para subir documentos de proyecto
 export async function uploadProjectDocument(uploadData: DocumentUpload): Promise<ProjectDocument> {
   const supabase = createClient()
@@ -258,3 +277,174 @@ export const ALLOWED_FILE_TYPES = {
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   ]
 } as const 
+
+/**
+ * Sube un archivo a Supabase Storage
+ */
+export async function uploadFile(
+  file: File,
+  options: FileUploadOptions
+): Promise<UploadFileResult> {
+  try {
+    const supabase = createClient()
+
+    // Verificar autenticación
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return {
+        success: false,
+        error: 'Usuario no autenticado'
+      }
+    }
+
+    // Generar nombre del archivo si no se proporciona
+    const timestamp = Date.now()
+    const fileExtension = file.name.split('.').pop()
+    const fileName = options.filename || `${timestamp}.${fileExtension}`
+    
+    // Construir la ruta del archivo
+    const filePath = options.folder 
+      ? `${options.folder}/${fileName}`
+      : fileName
+
+    // Convertir File a ArrayBuffer y luego a Buffer
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+
+    // Subir archivo
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from(options.bucket)
+      .upload(filePath, buffer, {
+        contentType: options.contentType || file.type,
+        cacheControl: options.cacheControl || '3600',
+        upsert: options.upsert || false
+      })
+
+    if (uploadError) {
+      return {
+        success: false,
+        error: `Error al subir archivo: ${uploadError.message}`
+      }
+    }
+
+    // Obtener URL pública
+    const { data: { publicUrl } } = supabase.storage
+      .from(options.bucket)
+      .getPublicUrl(uploadData.path)
+
+    return {
+      success: true,
+      data: {
+        path: uploadData.path,
+        publicUrl
+      }
+    }
+
+  } catch (error) {
+    return {
+      success: false,
+      error: `Error interno: ${error instanceof Error ? error.message : 'Error desconocido'}`
+    }
+  }
+}
+
+/**
+ * Elimina un archivo de Supabase Storage
+ */
+export async function deleteFile(
+  bucket: string,
+  filePath: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = createClient()
+
+    const { error } = await supabase.storage
+      .from(bucket)
+      .remove([filePath])
+
+    if (error) {
+      return {
+        success: false,
+        error: `Error al eliminar archivo: ${error.message}`
+      }
+    }
+
+    return { success: true }
+
+  } catch (error) {
+    return {
+      success: false,
+      error: `Error interno: ${error instanceof Error ? error.message : 'Error desconocido'}`
+    }
+  }
+}
+
+/**
+ * Obtiene la URL pública de un archivo
+ */
+export async function getPublicUrl(
+  bucket: string,
+  filePath: string
+): Promise<{ success: boolean; publicUrl?: string; error?: string }> {
+  try {
+    const supabase = createClient()
+
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(filePath)
+
+    return {
+      success: true,
+      publicUrl
+    }
+
+  } catch (error) {
+    return {
+      success: false,
+      error: `Error al obtener URL: ${error instanceof Error ? error.message : 'Error desconocido'}`
+    }
+  }
+}
+
+/**
+ * Lista archivos en un bucket
+ */
+export async function listFiles(
+  bucket: string,
+  folder?: string,
+  options?: {
+    limit?: number
+    offset?: number
+    sortBy?: { column: string; order: 'asc' | 'desc' }
+  }
+): Promise<{ success: boolean; files?: any[]; error?: string }> {
+  try {
+    const supabase = createClient()
+
+    const { data: files, error } = await supabase.storage
+      .from(bucket)
+      .list(folder, {
+        limit: options?.limit,
+        offset: options?.offset,
+        sortBy: options?.sortBy
+      })
+
+    if (error) {
+      return {
+        success: false,
+        error: `Error al listar archivos: ${error.message}`
+      }
+    }
+
+    return {
+      success: true,
+      files
+    }
+
+  } catch (error) {
+    return {
+      success: false,
+      error: `Error interno: ${error instanceof Error ? error.message : 'Error desconocido'}`
+    }
+  }
+} 

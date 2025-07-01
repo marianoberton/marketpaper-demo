@@ -1,49 +1,19 @@
 import { createClient } from '@/utils/supabase/server'
+import type { UserProfile, UserRole, Company, Permission } from './auth-types'
 
 // Re-export types from the main auth file
 export type { UserRole, Permission, UserProfile, Company } from './auth-types'
 export { ROLE_PERMISSIONS } from './auth-types'
 
-// Función para obtener el perfil del usuario actual (SERVER ONLY)
-export async function getCurrentUser(): Promise<import('./auth-types').UserProfile | null> {
+// Función para obtener el usuario actual con permisos (SERVER ONLY)
+export async function getCurrentUser(): Promise<UserProfile | null> {
   const supabase = await createClient()
   
   const { data: { user }, error: authError } = await supabase.auth.getUser()
-  
   if (authError || !user) {
     return null
   }
 
-  // Primero verificar si es super admin
-  const { data: superAdmin } = await supabase
-    .from('super_admins')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('status', 'active')
-    .single()
-
-  if (superAdmin) {
-    // Es super admin, crear perfil virtual
-    const { ROLE_PERMISSIONS } = await import('./auth-types')
-    return {
-      id: user.id,
-      email: user.email || '',
-      full_name: superAdmin.full_name || user.email || 'Super Admin',
-      avatar_url: user.user_metadata?.avatar_url,
-      company_id: undefined, // Super admin no tiene company específica
-      role: 'super_admin',
-      permissions: ROLE_PERMISSIONS['super_admin'],
-      status: 'active',
-      last_login: new Date().toISOString(),
-      preferences: {},
-      timezone: 'America/Argentina/Buenos_Aires',
-      locale: 'es',
-      created_at: superAdmin.created_at,
-      updated_at: superAdmin.updated_at
-    }
-  }
-
-  // Si no es super admin, buscar en user_profiles
   const { data: profile, error: profileError } = await supabase
     .from('user_profiles')
     .select('*')
@@ -57,12 +27,12 @@ export async function getCurrentUser(): Promise<import('./auth-types').UserProfi
   const { ROLE_PERMISSIONS } = await import('./auth-types')
   return {
     ...profile,
-    permissions: ROLE_PERMISSIONS[profile.role as import('./auth-types').UserRole] || []
+    permissions: ROLE_PERMISSIONS[profile.role as keyof typeof ROLE_PERMISSIONS] || []
   }
 }
 
 // Función para obtener la compañía del usuario (SERVER ONLY)
-export async function getUserCompany(userId: string): Promise<import('./auth-types').Company | null> {
+export async function getUserCompany(userId: string): Promise<Company | null> {
   const supabase = await createClient()
   
   const { data: profile } = await supabase
@@ -93,9 +63,9 @@ export async function createUser(userData: {
   email: string
   password: string
   full_name: string
-  role: import('./auth-types').UserRole
+  role: UserRole
   company_id: string
-}): Promise<{ user: import('./auth-types').UserProfile | null; error: string | null }> {
+}): Promise<{ user: UserProfile | null; error: string | null }> {
   const supabase = await createClient()
 
   // Crear usuario en Supabase Auth
@@ -129,10 +99,11 @@ export async function createUser(userData: {
     return { user: null, error: profileError.message }
   }
 
+  const { ROLE_PERMISSIONS } = await import('./auth-types')
   return {
     user: {
       ...profile,
-      permissions: (await import('./auth-types')).ROLE_PERMISSIONS[userData.role] || []
+      permissions: ROLE_PERMISSIONS[userData.role] || []
     },
     error: null
   }
@@ -141,8 +112,8 @@ export async function createUser(userData: {
 // Función para actualizar usuario (SERVER ONLY)
 export async function updateUser(
   userId: string, 
-  updates: Partial<import('./auth-types').UserProfile>
-): Promise<{ user: import('./auth-types').UserProfile | null; error: string | null }> {
+  updates: Partial<UserProfile>
+): Promise<{ user: UserProfile | null; error: string | null }> {
   const supabase = await createClient()
 
   const { data: profile, error } = await supabase
@@ -159,10 +130,11 @@ export async function updateUser(
     return { user: null, error: error.message }
   }
 
+  const { ROLE_PERMISSIONS } = await import('./auth-types')
   return {
     user: {
       ...profile,
-      permissions: (await import('./auth-types')).ROLE_PERMISSIONS[profile.role] || []
+      permissions: ROLE_PERMISSIONS[profile.role as keyof typeof ROLE_PERMISSIONS] || []
     },
     error: null
   }
@@ -193,7 +165,7 @@ export async function deleteUser(userId: string): Promise<{ error: string | null
 }
 
 // Función para obtener usuarios de una compañía (SERVER ONLY)
-export async function getCompanyUsers(companyId: string): Promise<import('./auth-types').UserProfile[]> {
+export async function getCompanyUsers(companyId: string): Promise<UserProfile[]> {
   const supabase = await createClient()
 
   const { data: profiles, error } = await supabase
@@ -206,9 +178,10 @@ export async function getCompanyUsers(companyId: string): Promise<import('./auth
     return []
   }
 
+  const { ROLE_PERMISSIONS } = await import('./auth-types')
   return profiles.map(profile => ({
     ...profile,
-    permissions: (require('./auth-types')).ROLE_PERMISSIONS[profile.role] || []
+    permissions: ROLE_PERMISSIONS[profile.role as keyof typeof ROLE_PERMISSIONS] || []
   }))
 }
 
@@ -216,7 +189,7 @@ export async function getCompanyUsers(companyId: string): Promise<import('./auth
 export async function inviteUser(inviteData: {
   email: string
   full_name: string
-  role: import('./auth-types').UserRole
+  role: UserRole
   company_id: string
 }): Promise<{ error: string | null }> {
   const supabase = await createClient()
@@ -239,7 +212,7 @@ export async function inviteUser(inviteData: {
 // Función para cambiar rol de usuario (SERVER ONLY)
 export async function changeUserRole(
   userId: string, 
-  newRole: import('./auth-types').UserRole
+  newRole: UserRole
 ): Promise<{ error: string | null }> {
   return updateUser(userId, { role: newRole })
     .then(result => ({ error: result.error }))
@@ -252,4 +225,53 @@ export async function toggleUserStatus(
 ): Promise<{ error: string | null }> {
   return updateUser(userId, { status })
     .then(result => ({ error: result.error }))
+}
+
+// Función para verificar permisos de usuario (SERVER ONLY)
+export async function userHasPermission(
+  userId: string, 
+  permission: Permission
+): Promise<boolean> {
+  const user = await getCurrentUser()
+  if (!user) return false
+  
+  return user.permissions.includes(permission)
+}
+
+// Función para verificar si el usuario es super admin (SERVER ONLY)
+export async function isSuperAdmin(userId?: string): Promise<boolean> {
+  if (!userId) {
+    const user = await getCurrentUser()
+    return user?.role === 'super_admin'
+  }
+  
+  const supabase = await createClient()
+  const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('role')
+    .eq('id', userId)
+    .single()
+    
+  return profile?.role === 'super_admin'
+}
+
+// Función para obtener perfil público de usuario (SERVER ONLY)
+export async function getUserProfile(userId: string): Promise<UserProfile | null> {
+  const supabase = await createClient()
+  
+  const { data: profile, error } = await supabase
+    .from('user_profiles')
+    .select('*')
+    .eq('id', userId)
+    .single()
+
+  if (error || !profile) {
+    return null
+  }
+
+  const { ROLE_PERMISSIONS } = await import('./auth-types')
+  return {
+    ...profile,
+    permissions: ROLE_PERMISSIONS[profile.role as keyof typeof ROLE_PERMISSIONS] || []
+  }
 } 

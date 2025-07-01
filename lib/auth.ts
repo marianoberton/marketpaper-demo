@@ -1,4 +1,6 @@
-import { createClient as createBrowserClient } from '@/utils/supabase/client'
+import { createClient } from '@/utils/supabase/client'
+import type { UserRole, UserProfile, Company, Permission } from './auth-types'
+import { ROLE_PERMISSIONS } from './auth-types'
 
 // Re-export types and constants
 export type { UserRole, Permission, UserProfile, Company } from './auth-types'
@@ -6,7 +8,7 @@ export { ROLE_PERMISSIONS } from './auth-types'
 
 // Función para obtener el perfil del usuario (cliente) - CLIENT ONLY
 export function getCurrentUserClient(): Promise<import('./auth-types').UserProfile | null> {
-  const supabase = createBrowserClient()
+  const supabase = createClient()
   
   return new Promise(async (resolve) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -61,7 +63,7 @@ export function getCurrentUserClient(): Promise<import('./auth-types').UserProfi
     const { ROLE_PERMISSIONS } = await import('./auth-types')
     resolve({
       ...profile,
-      permissions: ROLE_PERMISSIONS[profile.role] || []
+      permissions: ROLE_PERMISSIONS[profile.role as UserRole] || []
     })
   })
 }
@@ -84,7 +86,7 @@ export function isCompanyAdmin(user: import('./auth-types').UserProfile | null):
 
 // Función para obtener la compañía del usuario
 export async function getUserCompany(userId: string): Promise<Company | null> {
-  const supabase = await createBrowserClient()
+  const supabase = await createClient()
   
   const { data: profile } = await supabase
     .from('user_profiles')
@@ -117,7 +119,7 @@ export async function createUser(userData: {
   role: UserRole
   company_id: string
 }): Promise<{ user: UserProfile | null; error: string | null }> {
-  const supabase = await createBrowserClient()
+  const supabase = await createClient()
 
   // Crear usuario en Supabase Auth
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
@@ -164,7 +166,7 @@ export async function updateUser(
   userId: string, 
   updates: Partial<UserProfile>
 ): Promise<{ user: UserProfile | null; error: string | null }> {
-  const supabase = await createBrowserClient()
+  const supabase = await createClient()
 
   const { data: profile, error } = await supabase
     .from('user_profiles')
@@ -191,7 +193,7 @@ export async function updateUser(
 
 // Función para eliminar usuario
 export async function deleteUser(userId: string): Promise<{ error: string | null }> {
-  const supabase = await createBrowserClient()
+  const supabase = await createClient()
 
   // Eliminar perfil
   const { error: profileError } = await supabase
@@ -215,7 +217,7 @@ export async function deleteUser(userId: string): Promise<{ error: string | null
 
 // Función para obtener usuarios de una compañía
 export async function getCompanyUsers(companyId: string): Promise<UserProfile[]> {
-  const supabase = await createBrowserClient()
+  const supabase = await createClient()
 
   const { data: users, error } = await supabase
     .from('user_profiles')
@@ -240,7 +242,7 @@ export async function inviteUser(inviteData: {
   role: UserRole
   company_id: string
 }): Promise<{ error: string | null }> {
-  const supabase = await createBrowserClient()
+  const supabase = await createClient()
 
   // Generar contraseña temporal
   const tempPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8)

@@ -507,4 +507,6 @@ export const mockProjectStages: ProjectStage[] = [
     is_active: true,
     created_at: '2024-01-01T10:00:00Z'
   }
-] 
+]
+
+ 
