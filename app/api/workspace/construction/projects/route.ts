@@ -153,6 +153,9 @@ export async function PUT(request: NextRequest) {
 
     // Obtener datos del proyecto del cuerpo de la petición
     const { id, ...projectData } = await request.json()
+    
+    console.log('PUT /api/workspace/construction/projects - ID:', id)
+    console.log('PUT /api/workspace/construction/projects - Data:', projectData)
 
     if (!id) {
       return NextResponse.json({ error: 'ID del proyecto es requerido' }, { status: 400 })
@@ -171,13 +174,35 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // Lista de campos permitidos en la tabla projects
+    const allowedFields = [
+      'name', 'address', 'surface', 'architect', 'builder', 'status', 
+      'cover_image_url', 'dgro_file_number', 'project_type', 'project_use',
+      'client_id', 'start_date', 'end_date', 'budget', 'current_stage',
+      'permit_status', 'inspector_name', 'notes', 'projected_total_cost',
+      'paid_total_cost', 'paid_cost_rubro_a', 'paid_cost_rubro_b', 
+      'paid_cost_rubro_c', 'last_cost_update', 'enable_tax_management',
+      'domain_report_file_url', 'domain_report_upload_date', 
+      'domain_report_expiry_date', 'domain_report_is_valid', 'domain_report_notes'
+    ]
+    
+    // Filtrar solo campos permitidos y con valores definidos
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    }
+    
+    Object.keys(projectData).forEach(key => {
+      if (allowedFields.includes(key) && projectData[key] !== undefined) {
+        updateData[key] = projectData[key]
+      }
+    })
+    
+    console.log('Filtered update data:', updateData)
+
     // Actualizar el proyecto
     const { data: project, error } = await supabase
       .from('projects')
-      .update({
-        ...projectData,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', id)
       .select(`
         *,
@@ -186,18 +211,36 @@ export async function PUT(request: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Error updating project:', error)
-      return NextResponse.json({ error: 'Error al actualizar el proyecto' }, { status: 500 })
+      console.error('Supabase error updating project:', error)
+      console.error('Error code:', error.code)
+      console.error('Error message:', error.message)
+      console.error('Error details:', error.details)
+      console.error('Error hint:', error.hint)
+      
+      // Verificar si es un error de columna inexistente
+      if (error.code === '42703') {
+        return NextResponse.json({ 
+          error: `Error de base de datos: ${error.message}. Es posible que necesites ejecutar las migraciones pendientes.` 
+        }, { status: 500 })
+      }
+      
+      return NextResponse.json({ 
+        error: `Error al actualizar el proyecto: ${error.message}` 
+      }, { status: 500 })
     }
 
     if (!project) {
       return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 })
     }
 
+    console.log('Project updated successfully:', project.id)
     return NextResponse.json({ project })
-  } catch (error) {
+  } catch (error: any) {
     console.error('API Error:', error)
-    return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
+    console.error('Error stack:', error.stack)
+    return NextResponse.json({ 
+      error: `Error interno del servidor: ${error.message}` 
+    }, { status: 500 })
   }
 }
 

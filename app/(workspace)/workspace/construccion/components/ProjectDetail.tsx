@@ -29,11 +29,15 @@ import {
   Eye,
   Trash2,
   Camera,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Plus
 } from 'lucide-react'
 import Image from 'next/image'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Project, mockProjectStages } from '@/lib/construction'
 import { uploadProjectImage } from '@/lib/storage'
+import DomainReportSection from './DomainReportSection'
+import GovernmentTaxesSection from './GovernmentTaxesSection'
 
 interface ProjectDetailProps {
   project: Project
@@ -78,8 +82,22 @@ const projectPhases = [
   }
 ]
 
+// Tipo para documentos del proyecto
+interface ProjectDocument {
+  id: string
+  name: string
+  section: string
+  uploadDate: string
+  size: string
+  type: string
+  url?: string
+  isSpecial?: boolean
+  validUntil?: string
+  isValid?: boolean
+}
+
 // Mock documents para mostrar en la vista unificada
-const mockDocuments = [
+const mockDocuments: ProjectDocument[] = [
   {
     id: '1',
     name: 'Plano arquitectónico principal.pdf',
@@ -117,12 +135,13 @@ const mockDocuments = [
 export default function ProjectDetail({ project, onBack, onStageChange, onProjectUpdate, onDeleteProject }: ProjectDetailProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [editedProject, setEditedProject] = useState(project)
-  const [documents, setDocuments] = useState(mockDocuments)
+  const [documents, setDocuments] = useState<ProjectDocument[]>(mockDocuments)
   const [uploadingTo, setUploadingTo] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [tableExists, setTableExists] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [activeTab, setActiveTab] = useState('documentos')
 
   useEffect(() => {
     setEditedProject(project)
@@ -132,13 +151,15 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
   const loadProjectDocuments = async () => {
     try {
       setLoading(true)
+      let allDocuments: any[] = []
+      
       const response = await fetch(`/api/workspace/construction/documents?projectId=${project.id}`)
       
       if (response.ok) {
         const apiDocuments = await response.json()
         setTableExists(true)
         // Convertir formato API a formato del componente
-        const formattedDocuments = apiDocuments.map((doc: any) => ({
+        allDocuments = apiDocuments.map((doc: any): ProjectDocument => ({
           id: doc.id,
           name: doc.original_filename,
           section: doc.section_name,
@@ -147,7 +168,6 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
           type: doc.mime_type.includes('pdf') ? 'pdf' : 'image',
           url: doc.file_url
         }))
-        setDocuments(formattedDocuments)
       } else {
         const errorData = await response.json()
         if (errorData.error && errorData.error.includes('project_documents')) {
@@ -157,9 +177,30 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
           setTableExists(false)
           console.error('project_documents table has wrong structure - using mock data')
         }
-        // Mantener documentos mock en caso de error
-        setDocuments(mockDocuments)
+        // Usar documentos mock en caso de error
+        allDocuments = [...mockDocuments]
       }
+      
+      // Agregar informe de dominio si existe
+      if (project.domain_report_file_url) {
+        const domainReportDoc: ProjectDocument = {
+          id: 'domain-report',
+          name: 'Informe de Dominio.pdf',
+          section: 'Informe de Dominio',
+          uploadDate: project.domain_report_upload_date ? 
+            new Date(project.domain_report_upload_date).toISOString().split('T')[0] : 
+            'Fecha no disponible',
+          size: 'N/A',
+          type: 'pdf',
+          url: project.domain_report_file_url,
+          isSpecial: true,
+          validUntil: project.domain_report_expiry_date || undefined,
+          isValid: project.domain_report_is_valid || undefined
+        }
+        allDocuments.unshift(domainReportDoc)
+      }
+      
+      setDocuments(allDocuments)
     } catch (error) {
       console.error('Error loading documents:', error)
       // Mantener documentos mock en caso de error
@@ -261,7 +302,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
       const result = await response.json()
       
       // Agregar documento a la lista
-      const newDocument = {
+      const newDocument: ProjectDocument = {
         id: result.id || Date.now().toString(),
         name: file.name,
         section: section,
@@ -416,10 +457,10 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
           </div>
         </div>
 
-        {/* Layout principal mejorado - cambiado a 5 columnas para mejor distribución */}
-        <div className="grid grid-cols-1 xl:grid-cols-5 gap-8">
+        {/* Layout principal mejorado - layout responsivo con mejor distribución */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         {/* Columna principal - Información del proyecto */}
-        <div className="xl:col-span-4 space-y-6">
+        <div className="xl:col-span-3 space-y-6">
           
           {/* Información general con imagen */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -790,152 +831,200 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
             </CardContent>
           </Card>
 
-          {/* Documentación del Proyecto - Vista unificada */}
-            <Card>
-              <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
+          {/* Sistema de pestañas para documentos y nuevas funcionalidades */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="documentos" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                Documentación del Proyecto
-                <Badge variant="outline" className="ml-2">{documents.length} documentos</Badge>
-                </CardTitle>
-              <div className="flex gap-2">
-                <input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                  multiple
-                  className="hidden"
-                  id="document-upload"
-                  onChange={(e) => {
-                    const files = Array.from(e.target.files || [])
-                    files.forEach(file => {
-                      if (uploadingTo) {
-                        handleFileUpload(file, uploadingTo)
-                      }
-                    })
-                  }}
-                />
-                <Select onValueChange={(value) => setUploadingTo(value)}>
-                  <SelectTrigger className="w-64">
-                    <SelectValue placeholder="Seleccionar sección..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Planos de Proyecto e Instalaciones">Planos de Proyecto</SelectItem>
-                    <SelectItem value="Documentación Municipal y Gestoría">Doc. Municipal</SelectItem>
-                    <SelectItem value="Servicios Públicos">Servicios Públicos</SelectItem>
-                    <SelectItem value="Profesionales Intervinientes">Profesionales</SelectItem>
-                    <SelectItem value="Seguros y Documentación Administrativa">Seguros y Admin</SelectItem>
-                    <SelectItem value="Pagos y Comprobantes">Pagos</SelectItem>
-                    <SelectItem value="Verificaciones">Verificaciones</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  disabled={!uploadingTo || uploading}
-                  onClick={() => document.getElementById('document-upload')?.click()}
-                >
-                  {uploading ? (
-                    <>
-                      <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                      Subiendo...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Cargar Documentos
-                    </>
-                  )}
-                </Button>
-                </div>
-            </CardHeader>
-            <CardContent>
-              {!tableExists && (
-                <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <div className="flex items-center gap-2 text-yellow-800">
-                    <AlertCircle className="h-5 w-5" />
-                    <strong>Problema con la tabla de documentos</strong>
+                Documentos
+                <Badge variant="outline" className="ml-1">{documents.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger value="informe-dominio" className="flex items-center gap-2">
+                <Building className="h-4 w-4" />
+                Informe de Dominio
+              </TabsTrigger>
+              <TabsTrigger value="tasas" className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Tasas Gubernamentales
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="documentos" className="space-y-6 mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Todos los Documentos
+                    <Badge variant="outline" className="ml-2">{documents.length} documentos</Badge>
+                  </CardTitle>
+                  <div className="flex gap-2">
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                      multiple
+                      className="hidden"
+                      id="document-upload"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || [])
+                        files.forEach(file => {
+                          if (uploadingTo) {
+                            handleFileUpload(file, uploadingTo)
+                          }
+                        })
+                      }}
+                    />
+                    <Select onValueChange={(value) => setUploadingTo(value)}>
+                      <SelectTrigger className="w-64">
+                        <SelectValue placeholder="Seleccionar sección..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Planos de Proyecto e Instalaciones">Planos de Proyecto</SelectItem>
+                        <SelectItem value="Documentación Municipal y Gestoría">Doc. Municipal</SelectItem>
+                        <SelectItem value="Servicios Públicos">Servicios Públicos</SelectItem>
+                        <SelectItem value="Profesionales Intervinientes">Profesionales</SelectItem>
+                        <SelectItem value="Seguros y Documentación Administrativa">Seguros y Admin</SelectItem>
+                        <SelectItem value="Pagos y Comprobantes">Pagos y Comprobantes</SelectItem>
+                        <SelectItem value="Informe de Dominio">Informe de Dominio</SelectItem>
+                        <SelectItem value="Verificaciones">Verificaciones</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      disabled={!uploadingTo || uploading}
+                      onClick={() => document.getElementById('document-upload')?.click()}
+                    >
+                      {uploading ? (
+                        <>
+                          <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                          Subiendo...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Cargar Documentos
+                        </>
+                      )}
+                    </Button>
                   </div>
-                  <p className="text-sm text-yellow-700 mt-2">
-                    La tabla 'project_documents' no existe o no tiene la estructura correcta. 
-                    Mostrando datos de ejemplo. Para arreglar esto:
-                  </p>
-                  <ol className="text-sm text-yellow-700 mt-2 ml-4 list-decimal">
-                    <li>Ve a tu dashboard de Supabase → SQL Editor</li>
-                    <li>Ejecuta el SQL de corrección (ver consola del navegador)</li>
-                    <li>Recarga esta página</li>
-                  </ol>
-                  <div className="mt-3 p-2 bg-yellow-100 rounded text-xs font-mono text-yellow-800">
-                    DROP TABLE IF EXISTS project_documents; CREATE TABLE project_documents (...);
-                  </div>
-                  </div>
-                )}
-              {loading ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                  <p>Cargando documentos...</p>
-                </div>
-              ) : documents.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No hay documentos cargados</p>
-                  <p className="text-sm">Selecciona una sección y carga tus primeros documentos</p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {/* Agrupar documentos por sección */}
-                  {Object.entries(
-                    documents.reduce((acc, doc) => {
-                      if (!acc[doc.section]) {
-                        acc[doc.section] = []
-                      }
-                      acc[doc.section].push(doc)
-                      return acc
-                    }, {} as Record<string, typeof documents>)
-                  ).map(([section, sectionDocs]) => (
-                    <div key={section}>
-                      <h4 className="font-medium text-sm text-gray-700 mb-3 pb-2 border-b">
-                        {section} ({sectionDocs.length} documento{sectionDocs.length !== 1 ? 's' : ''})
-                      </h4>
-                      <div className="space-y-2">
-                        {sectionDocs.map((doc) => (
-                          <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
-                            <div className="flex items-center gap-3">
-                              <span className="text-2xl">{getFileIcon(doc.type)}</span>
-                              <div>
-                                <h4 className="font-medium text-sm">{doc.name}</h4>
-                                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                  <span>{doc.uploadDate}</span>
-                                  <span>{doc.size}</span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button size="sm" variant="outline" onClick={() => handleViewDocument(doc)}>
-                                <Eye className="h-4 w-4" />
-              </Button>
-                              <Button size="sm" variant="outline" onClick={() => handleDownloadDocument(doc)}>
-                                <Download className="h-4 w-4" />
-              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => handleDeleteDocument(doc.id)}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="h-4 w-4" />
-              </Button>
-                            </div>
-                          </div>
-                        ))}
+                </CardHeader>
+                <CardContent>
+                  {!tableExists && (
+                    <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="flex items-center gap-2 text-yellow-800">
+                        <AlertCircle className="h-5 w-5" />
+                        <strong>Problema con la tabla de documentos</strong>
+                      </div>
+                      <p className="text-sm text-yellow-700 mt-2">
+                        La tabla 'project_documents' no existe o no tiene la estructura correcta. 
+                        Mostrando datos de ejemplo. Para arreglar esto:
+                      </p>
+                      <ol className="text-sm text-yellow-700 mt-2 ml-4 list-decimal">
+                        <li>Ve a tu dashboard de Supabase → SQL Editor</li>
+                        <li>Ejecuta el SQL de corrección (ver consola del navegador)</li>
+                        <li>Recarga esta página</li>
+                      </ol>
+                      <div className="mt-3 p-2 bg-yellow-100 rounded text-xs font-mono text-yellow-800">
+                        DROP TABLE IF EXISTS project_documents; CREATE TABLE project_documents (...);
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  )}
+
+                  {loading ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+                      <p>Cargando documentos...</p>
+                    </div>
+                  ) : documents.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No hay documentos regulares cargados</p>
+                      <p className="text-sm mt-2">Use las secciones superiores para gestionar informe de dominio y tasas</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {/* Agrupar documentos por sección */}
+                      {Object.entries(
+                        documents.reduce((acc, doc) => {
+                          if (!acc[doc.section]) {
+                            acc[doc.section] = []
+                          }
+                          acc[doc.section].push(doc)
+                          return acc
+                        }, {} as Record<string, typeof documents>)
+                      ).map(([section, sectionDocs]) => (
+                        <div key={section}>
+                          <h4 className="font-medium text-sm text-gray-700 mb-3 pb-2 border-b">
+                            {section} ({sectionDocs.length} documento{sectionDocs.length !== 1 ? 's' : ''})
+                          </h4>
+                          <div className="space-y-2">
+                            {sectionDocs.map((doc) => (
+                              <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-2xl">{getFileIcon(doc.type)}</span>
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <h4 className="font-medium text-sm">{doc.name}</h4>
+                                      {doc.isSpecial && (
+                                        <Badge variant={doc.isValid ? "default" : "destructive"} className="text-xs">
+                                          {doc.isValid ? 'Válido' : 'Vencido'}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                                      <span>{doc.uploadDate}</span>
+                                      <span>{doc.size}</span>
+                                      {doc.validUntil && (
+                                        <span>Vence: {new Date(doc.validUntil).toLocaleDateString()}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Button size="sm" variant="outline" onClick={() => handleViewDocument(doc)}>
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={() => handleDownloadDocument(doc)}>
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                  {!doc.isSpecial && (
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline"
+                                      onClick={() => handleDeleteDocument(doc.id)}
+                                      className="text-red-600 hover:text-red-700"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="informe-dominio" className="space-y-6 mt-6">
+              <DomainReportSection 
+                project={project} 
+                onProjectUpdate={onProjectUpdate}
+              />
+            </TabsContent>
+
+            <TabsContent value="tasas" className="space-y-6 mt-6">
+              <GovernmentTaxesSection 
+                project={project} 
+                onProjectUpdate={onProjectUpdate}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
 
-        {/* Sidebar derecho */}
-        <div className="xl:col-span-1 space-y-6">
+        {/* Sidebar derecho - Cliente y Detalles */}
+        <div className="xl:col-span-1 space-y-6 xl:sticky xl:top-6 xl:self-start">
           {/* Cliente */}
           <Card>
             <CardHeader>
@@ -974,6 +1063,125 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                     )}
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Cronograma del Proyecto */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Cronograma
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {/* Línea de tiempo */}
+                <div className="relative">
+                  {/* Línea vertical */}
+                  <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+                  
+                  <div className="space-y-4">
+                    {/* Inicio del proyecto */}
+                    <div className="relative flex items-center gap-4">
+                      <div className={`relative z-10 w-3 h-3 rounded-full ${project.start_date ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium">Inicio de proyecto</p>
+                          <Badge variant={project.start_date ? "default" : "secondary"} className="text-xs">
+                            {project.start_date ? 'Iniciado' : 'Pendiente'}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {project.start_date ? new Date(project.start_date).toLocaleDateString() : 'Sin fecha'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Informe de dominio */}
+                    <div className="relative flex items-center gap-4">
+                      <div className={`relative z-10 w-3 h-3 rounded-full ${project.domain_report_file_url ? (project.domain_report_is_valid ? 'bg-green-500' : 'bg-orange-500') : 'bg-gray-300'}`}></div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium">Informe de dominio</p>
+                          <Badge variant={project.domain_report_file_url ? (project.domain_report_is_valid ? "default" : "destructive") : "secondary"} className="text-xs">
+                            {project.domain_report_file_url ? (project.domain_report_is_valid ? 'Válido' : 'Vencido') : 'Pendiente'}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {project.domain_report_upload_date ? new Date(project.domain_report_upload_date).toLocaleDateString() : 'Sin cargar'}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Permiso de construcción */}
+                    <div className="relative flex items-center gap-4">
+                      <div className={`relative z-10 w-3 h-3 rounded-full ${project.permit_status === 'Aprobado' ? 'bg-green-500' : project.permit_status === 'En trámite' ? 'bg-yellow-500' : 'bg-gray-300'}`}></div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium">Permiso construcción</p>
+                          <Badge variant={project.permit_status === 'Aprobado' ? "default" : project.permit_status === 'En trámite' ? "secondary" : "outline"} className="text-xs">
+                            {project.permit_status || 'Pendiente'}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Estado del trámite</p>
+                      </div>
+                    </div>
+
+                    {/* Etapas de construcción */}
+                    {['AVO 1', 'AVO 2', 'AVO 3', 'AVO 4'].map((stage, index) => {
+                      const isCurrentStage = project.current_stage === stage
+                      const isCompletedStage = mockProjectStages.findIndex(s => s.name === project.current_stage) > mockProjectStages.findIndex(s => s.name === stage)
+                      const stageStatus = isCompletedStage ? 'completed' : isCurrentStage ? 'current' : 'pending'
+                      
+                      return (
+                        <div key={stage} className="relative flex items-center gap-4">
+                          <div className={`relative z-10 w-3 h-3 rounded-full ${
+                            stageStatus === 'completed' ? 'bg-green-500' : 
+                            stageStatus === 'current' ? 'bg-blue-500' : 
+                            'bg-gray-300'
+                          }`}></div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm font-medium">{stage}</p>
+                              <Badge variant={
+                                stageStatus === 'completed' ? "default" : 
+                                stageStatus === 'current' ? "secondary" : 
+                                "outline"
+                              } className="text-xs">
+                                {stageStatus === 'completed' ? 'Completado' : 
+                                 stageStatus === 'current' ? 'En curso' : 
+                                 'Pendiente'}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {stageStatus === 'completed' ? 'Aprobado' : 
+                               stageStatus === 'current' ? 'En desarrollo' : 
+                               'Por iniciar'}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    })}
+
+                    {/* Finalización */}
+                    <div className="relative flex items-center gap-4">
+                      <div className={`relative z-10 w-3 h-3 rounded-full ${project.current_stage === 'Finalización' ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium">Finalización</p>
+                          <Badge variant={project.current_stage === 'Finalización' ? "default" : "outline"} className="text-xs">
+                            {project.current_stage === 'Finalización' ? 'Finalizado' : 'Pendiente'}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {project.end_date ? new Date(project.end_date).toLocaleDateString() : 'Fecha estimada no definida'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

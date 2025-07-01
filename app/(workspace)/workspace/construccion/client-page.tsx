@@ -382,14 +382,119 @@ export default function ConstruccionClientPage() {
     }
   }
 
-  const handleProjectUpdate = (updatedProject: Project) => {
-    // Actualizar la lista de proyectos
-    setProjects(prev => prev.map(project => 
-      project.id === updatedProject.id ? updatedProject : project
-    ))
-    
-    // Actualizar proyecto seleccionado
-    setSelectedProject(updatedProject)
+  const handleProjectUpdate = async (updatedProject: Project) => {
+    try {
+      console.log('Updating project:', updatedProject.id, 'with data:', {
+        enable_tax_management: updatedProject.enable_tax_management,
+        projected_total_cost: updatedProject.projected_total_cost
+      })
+
+      // Preparar solo los campos que pueden haber cambiado, filtrando valores undefined
+      const updateData: any = {
+        id: updatedProject.id
+      }
+
+      // Solo incluir campos que tienen valor definido
+      if (updatedProject.enable_tax_management !== undefined) {
+        updateData.enable_tax_management = updatedProject.enable_tax_management
+      }
+      if (updatedProject.projected_total_cost !== undefined) {
+        updateData.projected_total_cost = updatedProject.projected_total_cost
+      }
+      if (updatedProject.name !== undefined) {
+        updateData.name = updatedProject.name
+      }
+      if (updatedProject.address !== undefined) {
+        updateData.address = updatedProject.address
+      }
+      if (updatedProject.surface !== undefined) {
+        updateData.surface = updatedProject.surface
+      }
+      if (updatedProject.budget !== undefined) {
+        updateData.budget = updatedProject.budget
+      }
+      if (updatedProject.start_date !== undefined) {
+        updateData.start_date = updatedProject.start_date
+      }
+      if (updatedProject.end_date !== undefined) {
+        updateData.end_date = updatedProject.end_date
+      }
+      if (updatedProject.notes !== undefined) {
+        updateData.notes = updatedProject.notes
+      }
+      if (updatedProject.current_stage !== undefined) {
+        updateData.current_stage = updatedProject.current_stage
+      }
+      if (updatedProject.permit_status !== undefined) {
+        updateData.permit_status = updatedProject.permit_status
+      }
+      if (updatedProject.inspector_name !== undefined) {
+        updateData.inspector_name = updatedProject.inspector_name
+      }
+      if (updatedProject.architect !== undefined) {
+        updateData.architect = updatedProject.architect
+      }
+      if (updatedProject.builder !== undefined) {
+        updateData.builder = updatedProject.builder
+      }
+      if (updatedProject.project_type !== undefined) {
+        updateData.project_type = updatedProject.project_type
+      }
+      if (updatedProject.project_use !== undefined) {
+        updateData.project_use = updatedProject.project_use
+      }
+      if (updatedProject.dgro_file_number !== undefined) {
+        updateData.dgro_file_number = updatedProject.dgro_file_number
+      }
+
+      console.log('Sending update data:', updateData)
+
+      // Persistir cambios en la base de datos
+      const response = await fetch('/api/workspace/construction/projects', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      })
+
+      console.log('Response status:', response.status)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Response error:', errorText)
+        
+        let errorData
+        try {
+          errorData = JSON.parse(errorText)
+        } catch {
+          errorData = { error: errorText }
+        }
+        
+        throw new Error(errorData.error || `Error ${response.status}: ${errorText}`)
+      }
+
+      const data = await response.json()
+      console.log('Update response:', data)
+      
+      // Actualizar la lista de proyectos con los datos del servidor
+      setProjects(prev => prev.map(project => 
+        project.id === data.project.id ? data.project : project
+      ))
+      
+      // Actualizar proyecto seleccionado
+      setSelectedProject(data.project)
+      
+    } catch (error: any) {
+      console.error('Error updating project:', error)
+      setError(`Error al actualizar el proyecto: ${error.message}`)
+      
+      // Aún así actualizar el estado local temporalmente
+      setProjects(prev => prev.map(project => 
+        project.id === updatedProject.id ? updatedProject : project
+      ))
+      setSelectedProject(updatedProject)
+    }
   }
 
   const handleDeleteProject = async (projectId: string) => {

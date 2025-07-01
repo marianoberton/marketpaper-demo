@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { X, Building, MapPin, User, Calendar, DollarSign, FileText, Settings, Upload, Image as ImageIcon } from 'lucide-react'
+import { X, Building, MapPin, User, Calendar, DollarSign, FileText, Settings, Upload, Image as ImageIcon, Calculator, CheckCircle, Info } from 'lucide-react'
 import { Client, ProjectStage, CreateProjectData } from '@/lib/construction'
 import { uploadProjectImage } from '@/lib/storage'
 import Image from 'next/image'
@@ -53,6 +53,59 @@ export default function CreateProjectModal({
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string>('')
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [enableTaxManagement, setEnableTaxManagement] = useState(false)
+
+  // Función para calcular estimaciones de tasas gubernamentales
+  const calculateTaxEstimates = () => {
+    const surface = formData.surface || 0
+    const budget = formData.budget || 0
+    
+    if (surface === 0 && budget === 0) {
+      return { total: 0, professional_fees: 0, construction_rights: 0, surplus_value: 0, method: 'Ingrese presupuesto o superficie para calcular' }
+    }
+
+    let professionalFees = 0
+    let constructionRights = 0
+    let surplusValue = 0
+    let method = ''
+
+    if (budget > 0) {
+      // Método basado en presupuesto (más preciso)
+      method = 'Basado en presupuesto'
+      professionalFees = budget * 0.010 // 1% del presupuesto
+      constructionRights = budget * 0.004 // 0.4% del presupuesto
+      surplusValue = budget * 0.025 // 2.5% del presupuesto
+    } else if (surface > 0) {
+      // Método basado en superficie (estimativo)
+      method = 'Basado en superficie'
+      const updatedParams = {
+        cpau_rate: 12000,
+        cpic_rate: 8000,
+        construction_rate: 7000,
+        surplus_rate: 35000
+      }
+      professionalFees = (updatedParams.cpau_rate + updatedParams.cpic_rate) * surface
+      constructionRights = updatedParams.construction_rate * surface
+      surplusValue = updatedParams.surplus_rate * surface
+    }
+    
+    return {
+      total: professionalFees + constructionRights + surplusValue,
+      professional_fees: professionalFees,
+      construction_rights: constructionRights,
+      surplus_value: surplusValue,
+      method
+    }
+  }
+
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('es-AR', {
+      style: 'currency',
+      currency: 'ARS',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount)
+  }
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -126,8 +179,22 @@ export default function CreateProjectModal({
     setIsSubmitting(true)
     try {
       // Primero crear el proyecto sin imagen
-      const projectWithoutImage = { ...formData }
+      const projectWithoutImage = { 
+        ...formData
+      }
       delete projectWithoutImage.cover_image_url
+      
+      // Solo incluir enable_tax_management si está activado
+      // (para evitar problemas si la migración no se ha ejecutado)
+      if (enableTaxManagement) {
+        projectWithoutImage.enable_tax_management = true
+        
+        // También incluir el costo proyectado si se calculó
+        const estimates = calculateTaxEstimates()
+        if (estimates.total > 0) {
+          projectWithoutImage.projected_total_cost = estimates.total
+        }
+      }
       
       // Crear el proyecto con la imagen si existe
       await onSubmit(projectWithoutImage, selectedImage || undefined)
@@ -155,6 +222,7 @@ export default function CreateProjectModal({
       setSelectedImage(null)
       setImagePreview('')
       setErrors({})
+      setEnableTaxManagement(false)
       onClose()
     } catch (error) {
       console.error('Error creating project:', error)
@@ -202,6 +270,7 @@ export default function CreateProjectModal({
     setSelectedImage(null)
     setImagePreview('')
     setErrors({})
+    setEnableTaxManagement(false)
     onClose()
   }
 
@@ -569,6 +638,96 @@ export default function CreateProjectModal({
                     rows={3}
                   />
                 </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Gestión de Tasas Gubernamentales */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Calculator className="h-5 w-5 text-blue-600" />
+                <h3 className="text-lg font-semibold">Gestión de Tasas Gubernamentales</h3>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-blue-900 mb-1">Gestión Automática de Tasas</h4>
+                    <p className="text-sm text-blue-700">
+                      Active esta opción para gestionar automáticamente las tasas profesionales (CPAU/CPIC), 
+                      derechos de construcción y plusvalía. Se calculará en base al presupuesto o superficie del proyecto.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="enable-tax-management"
+                    checked={enableTaxManagement}
+                    onChange={(e) => setEnableTaxManagement(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                  />
+                  <Label htmlFor="enable-tax-management" className="flex items-center gap-2 cursor-pointer">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    Activar gestión de tasas gubernamentales
+                  </Label>
+                </div>
+
+                {enableTaxManagement && (() => {
+                  const estimates = calculateTaxEstimates()
+                  return (
+                    <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                      <h4 className="font-medium text-green-900 mb-3">Estimación de Tasas</h4>
+                      
+                      <div className="text-sm text-green-700 mb-3">
+                        <strong>Método de cálculo:</strong> {estimates.method}
+                      </div>
+
+                      {estimates.total > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <div className="flex justify-between">
+                              <span className="text-sm text-green-700">Tasas Profesionales:</span>
+                              <span className="font-medium text-green-900">{formatCurrency(estimates.professional_fees)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-green-700">Derechos de Construcción:</span>
+                              <span className="font-medium text-green-900">{formatCurrency(estimates.construction_rights)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-green-700">Plusvalía:</span>
+                              <span className="font-medium text-green-900">{formatCurrency(estimates.surplus_value)}</span>
+                            </div>
+                          </div>
+                          <div className="md:text-right">
+                            <div className="p-3 bg-white rounded-lg border border-green-300">
+                              <div className="text-sm text-green-700 mb-1">Total Estimado</div>
+                              <div className="text-xl font-bold text-green-900">{formatCurrency(estimates.total)}</div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-green-600 space-y-2">
+                          <p><strong>💡 Para obtener estimaciones precisas:</strong></p>
+                          <ul className="text-xs space-y-1 ml-4">
+                            <li>• <strong>Recomendado:</strong> Ingrese el presupuesto total de la obra</li>
+                            <li>• <strong>Alternativo:</strong> Ingrese la superficie en m²</li>
+                          </ul>
+                          <p className="text-xs text-green-500 mt-2">
+                            <em>Las estimaciones se actualizarán automáticamente al completar estos campos</em>
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div className="mt-3 p-2 bg-green-100 rounded text-xs text-green-600">
+                        <strong>Nota:</strong> Esta es una estimación inicial. Los montos exactos se calcularán según los parámetros vigentes al momento del pago.
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
             </div>
 

@@ -40,6 +40,28 @@ export type Project = {
   client?: Client
   sections?: ProjectSection[]
   status_history?: ProjectStatusHistory[]
+  
+  // Informe de Dominio
+  domain_report_file_url?: string | null
+  domain_report_upload_date?: string | null
+  domain_report_expiry_date?: string | null
+  domain_report_is_valid?: boolean | null
+  domain_report_notes?: string | null
+  
+  // Tasas y Gravámenes Gubernamentales
+  projected_total_cost?: number | null
+  paid_total_cost?: number | null
+  paid_cost_rubro_a?: number | null
+  paid_cost_rubro_b?: number | null
+  paid_cost_rubro_c?: number | null
+  last_cost_update?: string | null
+  enable_tax_management?: boolean | null
+  
+  // Relaciones con tasas específicas
+  professional_commissions?: ProfessionalCommission[]
+  construction_rights?: ConstructionRights[]
+  surplus_value_rights?: SurplusValueRights[]
+  tax_payments?: TaxPayment[]
 }
 
 export type ProjectSection = {
@@ -60,6 +82,90 @@ export type ProjectDocument = {
   file_url: string
   file_type?: string | null
   uploaded_by?: string | null
+  created_at: string
+}
+
+// Tipos para Tasas y Gravámenes Gubernamentales
+export type ProfessionalCommission = {
+  id: string
+  project_id: string
+  council_type: string // 'CPAU', 'CPIC', etc.
+  surface_m2: number
+  procedure_type: string
+  calculated_fee: number
+  actual_paid: number
+  payment_date?: string | null
+  receipt_number?: string | null
+  notes?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type ConstructionRights = {
+  id: string
+  project_id: string
+  surface_m2: number
+  stage_name: string // 'Registro Etapa', 'Permiso Obra'
+  calculated_fee: number
+  actual_paid: number
+  payment_date?: string | null
+  receipt_number?: string | null
+  notes?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type SurplusValueRights = {
+  id: string
+  project_id: string
+  surface_m2: number
+  zone_classification?: string | null // 'Palermo', 'Lugano', etc.
+  uva_coefficient: number
+  uva_value: number
+  base_calculation: number
+  total_amount: number
+  percentage_20_paid: number // 20% con permiso
+  percentage_40_avo1_paid: number // 40% con AVO I
+  percentage_40_avo4_paid: number // 40% con AVO IV/MH
+  payment_stage?: string | null // 'Pendiente', 'Permiso', 'AVO I', 'AVO IV', 'Completado'
+  notes?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type TaxPayment = {
+  id: string
+  project_id: string
+  payment_type: string // 'professional_commission', 'construction_rights', 'surplus_value'
+  reference_id?: string | null // ID de la tabla específica
+  rubro: string // 'A', 'B', 'C'
+  amount: number
+  payment_date: string
+  receipt_number?: string | null
+  description?: string | null
+  notes?: string | null
+  created_by?: string | null
+  created_at: string
+}
+
+// Tipos para datos maestros
+export type ProfessionalCouncil = {
+  id: string
+  code: string
+  name: string
+  description?: string | null
+  base_fee_formula?: string | null
+  is_active: boolean
+  created_at: string
+}
+
+export type SurplusValueZone = {
+  id: string
+  zone_name: string
+  zone_code?: string | null
+  multiplier_factor: number
+  description?: string | null
+  is_active: boolean
   created_at: string
 }
 
@@ -102,6 +208,14 @@ export type CreateProjectData = {
   dgro_file_number?: string
   project_type?: string
   project_use?: string
+  
+  // Informe de Dominio
+  domain_report_file_url?: string
+  domain_report_notes?: string
+  
+  // Tasas y Gravámenes Gubernamentales
+  projected_total_cost?: number
+  enable_tax_management?: boolean
 }
 
 export type UpdateProjectData = Partial<CreateProjectData> & {
@@ -508,5 +622,149 @@ export const mockProjectStages: ProjectStage[] = [
     created_at: '2024-01-01T10:00:00Z'
   }
 ]
+
+
+
+// =============================================
+// FUNCIONES PARA INFORME DE DOMINIO
+// =============================================
+
+export function calculateDomainReportDaysRemaining(uploadDate: string): number {
+  const upload = new Date(uploadDate)
+  const expiry = new Date(upload.getTime() + (90 * 24 * 60 * 60 * 1000)) // 90 días
+  const now = new Date()
+  const diffTime = expiry.getTime() - now.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  return Math.max(0, diffDays)
+}
+
+export function isDomainReportValid(uploadDate: string | null): boolean {
+  if (!uploadDate) return false
+  return calculateDomainReportDaysRemaining(uploadDate) > 0
+}
+
+export function formatDomainReportStatus(uploadDate: string | null): {
+  status: 'valid' | 'expiring' | 'expired' | 'none'
+  message: string
+  daysRemaining?: number
+} {
+  if (!uploadDate) {
+    return { status: 'none', message: 'No cargado' }
+  }
+  
+  const daysRemaining = calculateDomainReportDaysRemaining(uploadDate)
+  
+  if (daysRemaining <= 0) {
+    return { status: 'expired', message: 'Vencido', daysRemaining: 0 }
+  } else if (daysRemaining <= 10) {
+    return { status: 'expiring', message: `Vence en ${daysRemaining} días`, daysRemaining }
+  } else {
+    return { status: 'valid', message: `Vigente (${daysRemaining} días)`, daysRemaining }
+  }
+}
+
+// =============================================
+// FUNCIONES PARA TASAS Y GRAVÁMENES
+// =============================================
+
+export function calculateProjectedVsPaidPercentage(projected: number, paid: number): number {
+  if (projected <= 0) return 0
+  return Math.round((paid / projected) * 100)
+}
+
+export function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(amount)
+}
+
+export function calculateRemainingAmount(projected: number, paid: number): number {
+  return Math.max(0, projected - paid)
+}
+
+export type TaxSummary = {
+  projectedTotal: number
+  paidTotal: number
+  remainingTotal: number
+  percentagePaid: number
+  rubroBreakdown: {
+    A: { paid: number; percentage: number }
+    B: { paid: number; percentage: number }
+    C: { paid: number; percentage: number }
+  }
+}
+
+export function calculateTaxSummary(project: Project): TaxSummary {
+  const projectedTotal = project.projected_total_cost || 0
+  const paidTotal = project.paid_total_cost || 0
+  const remainingTotal = calculateRemainingAmount(projectedTotal, paidTotal)
+  const percentagePaid = calculateProjectedVsPaidPercentage(projectedTotal, paidTotal)
+  
+  const paidA = project.paid_cost_rubro_a || 0
+  const paidB = project.paid_cost_rubro_b || 0
+  const paidC = project.paid_cost_rubro_c || 0
+  
+  return {
+    projectedTotal,
+    paidTotal,
+    remainingTotal,
+    percentagePaid,
+    rubroBreakdown: {
+      A: { 
+        paid: paidA, 
+        percentage: paidTotal > 0 ? Math.round((paidA / paidTotal) * 100) : 0
+      },
+      B: { 
+        paid: paidB, 
+        percentage: paidTotal > 0 ? Math.round((paidB / paidTotal) * 100) : 0
+      },
+      C: { 
+        paid: paidC, 
+        percentage: paidTotal > 0 ? Math.round((paidC / paidTotal) * 100) : 0
+      }
+    }
+  }
+}
+
+// =============================================
+// FUNCIONES PARA OBTENER DATOS MAESTROS
+// =============================================
+
+export async function getProfessionalCouncils(): Promise<ProfessionalCouncil[]> {
+  const supabase = createClient()
+  
+  const { data, error } = await supabase
+    .from('professional_councils')
+    .select('*')
+    .eq('is_active', true)
+    .order('name')
+
+  if (error) {
+    console.error('Error fetching professional councils:', error)
+    throw new Error('Error al cargar los consejos profesionales')
+  }
+
+  return data as ProfessionalCouncil[]
+}
+
+export async function getSurplusValueZones(): Promise<SurplusValueZone[]> {
+  const supabase = createClient()
+  
+  const { data, error } = await supabase
+    .from('surplus_value_zones')
+    .select('*')
+    .eq('is_active', true)
+    .order('zone_name')
+
+  if (error) {
+    console.error('Error fetching surplus value zones:', error)
+    throw new Error('Error al cargar las zonas de plusvalía')
+  }
+
+  return data as SurplusValueZone[]
+}
 
  
