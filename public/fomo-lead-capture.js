@@ -13,431 +13,573 @@
  * </script>
  */
 
-(function(window, document) {
+(function() {
   'use strict';
 
-  // Configuración por defecto
-  const DEFAULT_CONFIG = {
-    webhookUrl: '',
-    trackingEnabled: true,
-    autoCapture: true,
-    debug: false,
-    formSelectors: [
-      'form[data-fomo-capture]',
-      'form.contact-form',
-      'form.lead-form',
-      'form#contact',
-      'form#lead-form'
-    ],
-    fieldMapping: {
-      name: ['name', 'nombre', 'full_name', 'fullname'],
-      email: ['email', 'correo', 'e-mail'],
-      phone: ['phone', 'telefono', 'tel', 'mobile'],
-      company: ['company', 'empresa', 'organization'],
-      message: ['message', 'mensaje', 'comment', 'comentario', 'description']
-    }
-  };
-
-  let config = {};
-  let isInitialized = false;
-
-  // Utilidades
-  const utils = {
-    log: function(message, data) {
-      if (config.debug) {
-        console.log('[FOMO Lead Capture]', message, data || '');
-      }
-    },
-
-    error: function(message, error) {
-      console.error('[FOMO Lead Capture]', message, error || '');
-    },
-
-    getUTMParams: function() {
+    // Configuración global del widget
+    window.FOMO_CONFIG = window.FOMO_CONFIG || {};
+    
+    const defaultConfig = {
+        apiEndpoint: 'https://your-domain.vercel.app/api/webhook/contact-lead',
+        trigger: 'exit-intent', // 'exit-intent', 'scroll', 'time', 'manual'
+        scrollThreshold: 70, // % de scroll para activar
+        timeDelay: 30000, // ms para activar por tiempo
+        position: 'bottom-right', // 'bottom-right', 'bottom-left', 'center', 'top'
+        theme: 'modern', // 'modern', 'minimal', 'rounded'
+        showPoweredBy: true,
+        autoCapture: true, // Capturar UTM y metadata automáticamente
+        fields: {
+            name: { required: true, placeholder: 'Tu nombre completo' },
+            email: { required: true, placeholder: 'tu@email.com' },
+            company: { required: false, placeholder: 'Tu empresa (opcional)' },
+            pain_point: { required: true, placeholder: '¿Cuál es tu principal desafío?' }
+        },
+        messages: {
+            title: '¡Espera! Antes de que te vayas...',
+            subtitle: 'Déjanos ayudarte con tu proyecto',
+            button: 'Quiero información gratuita',
+            success: '¡Gracias! Te contactaremos pronto.',
+            error: 'Error al enviar. Inténtalo de nuevo.'
+        },
+        styling: {
+            primaryColor: '#667eea',
+            backgroundColor: '#ffffff',
+            textColor: '#333333',
+            borderRadius: '12px'
+        }
+    };
+    
+    // Merge configuración del usuario
+    const config = { ...defaultConfig, ...window.FOMO_CONFIG };
+    
+    class FOMOLeadCapture {
+        constructor() {
+            this.isVisible = false;
+            this.hasBeenShown = false;
+            this.exitIntentListener = null;
+            this.scrollListener = null;
+            this.timeoutId = null;
+            this.metadata = this.collectMetadata();
+            
+            this.init();
+        }
+        
+        init() {
+            // Verificar que no se haya mostrado ya
+            if (this.hasBeenShown || localStorage.getItem('fomo_lead_shown')) {
+                return;
+            }
+            
+            this.createStyles();
+            this.createModal();
+            this.setupTriggers();
+            
+            console.log('🚀 FOMO Lead Capture Widget inicializado');
+        }
+        
+        collectMetadata() {
       const urlParams = new URLSearchParams(window.location.search);
+            
       return {
+                // UTM Parameters
         utm_source: urlParams.get('utm_source'),
+                utm_medium: urlParams.get('utm_medium'),
         utm_campaign: urlParams.get('utm_campaign'),
-        utm_medium: urlParams.get('utm_medium'),
+                utm_term: urlParams.get('utm_term'),
         utm_content: urlParams.get('utm_content'),
-        utm_term: urlParams.get('utm_term')
-      };
-    },
 
-    getPageInfo: function() {
-      return {
+                // Technical info
+                user_agent: navigator.userAgent,
+                referrer: document.referrer || null,
         page_url: window.location.href,
         page_title: document.title,
-        referrer: document.referrer,
-        user_agent: navigator.userAgent,
-        timestamp: new Date().toISOString()
-      };
-    },
-
-    findFieldByNames: function(form, fieldNames) {
-      for (let name of fieldNames) {
-        // Buscar por name attribute
-        let field = form.querySelector(`[name="${name}"]`);
-        if (field) return field;
-
-        // Buscar por id
-        field = form.querySelector(`#${name}`);
-        if (field) return field;
-
-        // Buscar por placeholder que contenga el nombre
-        field = form.querySelector(`[placeholder*="${name}"]`);
-        if (field) return field;
-      }
-      return null;
-    },
-
-    extractFormData: function(form) {
-      const data = {};
-      const mapping = config.fieldMapping;
-
-      // Mapear campos conocidos
-      for (let [key, fieldNames] of Object.entries(mapping)) {
-        const field = this.findFieldByNames(form, fieldNames);
-        if (field && field.value.trim()) {
-          data[key] = field.value.trim();
+                screen_resolution: `${screen.width}x${screen.height}`,
+                viewport_size: `${window.innerWidth}x${window.innerHeight}`,
+                language: navigator.language,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                
+                // Engagement data
+                timestamp: new Date().toISOString(),
+                session_duration: Math.round((Date.now() - performance.timing.navigationStart) / 1000)
+            };
         }
-      }
-
-      // Si no encontramos nombre o email, intentar extraer de todos los campos
-      if (!data.name || !data.email) {
-        const formData = new FormData(form);
-        for (let [key, value] of formData.entries()) {
-          if (!data.name && (key.toLowerCase().includes('name') || key.toLowerCase().includes('nombre'))) {
-            data.name = value.trim();
-          }
-          if (!data.email && (key.toLowerCase().includes('email') || key.toLowerCase().includes('correo'))) {
-            data.email = value.trim();
-          }
-          if (!data.phone && (key.toLowerCase().includes('phone') || key.toLowerCase().includes('tel'))) {
-            data.phone = value.trim();
-          }
-        }
-      }
-
-      return data;
-    },
-
-    validateEmail: function(email) {
-      const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      return re.test(email);
-    },
-
-    sendToWebhook: function(leadData) {
-      if (!config.webhookUrl) {
-        this.error('Webhook URL not configured');
-        return Promise.reject('Webhook URL not configured');
-      }
-
-      const payload = {
-        ...leadData,
-        ...this.getUTMParams(),
-        ...this.getPageInfo(),
-        form_id: leadData.form_id || 'web-capture',
-        source: 'web-form'
-      };
-
-      this.log('Sending lead data:', payload);
-
-      return fetch(config.webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload)
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(data => {
-        this.log('Lead sent successfully:', data);
-        return data;
-      })
-      .catch(error => {
-        this.error('Error sending lead:', error);
-        throw error;
-      });
-    }
-  };
-
-  // Captura de formularios
-  const formCapture = {
-    init: function() {
-      if (!config.autoCapture) return;
-
-      // Buscar formularios existentes
-      this.attachToExistingForms();
-
-      // Observar nuevos formularios (para SPAs)
-      this.observeNewForms();
-
-      utils.log('Form capture initialized');
-    },
-
-    attachToExistingForms: function() {
-      config.formSelectors.forEach(selector => {
-        const forms = document.querySelectorAll(selector);
-        forms.forEach(form => this.attachToForm(form));
-      });
-    },
-
-    observeNewForms: function() {
-      const observer = new MutationObserver(mutations => {
-        mutations.forEach(mutation => {
-          mutation.addedNodes.forEach(node => {
-            if (node.nodeType === Node.ELEMENT_NODE) {
-              // Verificar si el nodo es un formulario
-              if (node.tagName === 'FORM') {
-                this.checkAndAttachForm(node);
-              }
-              // Buscar formularios dentro del nodo
-              config.formSelectors.forEach(selector => {
-                const forms = node.querySelectorAll ? node.querySelectorAll(selector) : [];
-                forms.forEach(form => this.attachToForm(form));
-              });
-            }
-          });
-        });
-      });
-
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true
-      });
-    },
-
-    checkAndAttachForm: function(form) {
-      const shouldCapture = config.formSelectors.some(selector => {
-        return form.matches(selector);
-      });
-
-      if (shouldCapture) {
-        this.attachToForm(form);
-      }
-    },
-
-    attachToForm: function(form) {
-      // Evitar adjuntar múltiples veces
-      if (form.dataset.fomoAttached) return;
-      form.dataset.fomoAttached = 'true';
-
-      utils.log('Attaching to form:', form);
-
-      form.addEventListener('submit', (e) => {
-        this.handleFormSubmit(e, form);
-      });
-    },
-
-    handleFormSubmit: function(event, form) {
-      const formData = utils.extractFormData(form);
-
-      // Validar datos mínimos
-      if (!formData.name || !formData.email) {
-        utils.log('Form missing required fields (name or email), skipping capture');
-        return;
-      }
-
-      if (!utils.validateEmail(formData.email)) {
-        utils.log('Invalid email format, skipping capture');
-        return;
-      }
-
-      // Agregar ID del formulario si existe
-      if (form.id) {
-        formData.form_id = form.id;
-      }
-
-      // Enviar al webhook (no bloquear el envío del formulario)
-      utils.sendToWebhook(formData)
-        .then(response => {
-          utils.log('Lead captured successfully');
-          
-          // Disparar evento personalizado
-          window.dispatchEvent(new CustomEvent('fomoLeadCaptured', {
-            detail: { leadData: formData, response: response }
-          }));
-        })
-        .catch(error => {
-          utils.error('Failed to capture lead:', error);
-          
-          // Disparar evento de error
-          window.dispatchEvent(new CustomEvent('fomoLeadCaptureError', {
-            detail: { leadData: formData, error: error }
-          }));
-        });
-    }
-  };
-
-  // Tracking de eventos
-  const eventTracking = {
-    init: function() {
-      if (!config.trackingEnabled) return;
-
-      this.trackPageView();
-      this.trackClicks();
-      this.trackScrollDepth();
-
-      utils.log('Event tracking initialized');
-    },
-
-    trackPageView: function() {
-      const pageData = {
-        event: 'page_view',
-        ...utils.getPageInfo(),
-        ...utils.getUTMParams()
-      };
-
-      utils.log('Page view tracked:', pageData);
-    },
-
-    trackClicks: function() {
-      document.addEventListener('click', (e) => {
-        const target = e.target;
         
-        // Trackear clics en CTAs importantes
-        if (target.matches('a[href*="contact"], a[href*="demo"], button[type="submit"], .cta-button')) {
-          const clickData = {
-            event: 'cta_click',
-            element: target.tagName.toLowerCase(),
-            text: target.textContent.trim(),
-            href: target.href || null,
-            ...utils.getPageInfo()
-          };
-
-          utils.log('CTA click tracked:', clickData);
+        createStyles() {
+            const style = document.createElement('style');
+            style.textContent = `
+                .fomo-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.5);
+                    z-index: 999999;
+                    display: none;
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                    backdrop-filter: blur(4px);
+                }
+                
+                .fomo-overlay.show {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    opacity: 1;
+                }
+                
+                .fomo-modal {
+                    background: ${config.styling.backgroundColor};
+                    border-radius: ${config.styling.borderRadius};
+                    padding: 32px;
+                    max-width: 480px;
+                    width: 90%;
+                    max-height: 90vh;
+                    overflow-y: auto;
+                    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+                    transform: scale(0.9) translateY(20px);
+                    transition: transform 0.3s ease;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    position: relative;
+                }
+                
+                .fomo-overlay.show .fomo-modal {
+                    transform: scale(1) translateY(0);
+                }
+                
+                .fomo-close {
+                    position: absolute;
+                    top: 12px;
+                    right: 16px;
+                    background: none;
+                    border: none;
+                    font-size: 24px;
+                    cursor: pointer;
+                    color: #999;
+                    padding: 4px;
+                    border-radius: 50%;
+                    width: 32px;
+                    height: 32px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.2s ease;
+                }
+                
+                .fomo-close:hover {
+                    background: #f5f5f5;
+                    color: #666;
+                }
+                
+                .fomo-header {
+                    text-align: center;
+                    margin-bottom: 24px;
+                }
+                
+                .fomo-title {
+                    font-size: 24px;
+                    font-weight: 700;
+                    color: ${config.styling.textColor};
+                    margin: 0 0 8px 0;
+                    line-height: 1.3;
+                }
+                
+                .fomo-subtitle {
+                    font-size: 16px;
+                    color: #666;
+                    margin: 0;
+                    line-height: 1.4;
+                }
+                
+                .fomo-form {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 16px;
+                }
+                
+                .fomo-field {
+                    display: flex;
+                    flex-direction: column;
+                }
+                
+                .fomo-input, .fomo-textarea {
+                    padding: 12px 16px;
+                    border: 2px solid #e1e5e9;
+                    border-radius: 8px;
+                    font-size: 16px;
+                    transition: border-color 0.3s ease;
+                    font-family: inherit;
+                    outline: none;
+                }
+                
+                .fomo-input:focus, .fomo-textarea:focus {
+                    border-color: ${config.styling.primaryColor};
+                    box-shadow: 0 0 0 3px ${config.styling.primaryColor}20;
+                }
+                
+                .fomo-textarea {
+                    resize: vertical;
+                    min-height: 80px;
+                }
+                
+                .fomo-submit {
+                    background: linear-gradient(135deg, ${config.styling.primaryColor} 0%, ${config.styling.primaryColor}dd 100%);
+                    color: white;
+                    border: none;
+                    padding: 14px 24px;
+                    border-radius: 8px;
+                    font-size: 16px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                    margin-top: 8px;
+                }
+                
+                .fomo-submit:hover:not(:disabled) {
+                    transform: translateY(-1px);
+                    box-shadow: 0 8px 16px ${config.styling.primaryColor}40;
+                }
+                
+                .fomo-submit:disabled {
+                    opacity: 0.7;
+                    cursor: not-allowed;
+                    transform: none;
+                }
+                
+                .fomo-powered-by {
+                    text-align: center;
+                    margin-top: 16px;
+                    font-size: 12px;
+                    color: #999;
+                }
+                
+                .fomo-powered-by a {
+                    color: ${config.styling.primaryColor};
+                    text-decoration: none;
+                }
+                
+                .fomo-message {
+                    padding: 12px 16px;
+                    border-radius: 8px;
+                    margin-bottom: 16px;
+                    font-size: 14px;
+                    text-align: center;
+                    display: none;
+                }
+                
+                .fomo-message.success {
+                    background: #d4edda;
+                    color: #155724;
+                    border: 1px solid #c3e6cb;
+                }
+                
+                .fomo-message.error {
+                    background: #f8d7da;
+                    color: #721c24;
+                    border: 1px solid #f5c6cb;
+                }
+                
+                @media (max-width: 600px) {
+                    .fomo-modal {
+                        padding: 24px 20px;
+                        margin: 20px;
+                        width: calc(100% - 40px);
+                    }
+                    
+                    .fomo-title {
+                        font-size: 20px;
+                    }
+                }
+                
+                /* Animación de entrada */
+                @keyframes fomo-slide-up {
+                    from {
+                        opacity: 0;
+                        transform: translateY(20px) scale(0.95);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0) scale(1);
+                    }
+                }
+                
+                .fomo-modal.animate {
+                    animation: fomo-slide-up 0.3s ease-out;
+                }
+            `;
+            document.head.appendChild(style);
         }
-      });
-    },
-
-    trackScrollDepth: function() {
-      let maxScroll = 0;
-      let scrollTimer;
-
-      window.addEventListener('scroll', () => {
-        clearTimeout(scrollTimer);
-        scrollTimer = setTimeout(() => {
-          const scrollPercent = Math.round(
-            (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100
-          );
-
-          if (scrollPercent > maxScroll) {
-            maxScroll = scrollPercent;
-
-            // Trackear hitos importantes
-            if ([25, 50, 75, 90].includes(scrollPercent)) {
-              utils.log(`Scroll depth: ${scrollPercent}%`);
+        
+        createModal() {
+            const overlay = document.createElement('div');
+            overlay.className = 'fomo-overlay';
+            overlay.innerHTML = `
+                <div class="fomo-modal">
+                    <button class="fomo-close" type="button">&times;</button>
+                    
+                    <div class="fomo-header">
+                        <h2 class="fomo-title">${config.messages.title}</h2>
+                        <p class="fomo-subtitle">${config.messages.subtitle}</p>
+                    </div>
+                    
+                    <div class="fomo-message success"></div>
+                    <div class="fomo-message error"></div>
+                    
+                    <form class="fomo-form">
+                        ${this.generateFormFields()}
+                        
+                        <button type="submit" class="fomo-submit">
+                            ${config.messages.button}
+                        </button>
+                    </form>
+                    
+                    ${config.showPoweredBy ? `
+                        <div class="fomo-powered-by">
+                            Powered by <a href="https://fomoplatform.com" target="_blank">FOMO Platform</a>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            document.body.appendChild(overlay);
+            this.overlay = overlay;
+            this.modal = overlay.querySelector('.fomo-modal');
+            this.form = overlay.querySelector('.fomo-form');
+            
+            this.setupEventListeners();
+        }
+        
+        generateFormFields() {
+            return Object.entries(config.fields).map(([fieldName, fieldConfig]) => {
+                const isTextarea = fieldName === 'pain_point' || fieldName === 'notes';
+                const required = fieldConfig.required ? 'required' : '';
+                
+                if (isTextarea) {
+                    return `
+                        <div class="fomo-field">
+                            <textarea 
+                                name="${fieldName}" 
+                                class="fomo-textarea" 
+                                placeholder="${fieldConfig.placeholder}"
+                                ${required}
+                            ></textarea>
+                        </div>
+                    `;
+                } else {
+                    const inputType = fieldName === 'email' ? 'email' : 'text';
+                    return `
+                        <div class="fomo-field">
+                            <input 
+                                type="${inputType}" 
+                                name="${fieldName}" 
+                                class="fomo-input" 
+                                placeholder="${fieldConfig.placeholder}"
+                                ${required}
+                            />
+                        </div>
+                    `;
+                }
+            }).join('');
+        }
+        
+        setupEventListeners() {
+            // Cerrar modal
+            this.overlay.addEventListener('click', (e) => {
+                if (e.target === this.overlay) {
+                    this.hide();
+                }
+            });
+            
+            this.overlay.querySelector('.fomo-close').addEventListener('click', () => {
+                this.hide();
+            });
+            
+            // Submit form
+            this.form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.submitForm();
+            });
+            
+            // ESC key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && this.isVisible) {
+                    this.hide();
+                }
+            });
+        }
+        
+        setupTriggers() {
+            if (config.trigger === 'exit-intent') {
+                this.setupExitIntent();
+            } else if (config.trigger === 'scroll') {
+                this.setupScrollTrigger();
+            } else if (config.trigger === 'time') {
+                this.setupTimeTrigger();
             }
-          }
-        }, 100);
-      });
+            
+            // Manual trigger
+            window.showFOMOLeadCapture = () => this.show();
+        }
+        
+        setupExitIntent() {
+            this.exitIntentListener = (e) => {
+                if (e.clientY <= 0 && !this.hasBeenShown) {
+                    this.show();
+                }
+            };
+            document.addEventListener('mouseleave', this.exitIntentListener);
+        }
+        
+        setupScrollTrigger() {
+            this.scrollListener = () => {
+                const scrolled = (window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100;
+                if (scrolled >= config.scrollThreshold && !this.hasBeenShown) {
+                    this.show();
+                }
+            };
+            window.addEventListener('scroll', this.scrollListener);
+        }
+        
+        setupTimeTrigger() {
+            this.timeoutId = setTimeout(() => {
+                if (!this.hasBeenShown) {
+                    this.show();
+                }
+            }, config.timeDelay);
+        }
+        
+        show() {
+            if (this.hasBeenShown) return;
+            
+            this.hasBeenShown = true;
+            this.isVisible = true;
+            
+            // Actualizar metadata con información actual
+            this.metadata = { ...this.metadata, ...this.collectMetadata() };
+            
+            this.overlay.classList.add('show');
+            this.modal.classList.add('animate');
+            
+            // Marcar como mostrado en localStorage (opcional)
+            localStorage.setItem('fomo_lead_shown', Date.now().toString());
+            
+            // Cleanup triggers
+            this.cleanupTriggers();
+            
+            console.log('📝 FOMO Lead Capture mostrado');
+        }
+        
+        hide() {
+            this.isVisible = false;
+            this.overlay.classList.remove('show');
+            
+            setTimeout(() => {
+                this.overlay.style.display = 'none';
+            }, 300);
+        }
+        
+        async submitForm() {
+            const submitBtn = this.form.querySelector('.fomo-submit');
+            const successMsg = this.overlay.querySelector('.fomo-message.success');
+            const errorMsg = this.overlay.querySelector('.fomo-message.error');
+            
+            // Reset messages
+            successMsg.style.display = 'none';
+            errorMsg.style.display = 'none';
+            
+            // Disable button
+            submitBtn.disabled = true;
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Enviando...';
+            
+            try {
+                // Collect form data
+                const formData = new FormData(this.form);
+                const data = Object.fromEntries(formData.entries());
+                
+                // Merge with metadata
+                const payload = {
+                    ...data,
+                    ...this.metadata,
+                    widget_version: '2.0',
+                    trigger_type: config.trigger
+                };
+                
+                console.log('📤 Enviando lead:', payload);
+                
+                // Send to API
+                const response = await fetch(config.apiEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ Lead enviado exitosamente:', result);
+                    
+                    successMsg.textContent = config.messages.success;
+                    successMsg.style.display = 'block';
+                    
+                    // Hide form and show success
+                    this.form.style.display = 'none';
+                    
+                    // Auto-close after success
+                    setTimeout(() => {
+                        this.hide();
+                    }, 3000);
+                    
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+            } catch (error) {
+                console.error('❌ Error enviando lead:', error);
+                
+                errorMsg.textContent = config.messages.error;
+                errorMsg.style.display = 'block';
+                
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        }
+        
+        cleanupTriggers() {
+            if (this.exitIntentListener) {
+                document.removeEventListener('mouseleave', this.exitIntentListener);
+            }
+            if (this.scrollListener) {
+                window.removeEventListener('scroll', this.scrollListener);
+            }
+            if (this.timeoutId) {
+                clearTimeout(this.timeoutId);
+            }
+        }
+        
+        destroy() {
+            this.cleanupTriggers();
+            if (this.overlay) {
+                this.overlay.remove();
+            }
+        }
     }
-  };
-
-  // API pública
-  const FomoLeadCapture = {
-    init: function(userConfig = {}) {
-      if (isInitialized) {
-        utils.log('Already initialized');
-        return;
-      }
-
-      // Combinar configuración
-      config = { ...DEFAULT_CONFIG, ...userConfig };
-
-      if (!config.webhookUrl) {
-        utils.error('webhookUrl is required');
-        return;
-      }
-
-      // Inicializar módulos
+    
+    // Auto-initialize cuando el DOM esté listo
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
-          formCapture.init();
-          eventTracking.init();
+            window.fomoLeadCapture = new FOMOLeadCapture();
         });
       } else {
-        formCapture.init();
-        eventTracking.init();
-      }
-
-      isInitialized = true;
-      utils.log('FOMO Lead Capture initialized', config);
-    },
-
-    // Método para capturar lead manualmente
-    captureLead: function(leadData) {
-      if (!isInitialized) {
-        utils.error('Not initialized. Call init() first.');
-        return Promise.reject('Not initialized');
-      }
-
-      return utils.sendToWebhook(leadData);
-    },
-
-    // Método para trackear evento personalizado
-    trackEvent: function(eventName, eventData = {}) {
-      if (!config.trackingEnabled) return;
-
-      const trackingData = {
-        event: eventName,
-        ...eventData,
-        ...utils.getPageInfo()
-      };
-
-      utils.log('Custom event tracked:', trackingData);
-    },
-
-    // Configurar después de la inicialización
-    configure: function(newConfig) {
-      config = { ...config, ...newConfig };
-      utils.log('Configuration updated:', config);
+        window.fomoLeadCapture = new FOMOLeadCapture();
     }
-  };
-
-  // Exponer API globalmente
-  window.FomoLeadCapture = FomoLeadCapture;
-
-  // Auto-inicialización si se encuentra configuración en el DOM
-  document.addEventListener('DOMContentLoaded', () => {
-    const configScript = document.querySelector('script[data-fomo-config]');
-    if (configScript) {
-      try {
-        const autoConfig = JSON.parse(configScript.dataset.fomoConfig);
-        FomoLeadCapture.init(autoConfig);
-      } catch (error) {
-        utils.error('Error parsing auto-config:', error);
-      }
-    }
-  });
-
-})(window, document);
-
-// Ejemplo de uso:
-/*
-<script src="https://tu-dominio.com/fomo-lead-capture.js"></script>
-<script>
-  FomoLeadCapture.init({
-    webhookUrl: 'https://tu-dominio.com/api/webhook/leads',
-    trackingEnabled: true,
-    autoCapture: true,
-    debug: true
-  });
-
-  // Escuchar eventos
-  window.addEventListener('fomoLeadCaptured', function(e) {
-    console.log('Lead capturado:', e.detail);
-    // Aquí puedes agregar lógica adicional como mostrar un mensaje de éxito
-  });
-
-  window.addEventListener('fomoLeadCaptureError', function(e) {
-    console.error('Error capturando lead:', e.detail);
-  });
-</script>
-*/
+    
+    // Global methods
+    window.FOMO = {
+        show: () => window.showFOMOLeadCapture && window.showFOMOLeadCapture(),
+        destroy: () => window.fomoLeadCapture && window.fomoLeadCapture.destroy()
+    };
+    
+})();

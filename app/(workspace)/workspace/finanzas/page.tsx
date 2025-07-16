@@ -1,17 +1,14 @@
 import { WorkspacePageWrapper } from '../workspace-page-wrapper'
-import { CrmDashboard } from './components/CrmDashboard'
+import FinanzasClientPage from './client-page'
 
-export default async function CrmPage({
+export default async function FinanzasPage({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
-  const params = await searchParams;
-  const companyId = params?.company_id as string | undefined;
-  
   return (
     <WorkspacePageWrapper searchParams={searchParams}>
-      <CrmDashboard companyId={companyId} />
+      <FinanzasClientPage />
     </WorkspacePageWrapper>
   )
 } 
