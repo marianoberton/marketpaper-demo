@@ -282,7 +282,7 @@ export default function ContactLeadsManager() {
       setContactLeads(prev => 
         prev.map(lead => 
           lead.id === leadId 
-            ? { ...lead, notes: notes.trim() || null }
+            ? { ...lead, notes: notes.trim() || undefined }
             : lead
         )
       );
