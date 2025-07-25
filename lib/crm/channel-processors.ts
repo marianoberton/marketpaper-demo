@@ -450,6 +450,22 @@ export class LinkedInAdsProcessor extends BaseChannelProcessor {
     
     return Math.round(value)
   }
+
+  private extractCustomQuestions(fields: Record<string, string>): Array<{question: string, answer: string}> {
+    const customQuestions: Array<{question: string, answer: string}> = []
+    const standardFields = ['firstName', 'lastName', 'fullName', 'emailAddress', 'email', 'phoneNumber', 'phone', 'companyName', 'company', 'jobTitle', 'title']
+    
+    Object.entries(fields).forEach(([key, value]) => {
+      if (!standardFields.includes(key) && value) {
+        customQuestions.push({
+          question: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          answer: value
+        })
+      }
+    })
+    
+    return customQuestions
+  }
 }
 
 // =============================================
@@ -643,9 +659,9 @@ export class ChannelProcessorFactory {
   private static processors: Map<LeadChannel, () => ChannelProcessor> = new Map([
     ['facebook_ads', () => new FacebookAdsProcessor()],
     ['instagram_ads', () => new FacebookAdsProcessor()], // Usa el mismo procesador
-    ['linkedin_ads', () => new LinkedInAdsProcessor()],
-    ['whatsapp', () => new WhatsAppProcessor()],
-    ['web_form', () => new WebFormProcessor()],
+    ['linkedin_ads', () => new LinkedInAdsProcessor() as ChannelProcessor],
+    ['whatsapp', () => new WhatsAppProcessor() as ChannelProcessor],
+    ['web_form', () => new WebFormProcessor() as ChannelProcessor],
   ])
 
   static getProcessor(channel: LeadChannel): ChannelProcessor {
