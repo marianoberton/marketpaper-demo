@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
         medium: stats?.filter(l => l.priority === 'medium').length || 0,
         low: stats?.filter(l => l.priority === 'low').length || 0,
       },
-      avg_score: Math.round(stats?.reduce((acc, l) => acc + l.lead_score, 0) / (stats?.length || 1) || 0)
+      avg_score: Math.round((stats?.reduce((acc, l) => acc + l.lead_score, 0) || 0) / (stats?.length || 1))
     }
 
     return NextResponse.json({ 
