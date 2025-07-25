@@ -325,7 +325,7 @@ export default function FinanzasClientPage() {
     <div className="space-y-6 p-6">
       <PageHeader
         title="Finanzas Personales"
-        subtitle="Gestiona tus gastos, categorías y presupuestos"
+        description="Gestiona tus gastos, categorías y presupuestos"
       />
 
       {error && (
