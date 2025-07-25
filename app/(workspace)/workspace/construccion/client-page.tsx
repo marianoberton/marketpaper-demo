@@ -25,21 +25,30 @@ const mockProjects: Project[] = [
     id: '1',
     company_id: '1',
     name: 'LUJAN 2706',
-    address: 'LUJAN 2706, CABA',
+    address: 'LUJAN 2706',
+    barrio: 'Flores',
+    ciudad: 'CABA',
     surface: 2107.00,
-    architect: 'Arq. María González',
+    director_obra: 'Arq. María González',
     builder: 'TABOADA CORA RAQUEL',
     status: 'En AVO 3',
     current_stage: 'AVO 3',
     cover_image_url: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=400&h=300&fit=crop',
     dgro_file_number: 'EX-2021-18038149-GCABA-DGROC',
-    project_type: 'MODIFICACION Y/O AMPLIACION',
-    project_use: 'OBRA MAYOR',
+    project_type: 'Obra Mayor',
+    project_usage: 'Vivienda',
     permit_status: 'Aprobado',
     client_id: '1',
     start_date: '2024-01-15',
     end_date: '2024-12-15',
     budget: 8500000,
+    profesionales: [
+      { name: 'Ing. Carlos López', role: 'Estructuralista' },
+      { name: 'Ing. Ana García', role: 'Instalación Electrica' }
+    ],
+    // Compatibilidad temporal
+    architect: 'Arq. María González',
+    project_use: 'OBRA MAYOR',
     inspector_name: 'Ing. Carlos López',
     notes: 'Proyecto de ampliación con modificaciones estructurales importantes.',
     created_at: '2024-01-15T10:00:00Z',
@@ -49,21 +58,31 @@ const mockProjects: Project[] = [
     id: '2',
     company_id: '1',
     name: 'TORRE PALERMO',
-    address: 'Av. Santa Fe 3456, CABA',
+    address: 'Av. Santa Fe 3456',
+    barrio: 'Palermo',
+    ciudad: 'CABA',
     surface: 4500.00,
-    architect: 'Arq. Roberto Silva',
+    director_obra: 'Arq. Roberto Silva',
     builder: 'DESARROLLOS URBANOS SA',
-    status: 'En Permisos',
-    current_stage: 'Permisos',
+    status: 'En Gestoria',
+    current_stage: 'Permiso de obra',
     cover_image_url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=300&fit=crop',
     dgro_file_number: 'EX-2024-22345678-GCABA-DGROC',
-    project_type: 'OBRA NUEVA',
-    project_use: 'RESIDENCIAL',
+    project_type: 'Obra Mayor',
+    project_usage: 'Vivienda',
     permit_status: 'En trámite',
     client_id: '2',
     start_date: '2024-06-01',
     end_date: '2025-12-31',
     budget: 25000000,
+    profesionales: [
+      { name: 'Ing. Ana Martínez', role: 'Estructuralista' },
+      { name: 'Ing. Pedro Ruiz', role: 'Instalación Sanitaria' },
+      { name: 'Téc. Luis Castro', role: 'Instalación Electrica' }
+    ],
+    // Compatibilidad temporal
+    architect: 'Arq. Roberto Silva',
+    project_use: 'RESIDENCIAL',
     inspector_name: 'Ing. Ana Martínez',
     notes: 'Torre residencial de 15 pisos con cocheras subterráneas.',
     created_at: '2024-02-01T10:00:00Z',
@@ -73,21 +92,31 @@ const mockProjects: Project[] = [
     id: '3',
     company_id: '1',
     name: 'COMPLEJO BELGRANO',
-    address: 'Av. Cabildo 2789, CABA',
+    address: 'Av. Cabildo 2789',
+    barrio: 'Belgrano',
+    ciudad: 'CABA',
     surface: 3200.00,
-    architect: 'Arq. Laura Fernández',
+    director_obra: 'Arq. Laura Fernández',
     builder: 'TABOADA CORA RAQUEL',
     status: 'Finalización',
-    current_stage: 'Finalización',
+    current_stage: 'Conforme de obra',
     cover_image_url: 'https://images.unsplash.com/photo-1582268611958-ebfd161ef9cf?w=400&h=300&fit=crop',
     dgro_file_number: 'EX-2023-15555444-GCABA-DGROC',
-    project_type: 'OBRA NUEVA',
-    project_use: 'MIXTO',
+    project_type: 'Obra Media',
+    project_usage: 'Mixto',
     permit_status: 'Aprobado',
     client_id: '1',
     start_date: '2023-03-01',
     end_date: '2024-02-29',
     budget: 18000000,
+    profesionales: [
+      { name: 'Ing. Miguel Torres', role: 'Estructuralista' },
+      { name: 'Arq. Sofia Morales', role: 'Proyectista' },
+      { name: 'Ing. Roberto Díaz', role: 'Instalación e incendios' }
+    ],
+    // Compatibilidad temporal
+    architect: 'Arq. Laura Fernández',
+    project_use: 'MIXTO',
     inspector_name: 'Ing. Miguel Torres',
     notes: 'Complejo de oficinas y locales comerciales. Obra completada satisfactoriamente.',
     created_at: '2023-03-01T10:00:00Z',
@@ -174,26 +203,42 @@ export default function ConstruccionClientPage() {
     return matchesSearch && matchesStage && matchesClient
   })
 
-  // Calcular estadísticas
+  // Calcular estadísticas con nuevas etapas
   const totalProjects = projects.length
   const projectsInProgress = projects.filter(p => 
-    p.current_stage && !['Finalización', 'Paralización'].includes(p.current_stage)
+    p.current_stage && !['Conforme de obra', 'MH-SUBDIVISION'].includes(p.current_stage)
   ).length
-  const projectsInPermits = projects.filter(p => p.current_stage === 'Permisos').length
-  const projectsCompleted = projects.filter(p => p.current_stage === 'Finalización').length
+  const projectsInPermits = projects.filter(p => 
+    ['Consulta DGIUR', 'Registro etapa de proyecto', 'Permiso de obra'].includes(p.current_stage || '')
+  ).length
+  const projectsCompleted = projects.filter(p => 
+    ['Conforme de obra', 'MH-SUBDIVISION'].includes(p.current_stage || '')
+  ).length
 
   const getStageColor = (stage: string) => {
     const stageColors: Record<string, string> = {
-      'Planificación': 'bg-gray-500',
-      'Permisos': 'bg-yellow-500',
+      // Prefactibilidad
+      'Prefactibilidad del proyecto': 'bg-purple-500',
+      
+      // En Gestoria
+      'Consulta DGIUR': 'bg-yellow-500',
+      'Registro etapa de proyecto': 'bg-yellow-600',
+      'Permiso de obra': 'bg-yellow-700',
+      
+      // En ejecución de obra
       'Demolición': 'bg-red-500',
-      'Excavación 10%': 'bg-purple-500',
-      'Excavación 50%': 'bg-purple-600',
+      'Excavación': 'bg-red-600',
       'AVO 1': 'bg-green-500',
       'AVO 2': 'bg-green-600',
       'AVO 3': 'bg-green-700',
-      'AVO 4': 'bg-green-800',
-      'Paralización': 'bg-orange-500',
+      
+      // Finalización
+      'Conforme de obra': 'bg-emerald-600',
+      'MH-SUBDIVISION': 'bg-emerald-700',
+      
+      // Compatibilidad temporal con etapas antiguas
+      'Planificación': 'bg-gray-500',
+      'Permisos': 'bg-yellow-500',
       'Finalización': 'bg-emerald-600'
     }
     return stageColors[stage] || 'bg-blue-500'
@@ -428,6 +473,24 @@ export default function ConstruccionClientPage() {
       if (updatedProject.permit_status !== undefined) {
         updateData.permit_status = updatedProject.permit_status
       }
+      // Nuevos campos
+      if (updatedProject.director_obra !== undefined) {
+        updateData.director_obra = updatedProject.director_obra
+      }
+      if (updatedProject.profesionales !== undefined) {
+        updateData.profesionales = updatedProject.profesionales
+      }
+      if (updatedProject.project_usage !== undefined) {
+        updateData.project_usage = updatedProject.project_usage
+      }
+      if (updatedProject.barrio !== undefined) {
+        updateData.barrio = updatedProject.barrio
+      }
+      if (updatedProject.ciudad !== undefined) {
+        updateData.ciudad = updatedProject.ciudad
+      }
+      
+      // Campos de compatibilidad temporal
       if (updatedProject.inspector_name !== undefined) {
         updateData.inspector_name = updatedProject.inspector_name
       }
@@ -602,7 +665,7 @@ export default function ConstruccionClientPage() {
         </Card>
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">En Obra</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-700">Permisos de Gestoria</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
@@ -612,7 +675,7 @@ export default function ConstruccionClientPage() {
         </Card>
         <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-700">En Permisos</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-700">En ejecución de obra</CardTitle>
             <Clock className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
@@ -730,7 +793,14 @@ export default function ConstruccionClientPage() {
                     <div className="space-y-3">
                       <div>
                         <h3 className="font-semibold text-lg leading-tight">{project.name}</h3>
-                        <p className="text-sm text-muted-foreground">{project.dgro_file_number}</p>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          {project.barrio && (
+                            <span>{project.barrio}</span>
+                          )}
+                          {project.ciudad && (
+                            <span>{project.ciudad}</span>
+                          )}
+                        </div>
                       </div>
                       
                       <div className="space-y-2 text-sm">
@@ -744,11 +814,6 @@ export default function ConstruccionClientPage() {
                           <span className="text-muted-foreground">
                             Superficie: <span className="font-medium">{project.surface?.toLocaleString()} m²</span>
                           </span>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-muted-foreground">{project.architect}</span>
                         </div>
                         
                         <div className="pt-2">

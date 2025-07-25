@@ -55,7 +55,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Error al cargar clientes' }, { status: 500 })
     }
 
-    return NextResponse.json({ clients })
+    // Con JSONB, los referentes ya vienen como objetos, no necesitan parsing
+    const processedClients = clients?.map(client => ({
+      ...client,
+      referentes: client.referentes || null
+    })) || []
+
+    return NextResponse.json({ clients: processedClients })
   } catch (error) {
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
@@ -108,13 +114,21 @@ export async function POST(request: NextRequest) {
       targetCompanyId = currentUser.company_id
     }
 
+    // Limpiar datos antes de enviar a la base de datos
+    const processedData = { ...clientData, company_id: targetCompanyId }
+    
+    // Convertir strings vacíos a null para evitar problemas con constraints
+    if (processedData.cuit === '') processedData.cuit = null
+    if (processedData.website_url === '') processedData.website_url = null
+    if (processedData.email === '') processedData.email = null
+    if (processedData.phone === '') processedData.phone = null
+    if (processedData.address === '') processedData.address = null
+    if (processedData.notes === '') processedData.notes = null
+
     // Crear el cliente
     const { data: client, error } = await supabase
       .from('clients')
-      .insert({
-        ...clientData,
-        company_id: targetCompanyId
-      })
+      .insert(processedData)
       .select()
       .single()
 
@@ -146,13 +160,21 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'El nombre del cliente no puede estar vacío' }, { status: 400 })
     }
 
+    // Limpiar datos antes de enviar a la base de datos
+    const processedData = { ...clientData, updated_at: new Date().toISOString() }
+    
+    // Convertir strings vacíos a null para evitar problemas con constraints
+    if (processedData.cuit === '') processedData.cuit = null
+    if (processedData.website_url === '') processedData.website_url = null
+    if (processedData.email === '') processedData.email = null
+    if (processedData.phone === '') processedData.phone = null
+    if (processedData.address === '') processedData.address = null
+    if (processedData.notes === '') processedData.notes = null
+
     // Actualizar el cliente
     const { data: client, error } = await supabase
       .from('clients')
-      .update({
-        ...clientData,
-        updated_at: new Date().toISOString()
-      })
+      .update(processedData)
       .eq('id', id)
       .select()
       .single()

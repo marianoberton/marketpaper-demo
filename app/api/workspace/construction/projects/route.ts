@@ -115,13 +115,21 @@ export async function POST(request: NextRequest) {
       targetCompanyId = currentUser.company_id
     }
 
+    // Limpiar datos antes de enviar a la base de datos
+    const processedData = { ...projectData, company_id: targetCompanyId }
+    
+    // Convertir strings vacíos a null para evitar problemas
+    if (processedData.barrio === '') processedData.barrio = null
+    if (processedData.ciudad === '') processedData.ciudad = null
+    if (processedData.address === '') processedData.address = null
+    if (processedData.architect === '') processedData.architect = null
+    if (processedData.builder === '') processedData.builder = null
+    if (processedData.notes === '') processedData.notes = null
+
     // Crear el proyecto
     const { data: project, error } = await supabase
       .from('projects')
-      .insert({
-        ...projectData,
-        company_id: targetCompanyId
-      })
+      .insert(processedData)
       .select(`
         *,
         client:clients(*)
@@ -176,14 +184,16 @@ export async function PUT(request: NextRequest) {
 
     // Lista de campos permitidos en la tabla projects
     const allowedFields = [
-      'name', 'address', 'surface', 'architect', 'builder', 'status', 
-      'cover_image_url', 'dgro_file_number', 'project_type', 'project_use',
+      'name', 'address', 'barrio', 'ciudad', 'surface', 'director_obra', 'builder', 'status', 
+      'cover_image_url', 'dgro_file_number', 'project_type', 'project_usage',
       'client_id', 'start_date', 'end_date', 'budget', 'current_stage',
-      'permit_status', 'inspector_name', 'notes', 'projected_total_cost',
+      'permit_status', 'profesionales', 'notes', 'projected_total_cost',
       'paid_total_cost', 'paid_cost_rubro_a', 'paid_cost_rubro_b', 
       'paid_cost_rubro_c', 'last_cost_update', 'enable_tax_management',
       'domain_report_file_url', 'domain_report_upload_date', 
-      'domain_report_expiry_date', 'domain_report_is_valid', 'domain_report_notes'
+      'domain_report_expiry_date', 'domain_report_is_valid', 'domain_report_notes',
+      // Campos de compatibilidad temporal
+      'architect', 'project_use', 'inspector_name'
     ]
     
     // Filtrar solo campos permitidos y con valores definidos
@@ -193,7 +203,10 @@ export async function PUT(request: NextRequest) {
     
     Object.keys(projectData).forEach(key => {
       if (allowedFields.includes(key) && projectData[key] !== undefined) {
-        updateData[key] = projectData[key]
+        let value = projectData[key]
+        // Convertir strings vacíos a null
+        if (value === '') value = null
+        updateData[key] = value
       }
     })
     

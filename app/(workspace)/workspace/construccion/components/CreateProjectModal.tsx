@@ -8,10 +8,11 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { X, Building, MapPin, User, Calendar, DollarSign, FileText, Settings, Upload, Image as ImageIcon, Calculator, CheckCircle, Info } from 'lucide-react'
+import { X, Building, MapPin, User, Calendar, DollarSign, FileText, Settings, Upload, Image as ImageIcon, Calculator, CheckCircle, Info, Plus } from 'lucide-react'
 import { Client, ProjectStage, CreateProjectData } from '@/lib/construction'
 import { uploadProjectImage } from '@/lib/storage'
 import Image from 'next/image'
+import { ProjectProfessional } from '@/lib/construction'
 
 interface CreateProjectModalProps {
   isOpen: boolean
@@ -31,20 +32,21 @@ export default function CreateProjectModal({
   const [formData, setFormData] = useState<CreateProjectData>({
     name: '',
     address: '',
+    barrio: '',
+    ciudad: '',
     surface: undefined,
-    architect: '',
+    director_obra: '',
     builder: '',
     client_id: '',
     start_date: '',
     end_date: '',
     budget: undefined,
-    current_stage: 'Planificación',
-    permit_status: 'Pendiente',
-    inspector_name: '',
+    current_stage: 'Prefactibilidad del proyecto',
+    profesionales: [],
     notes: '',
     dgro_file_number: '',
     project_type: '',
-    project_use: '',
+    project_usage: '',
     cover_image_url: ''
   })
 
@@ -210,7 +212,7 @@ export default function CreateProjectModal({
         start_date: '',
         end_date: '',
         budget: undefined,
-        current_stage: 'Planificación',
+        current_stage: 'Prefactibilidad del proyecto',
         permit_status: 'Pendiente',
         inspector_name: '',
         notes: '',
@@ -247,24 +249,54 @@ export default function CreateProjectModal({
     }
   }
 
+  // Funciones para manejar profesionales
+  const handleProfesionalChange = (index: number, field: keyof ProjectProfessional, value: string) => {
+    setFormData(prev => {
+      const newProfesionales = [...(prev.profesionales || [])]
+      newProfesionales[index] = {
+        ...newProfesionales[index],
+        [field]: value
+      }
+      return {
+        ...prev,
+        profesionales: newProfesionales
+      }
+    })
+  }
+
+  const addProfesional = () => {
+    setFormData(prev => ({
+      ...prev,
+      profesionales: [...(prev.profesionales || []), { name: '', role: 'Estructuralista' as const }]
+    }))
+  }
+
+  const removeProfesional = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      profesionales: (prev.profesionales || []).filter((_, i) => i !== index)
+    }))
+  }
+
   const handleClose = () => {
     setFormData({
       name: '',
       address: '',
+      barrio: '',
+      ciudad: '',
       surface: undefined,
-      architect: '',
+      director_obra: '',
       builder: '',
       client_id: '',
       start_date: '',
       end_date: '',
       budget: undefined,
-      current_stage: 'Planificación',
-      permit_status: 'Pendiente',
-      inspector_name: '',
+      current_stage: 'Prefactibilidad del proyecto',
+      profesionales: [],
       notes: '',
       dgro_file_number: '',
       project_type: '',
-      project_use: '',
+      project_usage: '',
       cover_image_url: ''
     })
     setSelectedImage(null)
@@ -328,10 +360,30 @@ export default function CreateProjectModal({
                     id="address"
                     value={formData.address || ''}
                     onChange={(e) => handleInputChange('address', e.target.value)}
-                    placeholder="Ej: Av. Santa Fe 1234, CABA"
+                    placeholder="Ej: Av. Santa Fe 1234"
                     className={errors.address ? 'border-red-500' : ''}
                   />
                   {errors.address && <p className="text-sm text-red-500 mt-1">{errors.address}</p>}
+                </div>
+
+                <div>
+                  <Label htmlFor="barrio">Barrio</Label>
+                  <Input
+                    id="barrio"
+                    value={formData.barrio || ''}
+                    onChange={(e) => handleInputChange('barrio', e.target.value)}
+                    placeholder="Ej: Palermo"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="ciudad">Ciudad</Label>
+                  <Input
+                    id="ciudad"
+                    value={formData.ciudad || ''}
+                    onChange={(e) => handleInputChange('ciudad', e.target.value)}
+                    placeholder="Ej: CABA"
+                  />
                 </div>
 
                 <div>
@@ -498,30 +550,28 @@ export default function CreateProjectModal({
                       <SelectValue placeholder="Seleccionar tipo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="OBRA NUEVA">Obra Nueva</SelectItem>
-                      <SelectItem value="MODIFICACION Y/O AMPLIACION">Modificación y/o Ampliación</SelectItem>
-                      <SelectItem value="DEMOLICION">Demolición</SelectItem>
-                      <SelectItem value="REPARACION">Reparación</SelectItem>
+                      <SelectItem value="Microobra">Microobra</SelectItem>
+                      <SelectItem value="Obra Menor">Obra Menor</SelectItem>
+                      <SelectItem value="Obra Media">Obra Media</SelectItem>
+                      <SelectItem value="Obra Mayor">Obra Mayor</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div>
-                  <Label htmlFor="project_use">Tipo de Permiso</Label>
+                  <Label htmlFor="project_usage">Tipo de Uso</Label>
                   <Select 
-                    value={formData.project_use} 
-                    onValueChange={(value) => handleInputChange('project_use', value)}
+                    value={formData.project_usage} 
+                    onValueChange={(value) => handleInputChange('project_usage', value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar uso" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="OBRA MAYOR">Obra Mayor</SelectItem>
-                      <SelectItem value="OBRA MENOR">Obra Menor</SelectItem>
-                      <SelectItem value="RESIDENCIAL">Residencial</SelectItem>
-                      <SelectItem value="COMERCIAL">Comercial</SelectItem>
-                      <SelectItem value="INDUSTRIAL">Industrial</SelectItem>
-                      <SelectItem value="MIXTO">Mixto</SelectItem>
+                      <SelectItem value="Vivienda">Vivienda</SelectItem>
+                      <SelectItem value="Comercial">Comercial</SelectItem>
+                      <SelectItem value="Industrial">Industrial</SelectItem>
+                      <SelectItem value="Mixto">Mixto</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -539,12 +589,12 @@ export default function CreateProjectModal({
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="architect">Arquitecto Responsable</Label>
+                  <Label htmlFor="director_obra">Director de Obra</Label>
                   <Input
-                    id="architect"
-                    value={formData.architect}
-                    onChange={(e) => handleInputChange('architect', e.target.value)}
-                    placeholder="Nombre del arquitecto"
+                    id="director_obra"
+                    value={formData.director_obra}
+                    onChange={(e) => handleInputChange('director_obra', e.target.value)}
+                    placeholder="Nombre del director de obra"
                   />
                 </div>
 
@@ -557,33 +607,78 @@ export default function CreateProjectModal({
                     placeholder="Nombre de la constructora"
                   />
                 </div>
+              </div>
 
-                <div>
-                  <Label htmlFor="inspector_name">Inspector Asignado</Label>
-                  <Input
-                    id="inspector_name"
-                    value={formData.inspector_name}
-                    onChange={(e) => handleInputChange('inspector_name', e.target.value)}
-                    placeholder="Nombre del inspector"
-                  />
+              {/* Otros Profesionales */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <User className="h-5 w-5 text-green-600" />
+                  <h4 className="text-lg font-semibold">Otros Profesionales</h4>
                 </div>
 
-                <div>
-                  <Label htmlFor="permit_status">Estado del Permiso</Label>
-                  <Select 
-                    value={formData.permit_status} 
-                    onValueChange={(value) => handleInputChange('permit_status', value)}
+                <div className="space-y-3">
+                  {formData.profesionales?.map((profesional, index) => (
+                    <div key={index} className="flex gap-3 items-end">
+                      <div className="flex-1">
+                        <Label htmlFor={`profesional-name-${index}`}>
+                          Nombre del Profesional
+                        </Label>
+                        <Input
+                          id={`profesional-name-${index}`}
+                          value={profesional.name}
+                          onChange={(e) => handleProfesionalChange(index, 'name', e.target.value)}
+                          placeholder="Nombre completo"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <Label htmlFor={`profesional-role-${index}`}>
+                          Especialidad/Rol
+                        </Label>
+                        <Select
+                          value={profesional.role}
+                          onValueChange={(value) => handleProfesionalChange(index, 'role', value as ProjectProfessional['role'])}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Estructuralista">Estructuralista</SelectItem>
+                            <SelectItem value="Proyectista">Proyectista</SelectItem>
+                            <SelectItem value="Instalación Electrica">Instalación Eléctrica</SelectItem>
+                            <SelectItem value="Instalación Sanitaria">Instalación Sanitaria</SelectItem>
+                            <SelectItem value="Instalación e incendios">Instalación e Incendios</SelectItem>
+                            <SelectItem value="Instalación e elevadores">Instalación e Elevadores</SelectItem>
+                            <SelectItem value="Instalación Sala de maquinas">Instalación Sala de Máquinas</SelectItem>
+                            <SelectItem value="Instalación Ventilación Mecanica">Instalación Ventilación Mecánica</SelectItem>
+                            <SelectItem value="Instalación ventilación electromecánica">Instalación Ventilación Electromecánica</SelectItem>
+                            <SelectItem value="Agrimensor">Agrimensor</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {formData.profesionales && formData.profesionales.length > 0 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeProfesional(index)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addProfesional}
+                    className="w-full"
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Estado del permiso" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Pendiente">Pendiente</SelectItem>
-                      <SelectItem value="En trámite">En trámite</SelectItem>
-                      <SelectItem value="Aprobado">Aprobado</SelectItem>
-                      <SelectItem value="Rechazado">Rechazado</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Agregar Profesional
+                  </Button>
                 </div>
               </div>
             </div>

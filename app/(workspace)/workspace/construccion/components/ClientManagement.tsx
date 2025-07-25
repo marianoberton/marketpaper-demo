@@ -23,9 +23,10 @@ import {
   UserCheck,
   Calendar,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Users
 } from 'lucide-react'
-import { Client, CreateClientData } from '@/lib/construction'
+import { Client, CreateClientData, ClientReferente } from '@/lib/construction'
 
 interface ClientManagementProps {
   clients: Client[]
@@ -45,6 +46,9 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
     email: '',
     phone: '',
     address: '',
+    cuit: '',
+    website_url: '',
+    referentes: [{ name: '', role: '' }],
     contact_person: '',
     notes: ''
   })
@@ -69,6 +73,11 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
       newErrors.email = 'El email no tiene un formato válido'
     }
 
+    // Validar que al menos el primer referente tenga nombre
+    if (!formData.referentes || formData.referentes.length === 0 || !formData.referentes[0].name.trim()) {
+      newErrors.referentes = 'Debe agregar al menos un referente'
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -79,6 +88,9 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
       email: '',
       phone: '',
       address: '',
+      cuit: '',
+      website_url: '',
+      referentes: [{ name: '', role: '' }],
       contact_person: '',
       notes: ''
     })
@@ -115,6 +127,11 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
       email: client.email || '',
       phone: client.phone || '',
       address: client.address || '',
+      cuit: client.cuit || '',
+      website_url: client.website_url || '',
+      referentes: client.referentes && client.referentes.length > 0 
+        ? client.referentes 
+        : [{ name: client.contact_person || '', role: '' }],
       contact_person: client.contact_person || '',
       notes: client.notes || ''
     })
@@ -136,6 +153,29 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
         return newErrors
       })
     }
+  }
+
+  const handleReferenteChange = (index: number, field: keyof ClientReferente, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      referentes: prev.referentes?.map((ref, i) => 
+        i === index ? { ...ref, [field]: value } : ref
+      ) || []
+    }))
+  }
+
+  const addReferente = () => {
+    setFormData(prev => ({
+      ...prev,
+      referentes: [...(prev.referentes || []), { name: '', role: '' }]
+    }))
+  }
+
+  const removeReferente = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      referentes: prev.referentes?.filter((_, i) => i !== index) || []
+    }))
   }
 
   const handleDeleteClient = async () => {
@@ -256,18 +296,18 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
                     />
                   </div>
 
-                  <div className="md:col-span-2">
-                    <Label htmlFor="contact_person">Persona de Contacto</Label>
+                  <div>
+                    <Label htmlFor="cuit">CUIT</Label>
                     <Input
-                      id="contact_person"
-                      value={formData.contact_person}
-                      onChange={(e) => handleInputChange('contact_person', e.target.value)}
-                      placeholder="Nombre del contacto principal"
+                      id="cuit"
+                      value={formData.cuit}
+                      onChange={(e) => handleInputChange('cuit', e.target.value)}
+                      placeholder="20-12345678-9"
                     />
                   </div>
 
                   <div className="md:col-span-2">
-                    <Label htmlFor="address">Dirección</Label>
+                    <Label htmlFor="address">Domicilio</Label>
                     <Input
                       id="address"
                       value={formData.address}
@@ -277,17 +317,89 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
                   </div>
 
                   <div className="md:col-span-2">
-                    <Label htmlFor="notes">Notas y Observaciones</Label>
-                    <Textarea
-                      id="notes"
-                      value={formData.notes}
-                      onChange={(e) => handleInputChange('notes', e.target.value)}
-                      placeholder="Información adicional sobre el cliente..."
-                      rows={3}
+                    <Label htmlFor="website_url">URL de su web</Label>
+                    <Input
+                      id="website_url"
+                      value={formData.website_url}
+                      onChange={(e) => handleInputChange('website_url', e.target.value)}
+                      placeholder="https://www.empresa.com.ar"
                     />
                   </div>
                 </div>
               </div>
+
+              {/* Referentes */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Users className="h-5 w-5 text-blue-600" />
+                  <h4 className="text-lg font-semibold">Referentes</h4>
+                </div>
+                
+                <div className="space-y-3">
+                  {formData.referentes?.map((referente, index) => (
+                    <div key={index} className="flex gap-3 items-end">
+                      <div className="flex-1">
+                        <Label htmlFor={`referente-name-${index}`}>
+                          Nombre del Referente {index === 0 && <span className="text-red-500">*</span>}
+                        </Label>
+                        <Input
+                          id={`referente-name-${index}`}
+                          value={referente.name}
+                          onChange={(e) => handleReferenteChange(index, 'name', e.target.value)}
+                          placeholder="Nombre completo"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <Label htmlFor={`referente-role-${index}`}>
+                          Rol/Descripción
+                        </Label>
+                        <Input
+                          id={`referente-role-${index}`}
+                          value={referente.role}
+                          onChange={(e) => handleReferenteChange(index, 'role', e.target.value)}
+                          placeholder="Ej: Director General, Gerente de Proyectos"
+                        />
+                      </div>
+                      {formData.referentes && formData.referentes.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeReferente(index)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addReferente}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Agregar Referente
+                  </Button>
+                </div>
+              </div>
+
+                             {/* Notas */}
+               <div className="space-y-4">
+                 <div className="md:col-span-2">
+                   <Label htmlFor="notes">Notas y Observaciones</Label>
+                   <Textarea
+                     id="notes"
+                     value={formData.notes}
+                     onChange={(e) => handleInputChange('notes', e.target.value)}
+                     placeholder="Información adicional sobre el cliente..."
+                     rows={3}
+                   />
+                 </div>
+               </div>
 
               <div className="flex justify-end gap-3 pt-6 border-t">
                 <Button type="button" variant="outline" onClick={resetForm}>
@@ -348,14 +460,30 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
                   </CardHeader>
                   
                   <CardContent className="space-y-3">
-                    {client.contact_person && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <UserCheck className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Contacto:</span>
-                        <span className="font-medium">{client.contact_person}</span>
+                    {/* Referentes */}
+                    {client.referentes && client.referentes.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                          <Users className="h-4 w-4" />
+                          <span>Referentes:</span>
+                        </div>
+                        {client.referentes.slice(0, 2).map((referente, index) => (
+                          <div key={index} className="ml-6 text-sm">
+                            <span className="font-medium">{referente.name}</span>
+                            {referente.role && (
+                              <span className="text-muted-foreground"> - {referente.role}</span>
+                            )}
+                          </div>
+                        ))}
+                        {client.referentes.length > 2 && (
+                          <div className="ml-6 text-xs text-muted-foreground">
+                            +{client.referentes.length - 2} referente(s) más
+                          </div>
+                        )}
                       </div>
                     )}
-                    
+
+                    {/* Información de contacto */}
                     {client.email && (
                       <div className="flex items-center gap-2 text-sm">
                         <Mail className="h-4 w-4 text-muted-foreground" />
@@ -369,11 +497,32 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
                         <span className="text-muted-foreground">{client.phone}</span>
                       </div>
                     )}
+
+                    {client.cuit && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-muted-foreground">CUIT: {client.cuit}</span>
+                      </div>
+                    )}
                     
                     {client.address && (
                       <div className="flex items-center gap-2 text-sm">
                         <MapPin className="h-4 w-4 text-muted-foreground" />
                         <span className="text-muted-foreground text-sm leading-tight">{client.address}</span>
+                      </div>
+                    )}
+
+                    {client.website_url && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Building className="h-4 w-4 text-muted-foreground" />
+                        <a 
+                          href={client.website_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 truncate text-sm"
+                        >
+                          {client.website_url}
+                        </a>
                       </div>
                     )}
 

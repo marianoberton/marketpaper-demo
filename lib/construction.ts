@@ -1,6 +1,18 @@
 import { createClient } from '@/utils/supabase/client'
 
 // Definir tipos básicos sin importar database.types
+export type ClientReferente = {
+  id?: string
+  name: string
+  role: string // descripción/rol del referente
+}
+
+export type ProjectProfessional = {
+  id?: string
+  name: string
+  role: 'Estructuralista' | 'Proyectista' | 'Instalación Electrica' | 'Instalación Sanitaria' | 'Instalación e incendios' | 'Instalación e elevadores' | 'Instalación Sala de maquinas' | 'Instalación Ventilación Mecanica' | 'Instalación ventilación electromecánica' | 'Agrimensor'
+}
+
 export type Client = {
   id: string
   company_id: string
@@ -8,7 +20,10 @@ export type Client = {
   email?: string | null
   phone?: string | null
   address?: string | null
-  contact_person?: string | null
+  cuit?: string | null
+  website_url?: string | null
+  referentes?: ClientReferente[] | null
+  contact_person?: string | null // Mantenemos por compatibilidad temporal
   notes?: string | null
   created_at: string
   updated_at: string
@@ -19,27 +34,34 @@ export type Project = {
   company_id: string
   name: string
   address?: string | null
+  barrio?: string | null
+  ciudad?: string | null
   surface?: number | null
-  architect?: string | null
+  director_obra?: string | null
   builder?: string | null
   status?: string | null
   current_stage?: string | null
   cover_image_url?: string | null
   dgro_file_number?: string | null
   project_type?: string | null
-  project_use?: string | null
+  project_usage?: string | null
   permit_status?: string | null
   client_id?: string | null
   start_date?: string | null
   end_date?: string | null
   budget?: number | null
-  inspector_name?: string | null
+  profesionales?: ProjectProfessional[] | null
   notes?: string | null
   created_at: string
   updated_at: string
   client?: Client
   sections?: ProjectSection[]
   status_history?: ProjectStatusHistory[]
+  
+  // Campos de compatibilidad temporal
+  architect?: string | null // @deprecated - usar director_obra
+  project_use?: string | null // @deprecated - usar project_usage  
+  inspector_name?: string | null // @deprecated - usar profesionales
   
   // Informe de Dominio
   domain_report_file_url?: string | null
@@ -193,21 +215,22 @@ export type ProjectStatusHistory = {
 export type CreateProjectData = {
   name: string
   address?: string
+  barrio?: string
+  ciudad?: string
   surface?: number
-  architect?: string
+  director_obra?: string
   builder?: string
   client_id?: string
   start_date?: string
   end_date?: string
   budget?: number
   current_stage?: string
-  permit_status?: string
-  inspector_name?: string
+  profesionales?: ProjectProfessional[]
   notes?: string
   cover_image_url?: string
   dgro_file_number?: string
   project_type?: string
-  project_use?: string
+  project_usage?: string
   
   // Informe de Dominio
   domain_report_file_url?: string
@@ -216,6 +239,12 @@ export type CreateProjectData = {
   // Tasas y Gravámenes Gubernamentales
   projected_total_cost?: number
   enable_tax_management?: boolean
+  
+  // Campos de compatibilidad temporal
+  architect?: string // @deprecated - usar director_obra
+  project_use?: string // @deprecated - usar project_usage
+  permit_status?: string // @deprecated - se eliminó del formulario
+  inspector_name?: string // @deprecated - usar profesionales
 }
 
 export type UpdateProjectData = Partial<CreateProjectData> & {
@@ -227,7 +256,10 @@ export type CreateClientData = {
   email?: string
   phone?: string
   address?: string
-  contact_person?: string
+  cuit?: string
+  website_url?: string
+  referentes?: ClientReferente[]
+  contact_person?: string // Mantenemos por compatibilidad temporal
   notes?: string
 }
 
@@ -561,7 +593,13 @@ export const mockClients: Client[] = [
     email: 'taboada.cora@email.com',
     phone: '+54 11 1234-5678',
     address: 'Av. Corrientes 1234, CABA',
-    contact_person: 'Raquel Taboada',
+    cuit: '20-12345678-9',
+    website_url: 'https://taboada-construcciones.com.ar',
+    referentes: [
+      { name: 'Raquel Taboada', role: 'Directora General' },
+      { name: 'Carlos Taboada', role: 'Ingeniero Jefe' }
+    ],
+    contact_person: 'Raquel Taboada', // Compatibilidad temporal
     notes: 'Cliente VIP - Prioridad alta',
     created_at: '2024-01-15T10:00:00Z',
     updated_at: '2024-01-15T10:00:00Z'
@@ -573,7 +611,13 @@ export const mockClients: Client[] = [
     email: 'info@desarrollosurbanos.com',
     phone: '+54 11 9876-5432',
     address: 'Puerto Madero 567, CABA',
-    contact_person: 'María González',
+    cuit: '30-98765432-1',
+    website_url: 'https://desarrollosurbanos.com',
+    referentes: [
+      { name: 'María González', role: 'Gerente de Proyectos' },
+      { name: 'Roberto Silva', role: 'Director Comercial' }
+    ],
+    contact_person: 'María González', // Compatibilidad temporal
     notes: 'Desarrollador inmobiliario - Múltiples proyectos',
     created_at: '2024-02-01T10:00:00Z',
     updated_at: '2024-02-01T10:00:00Z'
@@ -581,43 +625,120 @@ export const mockClients: Client[] = [
 ]
 
 export const mockProjectStages: ProjectStage[] = [
+  // PREFACTIBILIDAD DEL PROYECTO
   {
     id: '1',
     company_id: '1',
-    name: 'Planificación',
-    description: 'Fase inicial de planificación del proyecto',
+    name: 'Prefactibilidad del proyecto',
+    description: 'Evaluación inicial y análisis de viabilidad del proyecto',
     order: 1,
-    color: '#6B7280',
+    color: '#8B5CF6', // Púrpura
     is_active: true,
     created_at: '2024-01-01T10:00:00Z'
   },
+  
+  // EN GESTORIA
   {
     id: '2',
     company_id: '1',
-    name: 'Permisos',
-    description: 'Tramitación de permisos municipales',
+    name: 'Consulta DGIUR',
+    description: 'Consulta a la Dirección General de Interpretación Urbanística',
     order: 2,
-    color: '#F59E0B',
+    color: '#F59E0B', // Amarillo
     is_active: true,
     created_at: '2024-01-01T10:00:00Z'
   },
   {
     id: '3',
     company_id: '1',
-    name: 'AVO 3',
-    description: 'Apto Verificación de Obra 3',
-    order: 8,
-    color: '#10B981',
+    name: 'Registro etapa de proyecto',
+    description: 'Registro formal del proyecto en los organismos correspondientes',
+    order: 3,
+    color: '#F59E0B', // Amarillo
     is_active: true,
     created_at: '2024-01-01T10:00:00Z'
   },
   {
     id: '4',
     company_id: '1',
-    name: 'Finalización',
-    description: 'Obra completada',
+    name: 'Permiso de obra',
+    description: 'Obtención del permiso municipal de construcción',
+    order: 4,
+    color: '#F59E0B', // Amarillo
+    is_active: true,
+    created_at: '2024-01-01T10:00:00Z'
+  },
+  
+  // EN EJECUCIÓN DE OBRA
+  {
+    id: '5',
+    company_id: '1',
+    name: 'Demolición',
+    description: 'Trabajos de demolición y preparación del terreno',
+    order: 5,
+    color: '#EF4444', // Rojo
+    is_active: true,
+    created_at: '2024-01-01T10:00:00Z'
+  },
+  {
+    id: '6',
+    company_id: '1',
+    name: 'Excavación',
+    description: 'Trabajos de excavación y movimiento de suelos',
+    order: 6,
+    color: '#EF4444', // Rojo
+    is_active: true,
+    created_at: '2024-01-01T10:00:00Z'
+  },
+  {
+    id: '7',
+    company_id: '1',
+    name: 'AVO 1',
+    description: 'Apto Verificación de Obra 1 - Estructura',
+    order: 7,
+    color: '#10B981', // Verde
+    is_active: true,
+    created_at: '2024-01-01T10:00:00Z'
+  },
+  {
+    id: '8',
+    company_id: '1',
+    name: 'AVO 2',
+    description: 'Apto Verificación de Obra 2 - Instalaciones',
+    order: 8,
+    color: '#10B981', // Verde
+    is_active: true,
+    created_at: '2024-01-01T10:00:00Z'
+  },
+  {
+    id: '9',
+    company_id: '1',
+    name: 'AVO 3',
+    description: 'Apto Verificación de Obra 3 - Terminaciones',
+    order: 9,
+    color: '#10B981', // Verde
+    is_active: true,
+    created_at: '2024-01-01T10:00:00Z'
+  },
+  
+  // FINALIZACIÓN
+  {
+    id: '10',
+    company_id: '1',
+    name: 'Conforme de obra',
+    description: 'Obtención del conforme final de obra',
+    order: 10,
+    color: '#059669', // Verde oscuro
+    is_active: true,
+    created_at: '2024-01-01T10:00:00Z'
+  },
+  {
+    id: '11',
+    company_id: '1',
+    name: 'MH-SUBDIVISION',
+    description: 'Certificado de Mensura y Subdivisión',
     order: 11,
-    color: '#059669',
+    color: '#059669', // Verde oscuro
     is_active: true,
     created_at: '2024-01-01T10:00:00Z'
   }

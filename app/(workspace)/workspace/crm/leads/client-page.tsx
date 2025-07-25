@@ -15,6 +15,7 @@ import {
   Webhook
 } from "lucide-react";
 import ContactLeadsManager from "./components/ContactLeadsManager";
+import PymeLeadsManager from "./components/PymeLeadsManager";
 
 export default function LeadsClientPage() {
   return (
@@ -26,10 +27,10 @@ export default function LeadsClientPage() {
           accentColor="orange"
         />
 
-        <Tabs defaultValue="contact-leads" className="space-y-6">
+        <Tabs defaultValue="contact-leads" className="space-y-4">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="contact-leads">Contact Leads</TabsTrigger>
-            <TabsTrigger value="traditional-leads">Leads Tradicionales</TabsTrigger>
+            <TabsTrigger value="pyme-leads">PYME Leads</TabsTrigger>
             <TabsTrigger value="integration">Integración</TabsTrigger>
           </TabsList>
 
@@ -37,25 +38,8 @@ export default function LeadsClientPage() {
             <ContactLeadsManager />
           </TabsContent>
 
-          <TabsContent value="traditional-leads">
-            <Card>
-              <CardHeader>
-                <CardTitle>Leads Tradicionales</CardTitle>
-                <CardDescription>
-                  Sistema de leads tradicional - próximamente integrado con Contact Leads
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  <Users className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                  <h3 className="text-lg font-semibold mb-2">Sistema Tradicional</h3>
-                  <p className="mb-4">
-                    Esta sección será integrada con el nuevo sistema de Contact Leads
-                  </p>
-                  <Badge variant="outline">Próximamente</Badge>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="pyme-leads">
+            <PymeLeadsManager />
           </TabsContent>
 
           <TabsContent value="integration">
@@ -64,133 +48,155 @@ export default function LeadsClientPage() {
                 <CardHeader>
                   <CardTitle>Integración con Formularios Web</CardTitle>
                   <CardDescription>
-                    Configura la captura automática de leads desde tu sitio web
+                    Captura automática de leads desde tu sitio web
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="bg-muted/50 rounded-lg p-4">
-                    <h4 className="font-semibold mb-2 flex items-center gap-2">
-                      <Webhook className="h-4 w-4" />
-                      Endpoint de Captura
-                    </h4>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Utiliza este endpoint para enviar leads desde tu formulario web:
-                    </p>
-                    <code className="block bg-background p-2 rounded text-sm">
-                      POST /api/webhook/contact-lead
-                    </code>
-                  </div>
-
-                  <div className="bg-muted/50 rounded-lg p-4">
-                    <h4 className="font-semibold mb-2 flex items-center gap-2">
-                      <Code className="h-4 w-4" />
-                      Ejemplo de Implementación
-                    </h4>
-                    <pre className="text-xs bg-background p-3 rounded overflow-x-auto">
-{`// Ejemplo JavaScript para formularios web
-fetch('/api/webhook/contact-lead', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    company_id: 'tu-company-id',
-    name: 'Nombre del Lead',
-    email: 'email@ejemplo.com',
-    company: 'Empresa del Lead',
-    pain_point: 'Problema o necesidad',
-    phone: '+34 600 000 000', // opcional
-    website: 'https://ejemplo.com', // opcional
-    source: 'website_form',
-    utm_source: 'google',
-    utm_medium: 'cpc',
-    utm_campaign: 'brand-awareness'
-  })
-})
-.then(response => response.json())
-.then(data => {
-  if (data.success) {
-    console.log('Lead capturado:', data.contact_lead);
-  }
-});`}
-                    </pre>
-                  </div>
-
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-semibold mb-2 text-blue-900">Características Clave</h4>
-                    <ul className="text-sm text-blue-800 space-y-1">
-                      <li>• Captura automática desde formularios web</li>
-                      <li>• Lead scoring automático basado en criterios inteligentes</li>
-                      <li>• Prevención de duplicados por email</li>
-                      <li>• Tracking de UTM parameters para analytics</li>
-                      <li>• Notificaciones automáticas al equipo de ventas</li>
-                      <li>• Compatibilidad con CORS para dominios externos</li>
-                    </ul>
-                  </div>
-
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <h4 className="font-semibold mb-2 text-green-900 flex items-center gap-2">
-                      <Target className="h-4 w-4" />
-                      Próximas Integraciones
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <strong className="text-green-800">Redes Sociales:</strong>
-                        <ul className="text-green-700 mt-1">
-                          <li>• Facebook Lead Ads</li>
-                          <li>• Instagram Lead Forms</li>
-                          <li>• LinkedIn Lead Gen Forms</li>
-                        </ul>
+                <CardContent>
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {/* Contact Leads Integration */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Globe className="h-5 w-5 text-blue-600" />
+                        <h3 className="text-lg font-semibold">Contact Leads API</h3>
                       </div>
-                      <div>
-                        <strong className="text-green-800">Plataformas de Marketing:</strong>
-                        <ul className="text-green-700 mt-1">
-                          <li>• Google Ads</li>
-                          <li>• Mailchimp</li>
-                          <li>• HubSpot (Webhook)</li>
-                        </ul>
+                      <p className="text-sm text-muted-foreground">
+                        Para formularios de contacto general y captura de leads estándar
+                      </p>
+                      <div className="bg-muted/50 rounded-lg p-3">
+                        <p className="text-sm font-mono">
+                          POST /api/webhook/contact-lead
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Badge variant="outline">JSON</Badge>
+                        <Badge variant="outline">Webhook</Badge>
+                        <Badge variant="outline">CORS Enabled</Badge>
+                      </div>
+                    </div>
+
+                    {/* PYME Leads Integration */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Target className="h-5 w-5 text-green-600" />
+                        <h3 className="text-lg font-semibold">PYME Leads API</h3>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Para formularios específicos de PYMEs con scoring inteligente
+                      </p>
+                      <div className="bg-muted/50 rounded-lg p-3">
+                        <p className="text-sm font-mono">
+                          POST /api/webhook/pyme-leads
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Badge variant="outline">JSON</Badge>
+                        <Badge variant="outline">Auto-Scoring</Badge>
+                        <Badge variant="outline">Priority Detection</Badge>
                       </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
+              {/* Formularios de Ejemplo */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Documentación Técnica</CardTitle>
+                  <CardTitle>Formularios de Ejemplo</CardTitle>
                   <CardDescription>
-                    Guías detalladas para implementar la captura de leads
+                    Ejemplos listos para usar en tu sitio web
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid gap-4 md:grid-cols-2">
-                    <div className="border rounded-lg p-4">
-                      <h4 className="font-semibold mb-2">Guía de Integración</h4>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Paso a paso para configurar formularios web
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Code className="h-4 w-4" />
+                        <span className="font-medium">Contact Lead Form</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Formulario estándar de contacto
                       </p>
-                      <a
-                        href="/workspace/crm/documentation"
-                        className="text-blue-600 hover:underline text-sm flex items-center gap-1"
-                      >
-                        Ver documentación
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
+                      <div className="flex gap-2">
+                        <a 
+                          href="/contact-lead-form-example.html" 
+                          target="_blank"
+                          className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          Ver Ejemplo HTML
+                        </a>
+                      </div>
                     </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Code className="h-4 w-4" />
+                        <span className="font-medium">PYME Lead Form</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Formulario específico para PYMEs
+                      </p>
+                      <div className="flex gap-2">
+                        <a 
+                          href="/pyme-lead-form-example.html" 
+                          target="_blank"
+                          className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                        >
+                          <ExternalLink className="h-3 w-3" />
+                          Ver Ejemplo HTML
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-                    <div className="border rounded-lg p-4">
-                      <h4 className="font-semibold mb-2">API Reference</h4>
+              {/* Widgets JavaScript */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Widgets JavaScript</CardTitle>
+                  <CardDescription>
+                    Agrega fácilmente formularios a cualquier página
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <h4 className="font-medium mb-2">PYME Lead Widget</h4>
                       <p className="text-sm text-muted-foreground mb-3">
-                        Documentación completa de la API
+                        Widget JavaScript listo para usar
                       </p>
-                      <a
-                        href="/workspace/crm/documentation"
-                        className="text-blue-600 hover:underline text-sm flex items-center gap-1"
-                      >
-                        Ver API docs
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
+                      <div className="bg-background border rounded p-3 text-sm font-mono">
+                        {`<script src="/pyme-lead-widget.js"></script>
+<div id="pyme-lead-form"></div>`}
+                      </div>
                     </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Documentación */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Documentación Completa</CardTitle>
+                  <CardDescription>
+                    Guías detalladas de implementación
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex gap-4">
+                    <Badge variant="outline" className="cursor-pointer hover:bg-muted">
+                      <Webhook className="h-3 w-3 mr-1" />
+                      API Reference
+                    </Badge>
+                    <Badge variant="outline" className="cursor-pointer hover:bg-muted">
+                      <Code className="h-3 w-3 mr-1" />
+                      Code Examples
+                    </Badge>
+                    <Badge variant="outline" className="cursor-pointer hover:bg-muted">
+                      <TrendingUp className="h-3 w-3 mr-1" />
+                      Lead Scoring Guide
+                    </Badge>
                   </div>
                 </CardContent>
               </Card>

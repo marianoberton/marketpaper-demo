@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Leads para PYMEs - FOMO Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .form-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .form-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .form-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .form-header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        
+        .form-body {
+            padding: 40px 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+            font-size: 14px;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            background: #fafafa;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .required {
+            color: #ef4444;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            margin-top: 10px;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .success-message {
+            background: #10b981;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .error-message {
+            background: #ef4444;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            margin-right: 10px;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <div class="form-header">
+            <h1>Impulsa tu PYME</h1>
+            <p>Descubre cómo FOMO Platform puede transformar tu negocio</p>
+        </div>
+        
+        <div class="form-body">
+            <div id="successMessage" class="success-message">
+                ¡Gracias por tu interés! Nos pondremos en contacto contigo pronto.
+            </div>
+            
+            <div id="errorMessage" class="error-message">
+                Ha ocurrido un error. Por favor, inténtalo de nuevo.
+            </div>
+            
+            <form id="pymeLeadForm">
+                <div class="form-group">
+                    <label for="full_name">Nombre Completo <span class="required">*</span></label>
+                    <input type="text" id="full_name" name="full_name" required placeholder="Ej: Juan Pérez">
+                </div>
+                
+                <div class="form-group">
+                    <label for="company">Empresa <span class="required">*</span></label>
+                    <input type="text" id="company" name="company" required placeholder="Ej: Mi Empresa SRL">
+                </div>
+                
+                <div class="form-group">
+                    <label for="position">Cargo/Puesto <span class="required">*</span></label>
+                    <select id="position" name="position" required>
+                        <option value="">Selecciona tu puesto</option>
+                        <option value="CEO">CEO</option>
+                        <option value="Fundador">Fundador</option>
+                        <option value="Director General">Director General</option>
+                        <option value="Director">Director</option>
+                        <option value="Gerente General">Gerente General</option>
+                        <option value="Gerente">Gerente</option>
+                        <option value="Jefe">Jefe</option>
+                        <option value="Coordinador">Coordinador</option>
+                        <option value="Responsable">Responsable</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email <span class="required">*</span></label>
+                    <input type="email" id="email" name="email" required placeholder="juan@miempresa.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="phone">Teléfono WhatsApp <span class="required">*</span></label>
+                    <input type="tel" id="phone" name="phone" required placeholder="+54 11 1234-5678">
+                </div>
+                
+                <div class="form-group">
+                    <label for="website">Sitio Web</label>
+                    <input type="url" id="website" name="website" placeholder="https://miempresa.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="country">País <span class="required">*</span></label>
+                    <select id="country" name="country" required>
+                        <option value="">Selecciona tu país</option>
+                        <option value="Argentina">Argentina</option>
+                        <option value="México">México</option>
+                        <option value="Colombia">Colombia</option>
+                        <option value="Chile">Chile</option>
+                        <option value="Perú">Perú</option>
+                        <option value="España">España</option>
+                        <option value="Estados Unidos">Estados Unidos</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="monthly_revenue">Facturación Mensual <span class="required">*</span></label>
+                    <select id="monthly_revenue" name="monthly_revenue" required>
+                        <option value="">Selecciona el rango</option>
+                        <option value="menos de $100k">Menos de $100k</option>
+                        <option value="$100k - $500k">$100k - $500k</option>
+                        <option value="$500k - $2 millones">$500k - $2 millones</option>
+                        <option value="$2 - $50 millones">$2 - $50 millones</option>
+                        <option value="$50 - $100 millones">$50 - $100 millones</option>
+                        <option value="$100 - $500 millones">$100 - $500 millones</option>
+                        <option value="más de $500 millones">Más de $500 millones</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="how_found_us">¿Cómo nos conociste? <span class="required">*</span></label>
+                    <select id="how_found_us" name="how_found_us" required>
+                        <option value="">Selecciona una opción</option>
+                        <option value="Google / Búsqueda web">Google / Búsqueda web</option>
+                        <option value="LinkedIn">LinkedIn</option>
+                        <option value="Redes sociales">Redes sociales</option>
+                        <option value="Referencia">Referencia</option>
+                        <option value="Recomendación">Recomendación</option>
+                        <option value="Evento / Conferencia">Evento / Conferencia</option>
+                        <option value="Publicidad online">Publicidad online</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="additional_info">Información Adicional</label>
+                    <textarea id="additional_info" name="additional_info" placeholder="Cuéntanos más sobre tu empresa y qué necesidades tienes..."></textarea>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    Solicitar Información
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('pymeLeadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const successMessage = document.getElementById('successMessage');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Ocultar mensajes previos
+            successMessage.style.display = 'none';
+            errorMessage.style.display = 'none';
+            
+            // Deshabilitar botón y mostrar loading
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="loading"></span>Enviando...';
+            
+            try {
+                // Recopilar datos del formulario
+                const formData = new FormData(this);
+                const data = Object.fromEntries(formData.entries());
+                
+                // Agregar información técnica para tracking
+                data.user_agent = navigator.userAgent;
+                data.referrer = document.referrer;
+                data.page_url = window.location.href;
+                
+                // Agregar parámetros UTM si existen
+                const urlParams = new URLSearchParams(window.location.search);
+                data.utm_source = urlParams.get('utm_source') || null;
+                data.utm_medium = urlParams.get('utm_medium') || null;
+                data.utm_campaign = urlParams.get('utm_campaign') || null;
+                data.utm_content = urlParams.get('utm_content') || null;
+                data.utm_term = urlParams.get('utm_term') || null;
+                
+                // ⚠️ IMPORTANTE: Cambiar esta URL por la de tu servidor
+                const response = await fetch('/api/webhook/pyme-leads', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    // Mostrar mensaje de éxito
+                    successMessage.style.display = 'block';
+                    
+                    // Limpiar formulario
+                    this.reset();
+                    
+                    // Log para analytics (opcional)
+                    console.log('Lead capturado:', {
+                        leadId: result.leadId,
+                        score: result.lead_score,
+                        priority: result.priority
+                    });
+                    
+                    // Opcional: Enviar evento a Google Analytics
+                    if (typeof gtag !== 'undefined') {
+                        gtag('event', 'lead_captured', {
+                            'event_category': 'pyme_form',
+                            'event_label': 'pyme_lead_submission',
+                            'value': result.lead_score
+                        });
+                    }
+                    
+                } else {
+                    throw new Error(result.error || 'Error desconocido');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                errorMessage.textContent = error.message || 'Ha ocurrido un error. Por favor, inténtalo de nuevo.';
+                errorMessage.style.display = 'block';
+                
+            } finally {
+                // Rehabilitar botón
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Solicitar Información';
+            }
+        });
+        
+        // Opcional: Validación en tiempo real
+        document.querySelectorAll('input[required], select[required], textarea[required]').forEach(input => {
+            input.addEventListener('blur', function() {
+                if (this.value.trim() === '') {
+                    this.style.borderColor = '#ef4444';
+                } else {
+                    this.style.borderColor = '#10b981';
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

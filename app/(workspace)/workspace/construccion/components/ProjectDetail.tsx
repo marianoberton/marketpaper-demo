@@ -30,11 +30,12 @@ import {
   Trash2,
   Camera,
   Image as ImageIcon,
-  Plus
+  Plus,
+  X
 } from 'lucide-react'
 import Image from 'next/image'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Project, mockProjectStages } from '@/lib/construction'
+import { Project, mockProjectStages, ProjectProfessional } from '@/lib/construction'
 import { uploadProjectImage } from '@/lib/storage'
 import DomainReportSection from './DomainReportSection'
 import GovernmentTaxesSection from './GovernmentTaxesSection'
@@ -47,38 +48,39 @@ interface ProjectDetailProps {
   onDeleteProject?: (projectId: string) => void
 }
 
-// Verificaciones con opciones de carga de documentos
+// Verificaciones actualizadas según nuevas etapas
 const verificationRequests = [
+  { name: 'Consulta DGIUR', required: true },
+  { name: 'Registro etapa de proyecto', required: true },
+  { name: 'Permiso de obra', required: true },
   { name: 'Demolición', required: false },
-  { name: 'Demolición final', required: false },
-  { name: 'Inicio de obra', required: false },
-  { name: 'Excavación al 10%', required: false },
-  { name: 'Excavación al 50%', required: false },
+  { name: 'Excavación', required: false },
   { name: 'AVO 1', required: true },
   { name: 'AVO 2', required: true },
   { name: 'AVO 3', required: true },
-  { name: 'AVO 4', required: false }
+  { name: 'Conforme de obra', required: true },
+  { name: 'MH-SUBDIVISION', required: true }
 ]
 
 
 
-// Etapas más compactas
+// Etapas reorganizadas según nueva estructura
 const projectPhases = [
   {
-    name: 'Planificación',
-    stages: ['Planificación']
+    name: 'Prefactibilidad del proyecto',
+    stages: ['Prefactibilidad del proyecto']
   },
   {
-    name: 'Permisos',
-    stages: ['Permisos']
+    name: 'En Gestoria',
+    stages: ['Consulta DGIUR', 'Registro etapa de proyecto', 'Permiso de obra']
   },
   {
-    name: 'Construcción',
-    stages: ['AVO 1', 'AVO 2', 'AVO 3', 'AVO 4', 'Finalización']
+    name: 'En ejecución de obra',
+    stages: ['Demolición', 'Excavación', 'AVO 1', 'AVO 2', 'AVO 3']
   },
   {
-    name: 'Especiales',
-    stages: ['Paralización']
+    name: 'Finalización',
+    stages: ['Conforme de obra', 'MH-SUBDIVISION']
   }
 ]
 
@@ -211,8 +213,40 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
   }
 
   const handleSave = async () => {
-    // TODO: Implementar guardado del proyecto editado
-    setIsEditing(false)
+    try {
+      const { id, ...projectData } = editedProject
+      const response = await fetch('/api/workspace/construction/projects', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: project.id,
+          ...projectData
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Error al actualizar el proyecto')
+      }
+
+      const data = await response.json()
+      const updatedProject = data.project
+      
+      // Actualizar el proyecto local
+      setEditedProject(updatedProject)
+      
+      // Notificar al componente padre si existe la función
+      if (onProjectUpdate) {
+        onProjectUpdate(updatedProject)
+      }
+      
+      setIsEditing(false)
+      
+    } catch (error) {
+      console.error('Error saving project:', error)
+      alert('Error al guardar los cambios. Por favor, inténtalo de nuevo.')
+    }
   }
 
   const handleImageUpload = async (file: File) => {
@@ -375,13 +409,28 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
 
   const getStageColor = (stage: string) => {
     const stageColors: Record<string, string> = {
-      'Planificación': 'bg-gray-500',
-      'Permisos': 'bg-yellow-500',
+      // Prefactibilidad
+      'Prefactibilidad del proyecto': 'bg-purple-500',
+      
+      // En Gestoria
+      'Consulta DGIUR': 'bg-yellow-500',
+      'Registro etapa de proyecto': 'bg-yellow-600',
+      'Permiso de obra': 'bg-yellow-700',
+      
+      // En ejecución de obra
+      'Demolición': 'bg-red-500',
+      'Excavación': 'bg-red-600',
       'AVO 1': 'bg-green-500',
       'AVO 2': 'bg-green-600',
       'AVO 3': 'bg-green-700',
-      'AVO 4': 'bg-green-800',
-      'Paralización': 'bg-orange-500',
+      
+      // Finalización
+      'Conforme de obra': 'bg-emerald-600',
+      'MH-SUBDIVISION': 'bg-emerald-700',
+      
+      // Compatibilidad temporal con etapas antiguas
+      'Planificación': 'bg-gray-500',
+      'Permisos': 'bg-yellow-500',
       'Finalización': 'bg-emerald-600'
     }
     return stageColors[stage] || 'bg-blue-500'
@@ -406,6 +455,35 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
     return docs.length > 0
   }
 
+  // Funciones para manejar profesionales
+  const handleProfesionalChange = (index: number, field: keyof ProjectProfessional, value: string) => {
+    setEditedProject(prev => {
+      const newProfesionales = [...(prev.profesionales || [])]
+      newProfesionales[index] = {
+        ...newProfesionales[index],
+        [field]: value
+      }
+      return {
+        ...prev,
+        profesionales: newProfesionales
+      }
+    })
+  }
+
+  const addProfesional = () => {
+    setEditedProject(prev => ({
+      ...prev,
+      profesionales: [...(prev.profesionales || []), { name: '', role: 'Estructuralista' as const }]
+    }))
+  }
+
+  const removeProfesional = (index: number) => {
+    setEditedProject(prev => ({
+      ...prev,
+      profesionales: (prev.profesionales || []).filter((_, i) => i !== index)
+    }))
+  }
+
   return (
     <div className="min-h-screen bg-gray-50/50">
       <div className="mx-auto px-6 py-6 space-y-6">
@@ -428,18 +506,35 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
               <Badge className={`${getStageColor(project.current_stage || '')} text-white px-4 py-2 text-sm`}>
                 {project.current_stage}
               </Badge>
-              <Button 
-                onClick={() => setIsEditing(!isEditing)}
-                variant={isEditing ? "outline" : "default"}
-                size="lg"
-              >
-                <Edit className="h-4 w-4 mr-2" />
-                {isEditing ? 'Cancelar' : 'Editar'}
-              </Button>
-              {isEditing && (
-                <Button onClick={handleSave} size="lg">
-                  <Save className="h-4 w-4 mr-2" />
-                  Guardar
+              {isEditing ? (
+                <>
+                  <Button 
+                    onClick={handleSave}
+                    variant="default"
+                    size="lg"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    Guardar
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      setIsEditing(false)
+                      setEditedProject(project) // Restaurar datos originales
+                    }}
+                    variant="outline"
+                    size="lg"
+                  >
+                    Cancelar
+                  </Button>
+                </>
+              ) : (
+                <Button 
+                  onClick={() => setIsEditing(true)}
+                  variant="default"
+                  size="lg"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar
                 </Button>
               )}
               {onDeleteProject && (
@@ -507,6 +602,40 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                           <p className="font-semibold">{project.address}</p>
                         )}
                 </div>
+
+                <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Barrio</Label>
+                        {isEditing ? (
+                          <Input
+                            value={editedProject.barrio || ''}
+                            onChange={(e) => setEditedProject(prev => ({
+                              ...prev,
+                              barrio: e.target.value
+                            }))}
+                            className="mt-1"
+                            placeholder="Ej: Palermo"
+                          />
+                        ) : (
+                          <p className="font-semibold">{project.barrio || 'No especificado'}</p>
+                        )}
+                </div>
+
+                <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Ciudad</Label>
+                        {isEditing ? (
+                          <Input
+                            value={editedProject.ciudad || ''}
+                            onChange={(e) => setEditedProject(prev => ({
+                              ...prev,
+                              ciudad: e.target.value
+                            }))}
+                            className="mt-1"
+                            placeholder="Ej: CABA"
+                          />
+                        ) : (
+                          <p className="font-semibold">{project.ciudad || 'No especificado'}</p>
+                        )}
+                </div>
                       
                 <div>
                         <Label className="text-sm font-medium text-muted-foreground">Superficie a construir</Label>
@@ -522,6 +651,23 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                           />
                         ) : (
                           <p className="font-semibold">{project.surface?.toLocaleString()} m²</p>
+                        )}
+                </div>
+
+                <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Director de Obra</Label>
+                        {isEditing ? (
+                          <Input
+                            value={editedProject.director_obra || editedProject.architect || ''}
+                            onChange={(e) => setEditedProject(prev => ({
+                              ...prev,
+                              director_obra: e.target.value
+                            }))}
+                            className="mt-1"
+                            placeholder="Nombre del director de obra"
+                          />
+                        ) : (
+                          <p className="font-semibold">{project.director_obra || project.architect || 'No especificado'}</p>
                         )}
                 </div>
                       
@@ -557,10 +703,10 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="OBRA NUEVA">OBRA NUEVA</SelectItem>
-                              <SelectItem value="MODIFICACION Y/O AMPLIACION">MODIFICACIÓN Y/O AMPLIACIÓN</SelectItem>
-                              <SelectItem value="REFACCION">REFACCIÓN</SelectItem>
-                              <SelectItem value="DEMOLICION">DEMOLICIÓN</SelectItem>
+                              <SelectItem value="Microobra">Microobra</SelectItem>
+                              <SelectItem value="Obra Menor">Obra Menor</SelectItem>
+                              <SelectItem value="Obra Media">Obra Media</SelectItem>
+                              <SelectItem value="Obra Mayor">Obra Mayor</SelectItem>
                             </SelectContent>
                           </Select>
                         ) : (
@@ -569,27 +715,27 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                 </div>
                       
                 <div>
-                        <Label className="text-sm font-medium text-muted-foreground">Tipo de permiso</Label>
+                        <Label className="text-sm font-medium text-muted-foreground">Tipo de Uso</Label>
                         {isEditing ? (
                           <Select
-                            value={editedProject.project_use || ''}
+                            value={editedProject.project_usage || editedProject.project_use || ''}
                             onValueChange={(value) => setEditedProject(prev => ({
                               ...prev,
-                              project_use: value
+                              project_usage: value
                             }))}
                           >
                             <SelectTrigger className="mt-1">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="RESIDENCIAL">RESIDENCIAL</SelectItem>
-                              <SelectItem value="COMERCIAL">COMERCIAL</SelectItem>
-                              <SelectItem value="INDUSTRIAL">INDUSTRIAL</SelectItem>
-                              <SelectItem value="MIXTO">MIXTO</SelectItem>
+                              <SelectItem value="Vivienda">Vivienda</SelectItem>
+                              <SelectItem value="Comercial">Comercial</SelectItem>
+                              <SelectItem value="Industrial">Industrial</SelectItem>
+                              <SelectItem value="Mixto">Mixto</SelectItem>
                             </SelectContent>
                           </Select>
                         ) : (
-                          <p className="font-semibold">{project.project_use}</p>
+                          <p className="font-semibold">{project.project_usage || project.project_use}</p>
                         )}
                 </div>
                       
@@ -610,6 +756,103 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                       </div>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Otros Profesionales */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Otros Profesionales
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {isEditing ? (
+                    <div className="space-y-4">
+                      <div className="space-y-3">
+                        {editedProject.profesionales?.map((profesional, index) => (
+                          <div key={index} className="flex gap-3 items-end">
+                            <div className="flex-1">
+                              <Label htmlFor={`profesional-name-${index}`}>
+                                Nombre del Profesional
+                              </Label>
+                              <Input
+                                id={`profesional-name-${index}`}
+                                value={profesional.name}
+                                onChange={(e) => handleProfesionalChange(index, 'name', e.target.value)}
+                                placeholder="Nombre completo"
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <Label htmlFor={`profesional-role-${index}`}>
+                                Especialidad/Rol
+                              </Label>
+                              <Select
+                                value={profesional.role}
+                                onValueChange={(value) => handleProfesionalChange(index, 'role', value as ProjectProfessional['role'])}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Estructuralista">Estructuralista</SelectItem>
+                                  <SelectItem value="Proyectista">Proyectista</SelectItem>
+                                  <SelectItem value="Instalación Electrica">Instalación Eléctrica</SelectItem>
+                                  <SelectItem value="Instalación Sanitaria">Instalación Sanitaria</SelectItem>
+                                  <SelectItem value="Instalación e incendios">Instalación e Incendios</SelectItem>
+                                  <SelectItem value="Instalación e elevadores">Instalación e Elevadores</SelectItem>
+                                  <SelectItem value="Instalación Sala de maquinas">Instalación Sala de Máquinas</SelectItem>
+                                  <SelectItem value="Instalación Ventilación Mecanica">Instalación Ventilación Mecánica</SelectItem>
+                                  <SelectItem value="Instalación ventilación electromecánica">Instalación Ventilación Electromecánica</SelectItem>
+                                  <SelectItem value="Agrimensor">Agrimensor</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            {editedProject.profesionales && editedProject.profesionales.length > 0 && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => removeProfesional(index)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={addProfesional}
+                          className="w-full"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Agregar Profesional
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {project.profesionales && project.profesionales.length > 0 ? (
+                        project.profesionales.map((profesional, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <p className="font-medium">{profesional.name}</p>
+                              <p className="text-sm text-muted-foreground">{profesional.role}</p>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-muted-foreground text-center py-4">
+                          No hay profesionales adicionales registrados
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
                 </div>
@@ -640,6 +883,13 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                     <div className="absolute bottom-4 left-4 text-white">
                       <h3 className="font-bold text-lg">{editedProject.name}</h3>
                       <p className="text-sm opacity-90">{editedProject.address}</p>
+                      {(editedProject.barrio || editedProject.ciudad) && (
+                        <div className="flex items-center gap-2 text-xs opacity-75">
+                          {editedProject.barrio && <span>{editedProject.barrio}</span>}
+                          {editedProject.barrio && editedProject.ciudad && <span>•</span>}
+                          {editedProject.ciudad && <span>{editedProject.ciudad}</span>}
+                        </div>
+                      )}
                     </div>
                     
                     {/* Botón para editar imagen */}
@@ -714,7 +964,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
             </CardContent>
           </Card>
 
-          {/* Pedidos de verificaciones con carga de documentos */}
+          {/* Pedidos de verificaciones organizadas por categorías */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -722,111 +972,361 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                 Pedidos de Verificaciones
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {verificationRequests.map((request, index) => (
-                  <Card key={index} className="p-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium text-sm">{request.name}</h4>
-                        {request.required ? (
-                          <Badge variant="secondary" className="text-xs">Requerido</Badge>
+            <CardContent className="space-y-6">
+              {/* Prefactibilidad del proyecto */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 border-b pb-2">
+                  <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                  <h3 className="text-lg font-semibold text-purple-700">Prefactibilidad del proyecto</h3>
+                </div>
+                <div className="text-sm text-muted-foreground ml-6">
+                  Esta etapa no requiere verificaciones específicas de documentos.
+                </div>
+              </div>
+
+              {/* En Gestoria */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 border-b pb-2">
+                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                  <h3 className="text-lg font-semibold text-yellow-700">En Gestoria</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ml-6">
+                  {verificationRequests
+                    .filter(req => ['Consulta DGIUR', 'Registro etapa de proyecto', 'Permiso de obra'].includes(req.name))
+                    .map((request, index) => (
+                    <Card key={index} className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium text-sm">{request.name}</h4>
+                          {request.required ? (
+                            <Badge variant="secondary" className="text-xs">Requerido</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">No requiere</Badge>
+                          )}
+                        </div>
+                        
+                        {hasVerificationCertificate(request.name) ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                              <span className="text-xs text-green-600">Completado</span>
+                            </div>
+                            <div className="text-xs text-blue-600">📄 Certificado disponible</div>
+                            
+                            {/* Botones para ver y descargar documentos de verificación */}
+                            <div className="flex gap-1">
+                              {getVerificationDocuments(request.name).map((doc, docIndex) => (
+                                <div key={docIndex} className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={() => handleViewDocument(doc)}
+                                    title="Ver documento"
+                                  >
+                                    <Eye className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={() => handleDownloadDocument(doc)}
+                                    title="Descargar documento"
+                                  >
+                                    <Download className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                className="hidden"
+                                id={`verification-gestoria-${index}`}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) {
+                                    handleVerificationUpload(request.name, file)
+                                  }
+                                }}
+                              />
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full text-xs"
+                                onClick={() => document.getElementById(`verification-gestoria-${index}`)?.click()}
+                              >
+                                <Upload className="h-3 w-3 mr-1" />
+                                Actualizar Doc.
+                              </Button>
+                            </div>
+                          </div>
                         ) : (
-                          <Badge variant="outline" className="text-xs">No requiere</Badge>
+                          <div className="space-y-2">
+                            <div className="text-xs text-muted-foreground">
+                              {request.required ? 'Pendiente' : 'No aplicable'}
+                            </div>
+                            <div className="space-y-2">
+                              <input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                className="hidden"
+                                id={`verification-gestoria-${index}`}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) {
+                                    handleVerificationUpload(request.name, file)
+                                  }
+                                }}
+                              />
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full text-xs"
+                                onClick={() => document.getElementById(`verification-gestoria-${index}`)?.click()}
+                              >
+                                <Upload className="h-3 w-3 mr-1" />
+                                Cargar Doc.
+                              </Button>
+                            </div>
+                          </div>
                         )}
                       </div>
-                      
-{hasVerificationCertificate(request.name) ? (
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                            <span className="text-xs text-green-600">Completado</span>
-                          </div>
-                          <div className="text-xs text-blue-600">📄 Certificado disponible</div>
-                          
-                          {/* Botones para ver y descargar documentos de verificación */}
-                          <div className="flex gap-1">
-                            {getVerificationDocuments(request.name).map((doc, docIndex) => (
-                              <div key={docIndex} className="flex gap-1">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-6 px-2 text-xs"
-                                  onClick={() => handleViewDocument(doc)}
-                                  title="Ver documento"
-                                >
-                                  <Eye className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-6 px-2 text-xs"
-                                  onClick={() => handleDownloadDocument(doc)}
-                                  title="Descargar documento"
-                                >
-                                  <Download className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <input
-                              type="file"
-                              accept=".pdf,.jpg,.jpeg,.png"
-                              className="hidden"
-                              id={`verification-${index}`}
-                              onChange={(e) => {
-                                const file = e.target.files?.[0]
-                                if (file) {
-                                  handleVerificationUpload(request.name, file)
-                                }
-                              }}
-                            />
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="w-full text-xs"
-                              onClick={() => document.getElementById(`verification-${index}`)?.click()}
-                            >
-                              <Upload className="h-3 w-3 mr-1" />
-                              Actualizar Doc.
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <div className="text-xs text-muted-foreground">
-                            {request.required ? 'Pendiente' : 'No aplicable'}
-                          </div>
-                          <div className="space-y-2">
-                            <input
-                              type="file"
-                              accept=".pdf,.jpg,.jpeg,.png"
-                              className="hidden"
-                              id={`verification-${index}`}
-                              onChange={(e) => {
-                                const file = e.target.files?.[0]
-                                if (file) {
-                                  handleVerificationUpload(request.name, file)
-                                }
-                              }}
-                            />
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="w-full text-xs"
-                              onClick={() => document.getElementById(`verification-${index}`)?.click()}
-                            >
-                              <Upload className="h-3 w-3 mr-1" />
-                              Cargar Doc.
-                            </Button>
-                        </div>
-                        </div>
-                      )}
+                    </Card>
+                  ))}
+                </div>
               </div>
-                  </Card>
-                ))}
+
+              {/* En ejecución de obra */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 border-b pb-2">
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  <h3 className="text-lg font-semibold text-green-700">En ejecución de obra</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ml-6">
+                  {verificationRequests
+                    .filter(req => ['Demolición', 'Excavación', 'AVO 1', 'AVO 2', 'AVO 3'].includes(req.name))
+                    .map((request, index) => (
+                    <Card key={index} className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium text-sm">{request.name}</h4>
+                          {request.required ? (
+                            <Badge variant="secondary" className="text-xs">Requerido</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">No requiere</Badge>
+                          )}
+                        </div>
+                        
+                        {hasVerificationCertificate(request.name) ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                              <span className="text-xs text-green-600">Completado</span>
+                            </div>
+                            <div className="text-xs text-blue-600">📄 Certificado disponible</div>
+                            
+                            {/* Botones para ver y descargar documentos de verificación */}
+                            <div className="flex gap-1">
+                              {getVerificationDocuments(request.name).map((doc, docIndex) => (
+                                <div key={docIndex} className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={() => handleViewDocument(doc)}
+                                    title="Ver documento"
+                                  >
+                                    <Eye className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={() => handleDownloadDocument(doc)}
+                                    title="Descargar documento"
+                                  >
+                                    <Download className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                className="hidden"
+                                id={`verification-obra-${index}`}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) {
+                                    handleVerificationUpload(request.name, file)
+                                  }
+                                }}
+                              />
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full text-xs"
+                                onClick={() => document.getElementById(`verification-obra-${index}`)?.click()}
+                              >
+                                <Upload className="h-3 w-3 mr-1" />
+                                Actualizar Doc.
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="text-xs text-muted-foreground">
+                              {request.required ? 'Pendiente' : 'No aplicable'}
+                            </div>
+                            <div className="space-y-2">
+                              <input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                className="hidden"
+                                id={`verification-obra-${index}`}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) {
+                                    handleVerificationUpload(request.name, file)
+                                  }
+                                }}
+                              />
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full text-xs"
+                                onClick={() => document.getElementById(`verification-obra-${index}`)?.click()}
+                              >
+                                <Upload className="h-3 w-3 mr-1" />
+                                Cargar Doc.
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+
+              {/* Finalización */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 border-b pb-2">
+                  <div className="w-3 h-3 rounded-full bg-emerald-600"></div>
+                  <h3 className="text-lg font-semibold text-emerald-700">Finalización</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ml-6">
+                  {verificationRequests
+                    .filter(req => ['Conforme de obra', 'MH-SUBDIVISION'].includes(req.name))
+                    .map((request, index) => (
+                    <Card key={index} className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium text-sm">{request.name}</h4>
+                          {request.required ? (
+                            <Badge variant="secondary" className="text-xs">Requerido</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">No requiere</Badge>
+                          )}
+                        </div>
+                        
+                        {hasVerificationCertificate(request.name) ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="h-4 w-4 text-green-500" />
+                              <span className="text-xs text-green-600">Completado</span>
+                            </div>
+                            <div className="text-xs text-blue-600">📄 Certificado disponible</div>
+                            
+                            {/* Botones para ver y descargar documentos de verificación */}
+                            <div className="flex gap-1">
+                              {getVerificationDocuments(request.name).map((doc, docIndex) => (
+                                <div key={docIndex} className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={() => handleViewDocument(doc)}
+                                    title="Ver documento"
+                                  >
+                                    <Eye className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={() => handleDownloadDocument(doc)}
+                                    title="Descargar documento"
+                                  >
+                                    <Download className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                className="hidden"
+                                id={`verification-final-${index}`}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) {
+                                    handleVerificationUpload(request.name, file)
+                                  }
+                                }}
+                              />
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full text-xs"
+                                onClick={() => document.getElementById(`verification-final-${index}`)?.click()}
+                              >
+                                <Upload className="h-3 w-3 mr-1" />
+                                Actualizar Doc.
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="text-xs text-muted-foreground">
+                              {request.required ? 'Pendiente' : 'No aplicable'}
+                            </div>
+                            <div className="space-y-2">
+                              <input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                className="hidden"
+                                id={`verification-final-${index}`}
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0]
+                                  if (file) {
+                                    handleVerificationUpload(request.name, file)
+                                  }
+                                }}
+                              />
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full text-xs"
+                                onClick={() => document.getElementById(`verification-final-${index}`)?.click()}
+                              >
+                                <Upload className="h-3 w-3 mr-1" />
+                                Cargar Doc.
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -1067,121 +1567,102 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
             </CardContent>
           </Card>
 
-          {/* Cronograma del Proyecto */}
+          {/* Profesionales del Proyecto */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Cronograma
+                <User className="h-5 w-5" />
+                Profesionales
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {/* Línea de tiempo */}
-                <div className="relative">
-                  {/* Línea vertical */}
-                  <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200"></div>
-                  
-                  <div className="space-y-4">
-                    {/* Inicio del proyecto */}
-                    <div className="relative flex items-center gap-4">
-                      <div className={`relative z-10 w-3 h-3 rounded-full ${project.start_date ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium">Inicio de proyecto</p>
-                          <Badge variant={project.start_date ? "default" : "secondary"} className="text-xs">
-                            {project.start_date ? 'Iniciado' : 'Pendiente'}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {project.start_date ? new Date(project.start_date).toLocaleDateString() : 'Sin fecha'}
-                        </p>
-                      </div>
+              <div className="space-y-4">
+                {/* Director de Obra */}
+                <div className="border-b pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <User className="h-4 w-4 text-blue-600" />
                     </div>
-
-                    {/* Informe de dominio */}
-                    <div className="relative flex items-center gap-4">
-                      <div className={`relative z-10 w-3 h-3 rounded-full ${project.domain_report_file_url ? (project.domain_report_is_valid ? 'bg-green-500' : 'bg-orange-500') : 'bg-gray-300'}`}></div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium">Informe de dominio</p>
-                          <Badge variant={project.domain_report_file_url ? (project.domain_report_is_valid ? "default" : "destructive") : "secondary"} className="text-xs">
-                            {project.domain_report_file_url ? (project.domain_report_is_valid ? 'Válido' : 'Vencido') : 'Pendiente'}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {project.domain_report_upload_date ? new Date(project.domain_report_upload_date).toLocaleDateString() : 'Sin cargar'}
-                        </p>
-                      </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Director de Obra</p>
+                      <p className="text-xs text-muted-foreground">
+                        {project.director_obra || project.architect || 'No asignado'}
+                      </p>
                     </div>
-
-                    {/* Permiso de construcción */}
-                    <div className="relative flex items-center gap-4">
-                      <div className={`relative z-10 w-3 h-3 rounded-full ${project.permit_status === 'Aprobado' ? 'bg-green-500' : project.permit_status === 'En trámite' ? 'bg-yellow-500' : 'bg-gray-300'}`}></div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium">Permiso construcción</p>
-                          <Badge variant={project.permit_status === 'Aprobado' ? "default" : project.permit_status === 'En trámite' ? "secondary" : "outline"} className="text-xs">
-                            {project.permit_status || 'Pendiente'}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">Estado del trámite</p>
-                      </div>
-                    </div>
-
-                    {/* Etapas de construcción */}
-                    {['AVO 1', 'AVO 2', 'AVO 3', 'AVO 4'].map((stage, index) => {
-                      const isCurrentStage = project.current_stage === stage
-                      const isCompletedStage = mockProjectStages.findIndex(s => s.name === project.current_stage) > mockProjectStages.findIndex(s => s.name === stage)
-                      const stageStatus = isCompletedStage ? 'completed' : isCurrentStage ? 'current' : 'pending'
-                      
-                      return (
-                        <div key={stage} className="relative flex items-center gap-4">
-                          <div className={`relative z-10 w-3 h-3 rounded-full ${
-                            stageStatus === 'completed' ? 'bg-green-500' : 
-                            stageStatus === 'current' ? 'bg-blue-500' : 
-                            'bg-gray-300'
-                          }`}></div>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <p className="text-sm font-medium">{stage}</p>
-                              <Badge variant={
-                                stageStatus === 'completed' ? "default" : 
-                                stageStatus === 'current' ? "secondary" : 
-                                "outline"
-                              } className="text-xs">
-                                {stageStatus === 'completed' ? 'Completado' : 
-                                 stageStatus === 'current' ? 'En curso' : 
-                                 'Pendiente'}
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              {stageStatus === 'completed' ? 'Aprobado' : 
-                               stageStatus === 'current' ? 'En desarrollo' : 
-                               'Por iniciar'}
-                            </p>
-                          </div>
-                        </div>
-                      )
-                    })}
-
-                    {/* Finalización */}
-                    <div className="relative flex items-center gap-4">
-                      <div className={`relative z-10 w-3 h-3 rounded-full ${project.current_stage === 'Finalización' ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium">Finalización</p>
-                          <Badge variant={project.current_stage === 'Finalización' ? "default" : "outline"} className="text-xs">
-                            {project.current_stage === 'Finalización' ? 'Finalizado' : 'Pendiente'}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {project.end_date ? new Date(project.end_date).toLocaleDateString() : 'Fecha estimada no definida'}
-                        </p>
-                      </div>
-                    </div>
+                    <Badge variant="default" className="text-xs">
+                      Principal
+                    </Badge>
                   </div>
                 </div>
+
+                {/* Constructor */}
+                {project.builder && (
+                  <div className="border-b pb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                        <Building className="h-4 w-4 text-orange-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Constructor</p>
+                        <p className="text-xs text-muted-foreground">
+                          {project.builder}
+                        </p>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">
+                        Empresa
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+
+                {/* Otros Profesionales */}
+                {project.profesionales && project.profesionales.length > 0 ? (
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-medium text-muted-foreground">Otros Profesionales</h4>
+                    {project.profesionales.map((profesional, index) => (
+                      <div key={index} className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                          <User className="h-4 w-4 text-green-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{profesional.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {profesional.role}
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="text-xs">
+                          Especialista
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-muted-foreground">
+                      No hay profesionales adicionales asignados
+                    </p>
+                  </div>
+                )}
+
+                {/* Profesional Legacy (inspector_name) para compatibilidad */}
+                {project.inspector_name && !project.profesionales?.length && (
+                  <div className="border-t pt-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                        <User className="h-4 w-4 text-gray-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{project.inspector_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Inspector/Especialista
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        Legacy
+                      </Badge>
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
