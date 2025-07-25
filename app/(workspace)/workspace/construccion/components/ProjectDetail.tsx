@@ -456,7 +456,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
   }
 
   // Funciones para manejar profesionales
-  const handleProfesionalChange = (index: number, field: keyof ProjectProfessional, value: string) => {
+  const handleProfesionalChange = (index: number, field: 'name' | 'role', value: string) => {
     setEditedProject(prev => {
       const newProfesionales = [...(prev.profesionales || [])]
       newProfesionales[index] = {
@@ -552,25 +552,96 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
           </div>
         </div>
 
+        {/* Imagen de portada del proyecto - Ocupa todo el ancho */}
+        <div className="w-full">
+          <Card className="overflow-hidden">
+            <CardContent className="p-0">
+              <div className="relative h-80 bg-gray-100">
+                {editedProject.cover_image_url ? (
+                  <img
+                    src={editedProject.cover_image_url}
+                    alt={editedProject.name}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full bg-gradient-to-br from-gray-100 to-gray-200">
+                    <div className="text-center">
+                      <Building className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-500 font-medium">Imagen del Proyecto</p>
+                      <p className="text-gray-400 text-sm">No disponible</p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Overlay con información del proyecto */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="absolute bottom-6 left-6 text-white">
+                  <h3 className="font-bold text-2xl mb-2">{editedProject.name}</h3>
+                  <p className="text-lg opacity-90 mb-1">{editedProject.address}</p>
+                  {(editedProject.barrio || editedProject.ciudad) && (
+                    <div className="flex items-center gap-2 text-sm opacity-75">
+                      {editedProject.barrio && <span>{editedProject.barrio}</span>}
+                      {editedProject.barrio && editedProject.ciudad && <span>•</span>}
+                      {editedProject.ciudad && <span>{editedProject.ciudad}</span>}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Botón para editar imagen */}
+                <div className="absolute top-6 right-6">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    id="project-image-upload"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        handleImageUpload(file)
+                      }
+                    }}
+                  />
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="bg-white/90 hover:bg-white text-gray-700 shadow-lg"
+                    onClick={() => document.getElementById('project-image-upload')?.click()}
+                    disabled={uploadingImage}
+                  >
+                    {uploadingImage ? (
+                      <>
+                        <Upload className="h-4 w-4 mr-2 animate-spin" />
+                        Subiendo...
+                      </>
+                    ) : (
+                      <>
+                        <Camera className="h-4 w-4 mr-2" />
+                        {editedProject.cover_image_url ? 'Cambiar' : 'Agregar'}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Layout principal mejorado - layout responsivo con mejor distribución */}
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         {/* Columna principal - Información del proyecto */}
         <div className="xl:col-span-3 space-y-6">
           
-          {/* Información general con imagen */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Datos del proyecto */}
-            <div className="lg:col-span-2">
+          {/* Información general */}
           <Card>
-                <CardHeader>
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <Building className="h-5 w-5" />
-                    Información General
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
+            <CardHeader>
+              <CardTitle className="text-xl flex items-center gap-2">
+                <Building className="h-5 w-5" />
+                Información General
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
                       <div>
                         <Label className="text-sm font-medium text-muted-foreground">N° expediente DGROC</Label>
                         {isEditing ? (
@@ -855,82 +926,6 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                   )}
                 </CardContent>
               </Card>
-                </div>
-
-            {/* Imagen del proyecto */}
-                <div>
-              <Card className="h-full">
-                <CardContent className="p-0">
-                  <div className="relative h-80 rounded-lg overflow-hidden bg-gray-100">
-                    {editedProject.cover_image_url ? (
-                      <img
-                        src={editedProject.cover_image_url}
-                        alt={editedProject.name}
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full bg-gradient-to-br from-gray-100 to-gray-200">
-                        <div className="text-center">
-                          <Building className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                          <p className="text-gray-500 font-medium">Imagen del Proyecto</p>
-                          <p className="text-gray-400 text-sm">No disponible</p>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Overlay con información del proyecto */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                    <div className="absolute bottom-4 left-4 text-white">
-                      <h3 className="font-bold text-lg">{editedProject.name}</h3>
-                      <p className="text-sm opacity-90">{editedProject.address}</p>
-                      {(editedProject.barrio || editedProject.ciudad) && (
-                        <div className="flex items-center gap-2 text-xs opacity-75">
-                          {editedProject.barrio && <span>{editedProject.barrio}</span>}
-                          {editedProject.barrio && editedProject.ciudad && <span>•</span>}
-                          {editedProject.ciudad && <span>{editedProject.ciudad}</span>}
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Botón para editar imagen */}
-                    <div className="absolute top-4 right-4">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        id="project-image-upload"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0]
-                          if (file) {
-                            handleImageUpload(file)
-                          }
-                        }}
-                      />
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="bg-white/90 hover:bg-white text-gray-700 shadow-lg"
-                        onClick={() => document.getElementById('project-image-upload')?.click()}
-                        disabled={uploadingImage}
-                      >
-                        {uploadingImage ? (
-                          <>
-                            <Upload className="h-4 w-4 mr-2 animate-spin" />
-                            Subiendo...
-                          </>
-                        ) : (
-                          <>
-                            <Camera className="h-4 w-4 mr-2" />
-                            {editedProject.cover_image_url ? 'Cambiar' : 'Agregar'}
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
 
           {/* Etapas del proyecto más compactas */}
           <Card>
