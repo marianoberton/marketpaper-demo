@@ -75,12 +75,12 @@ export default function ExpenseModal({ expense, categories, onSave, onCancel }: 
     description: '',
     category_id: '',
     date: new Date().toISOString().split('T')[0],
-    payment_method: 'credit_card',
+    payment_method: 'credit_card' as 'credit_card' | 'debit_card' | 'cash' | 'bank_transfer' | 'other',
     receipt_url: '',
     notes: '',
     tags: [] as string[],
     is_recurring: false,
-    recurring_frequency: 'monthly'
+    recurring_frequency: 'monthly' as 'daily' | 'weekly' | 'monthly' | 'yearly'
   })
 
   const [newTag, setNewTag] = useState('')
@@ -289,7 +289,7 @@ export default function ExpenseModal({ expense, categories, onSave, onCancel }: 
               <Label htmlFor="payment_method">Método de Pago</Label>
               <Select 
                 value={formData.payment_method} 
-                onValueChange={(value) => handleInputChange('payment_method', value)}
+                onValueChange={(value) => handleInputChange('payment_method', value as 'credit_card' | 'debit_card' | 'cash' | 'bank_transfer' | 'other')}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -398,7 +398,7 @@ export default function ExpenseModal({ expense, categories, onSave, onCancel }: 
                 <Label>Frecuencia</Label>
                 <Select 
                   value={formData.recurring_frequency} 
-                  onValueChange={(value) => handleInputChange('recurring_frequency', value)}
+                  onValueChange={(value) => handleInputChange('recurring_frequency', value as 'daily' | 'weekly' | 'monthly' | 'yearly')}
                 >
                   <SelectTrigger>
                     <SelectValue />
