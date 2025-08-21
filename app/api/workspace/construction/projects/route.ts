@@ -43,12 +43,13 @@ export async function GET(request: NextRequest) {
       targetCompanyId = currentUser.company_id
     }
 
-    // Obtener proyectos de la compañía con información del cliente
+    // Obtener proyectos de la compañía con información del cliente y expedientes
     const { data: projects, error } = await supabase
       .from('projects')
       .select(`
         *,
-        client:clients(*)
+        client:clients(*),
+        expedientes:project_expedientes(*)
       `)
       .eq('company_id', targetCompanyId)
       .order('created_at', { ascending: false })
@@ -126,19 +127,42 @@ export async function POST(request: NextRequest) {
     if (processedData.builder === '') processedData.builder = null
     if (processedData.notes === '') processedData.notes = null
 
+    // Extraer expedientes del projectData antes de crear el proyecto
+    const { expedientes, ...projectDataWithoutExpedientes } = processedData
+
     // Crear el proyecto
     const { data: project, error } = await supabase
       .from('projects')
-      .insert(processedData)
+      .insert(projectDataWithoutExpedientes)
       .select(`
         *,
-        client:clients(*)
+        client:clients(*),
+        expedientes:project_expedientes(*)
       `)
       .single()
 
     if (error) {
       console.error('Error creating project:', error)
       return NextResponse.json({ error: 'Error al crear el proyecto' }, { status: 500 })
+    }
+
+    // Si hay expedientes, crearlos
+    if (expedientes && expedientes.length > 0) {
+      const expedientesData = expedientes.map((exp: any) => ({
+        project_id: project.id,
+        expediente_number: exp.expediente_number,
+        expediente_type: exp.expediente_type || 'Otros',
+        status: exp.status || 'Pendiente'
+      }))
+
+      const { error: expedientesError } = await supabase
+        .from('project_expedientes')
+        .insert(expedientesData)
+
+      if (expedientesError) {
+        console.error('Error creating expedientes:', expedientesError)
+        // No fallar la creación del proyecto por error en expedientes
+      }
     }
 
     return NextResponse.json({ project }, { status: 201 })
@@ -160,7 +184,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Obtener datos del proyecto del cuerpo de la petición
-    const { id, ...projectData } = await request.json()
+    const { id, expedientes, ...projectData } = await request.json()
     
     console.log('PUT /api/workspace/construction/projects - ID:', id)
     console.log('PUT /api/workspace/construction/projects - Data:', projectData)
@@ -246,6 +270,37 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 })
     }
 
+    // Manejar expedientes si se proporcionan
+    if (expedientes && Array.isArray(expedientes)) {
+      // Primero eliminar expedientes existentes
+      const { error: deleteError } = await supabase
+        .from('project_expedientes')
+        .delete()
+        .eq('project_id', id)
+
+      if (deleteError) {
+        console.error('Error deleting existing expedientes:', deleteError)
+      }
+
+      // Luego insertar los nuevos expedientes
+      if (expedientes.length > 0) {
+        const expedientesData = expedientes.map((exp: any) => ({
+          project_id: id,
+          expediente_number: exp.expediente_number,
+          expediente_type: exp.expediente_type || 'Otros',
+          status: exp.status || 'Pendiente'
+        }))
+
+        const { error: expedientesError } = await supabase
+          .from('project_expedientes')
+          .insert(expedientesData)
+
+        if (expedientesError) {
+          console.error('Error creating expedientes:', expedientesError)
+        }
+      }
+    }
+
     console.log('Project updated successfully:', project.id)
     return NextResponse.json({ project })
   } catch (error: any) {
@@ -329,4 +384,4 @@ export async function DELETE(request: NextRequest) {
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
   }
-} 
+}

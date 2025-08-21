@@ -13,6 +13,8 @@ import { Client, ProjectStage, CreateProjectData } from '@/lib/construction'
 import { uploadProjectImage } from '@/lib/storage'
 import Image from 'next/image'
 import { ProjectProfessional } from '@/lib/construction'
+import ExpedientesManager from '@/components/ExpedientesManager'
+import { ProjectExpediente } from '@/lib/construction'
 
 interface CreateProjectModalProps {
   isOpen: boolean
@@ -44,7 +46,6 @@ export default function CreateProjectModal({
     current_stage: 'Prefactibilidad del proyecto',
     profesionales: [],
     notes: '',
-    dgro_file_number: '',
     project_type: '',
     project_usage: '',
     cover_image_url: ''
@@ -56,6 +57,7 @@ export default function CreateProjectModal({
   const [imagePreview, setImagePreview] = useState<string>('')
   const [uploadingImage, setUploadingImage] = useState(false)
   const [enableTaxManagement, setEnableTaxManagement] = useState(false)
+  const [expedientes, setExpedientes] = useState<ProjectExpediente[]>([])
 
   // Función para calcular estimaciones de tasas gubernamentales
   const calculateTaxEstimates = () => {
@@ -182,7 +184,8 @@ export default function CreateProjectModal({
     try {
       // Primero crear el proyecto sin imagen
       const projectWithoutImage = { 
-        ...formData
+        ...formData,
+        expedientes: expedientes
       }
       delete projectWithoutImage.cover_image_url
       
@@ -225,6 +228,7 @@ export default function CreateProjectModal({
       setImagePreview('')
       setErrors({})
       setEnableTaxManagement(false)
+      setExpedientes([])
       onClose()
     } catch (error) {
       console.error('Error creating project:', error)
@@ -278,6 +282,10 @@ export default function CreateProjectModal({
     }))
   }
 
+  const handleExpedientesChange = (newExpedientes: ProjectExpediente[]) => {
+    setExpedientes(newExpedientes)
+  }
+
   const handleClose = () => {
     setFormData({
       name: '',
@@ -294,7 +302,6 @@ export default function CreateProjectModal({
       current_stage: 'Prefactibilidad del proyecto',
       profesionales: [],
       notes: '',
-      dgro_file_number: '',
       project_type: '',
       project_usage: '',
       cover_image_url: ''
@@ -303,6 +310,7 @@ export default function CreateProjectModal({
     setImagePreview('')
     setErrors({})
     setEnableTaxManagement(false)
+    setExpedientes([])
     onClose()
   }
 
@@ -714,12 +722,12 @@ export default function CreateProjectModal({
                 </div>
 
                 <div className="md:col-span-2">
-                  <Label htmlFor="dgro_file_number">N° Expediente DGROC</Label>
-                  <Input
-                    id="dgro_file_number"
-                    value={formData.dgro_file_number}
-                    onChange={(e) => handleInputChange('dgro_file_number', e.target.value)}
-                    placeholder="Ej: EX-2024-12345678-GCABA-DGROC"
+                  <Label>Expedientes</Label>
+                  <ExpedientesManager
+                    projectId=""
+                    expedientes={expedientes}
+                    onExpedientesChange={handleExpedientesChange}
+                    readOnly={false}
                   />
                 </div>
 
@@ -849,4 +857,4 @@ export default function CreateProjectModal({
       </Card>
     </div>
   )
-} 
+}

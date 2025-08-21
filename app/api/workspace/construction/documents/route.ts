@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 
+// Configuración para permitir archivos más grandes
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+}
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -141,6 +150,70 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { searchParams } = new URL(request.url)
+    const documentId = searchParams.get('id')
+
+    if (!documentId) {
+      return NextResponse.json(
+        { error: 'Document ID requerido' },
+        { status: 400 }
+      )
+    }
+
+    // Obtener información del documento antes de eliminarlo
+    const { data: document, error: fetchError } = await supabase
+      .from('project_documents')
+      .select('filename, original_filename')
+      .eq('id', documentId)
+      .single()
+
+    if (fetchError || !document) {
+      return NextResponse.json(
+        { error: 'Documento no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    // Eliminar archivo del storage
+    const { error: storageError } = await supabase.storage
+      .from('construction-documents')
+      .remove([document.filename])
+
+    if (storageError) {
+      console.error('Storage delete error:', storageError)
+      // Continuar con la eliminación de la DB aunque falle el storage
+    }
+
+    // Eliminar registro de la base de datos
+    const { error: dbError } = await supabase
+      .from('project_documents')
+      .delete()
+      .eq('id', documentId)
+
+    if (dbError) {
+      console.error('Database delete error:', dbError)
+      return NextResponse.json(
+        { error: 'Error al eliminar el documento' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      message: `Documento "${document.original_filename}" eliminado exitosamente`
+    })
+
+  } catch (error) {
+    console.error('Delete request processing error:', error)
+    return NextResponse.json(
+      { error: 'Error al procesar la solicitud de eliminación' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -216,4 +289,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
-} 
+}

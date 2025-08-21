@@ -29,6 +29,19 @@ export type Client = {
   updated_at: string
 }
 
+export type ProjectExpediente = {
+  id: string
+  project_id: string
+  expediente_number: string
+  expediente_type: string // 'DGROC', 'DGIUR', etc.
+  status: string // 'Pendiente', 'En trámite', 'Aprobado', 'Rechazado'
+  submission_date?: string | null
+  approval_date?: string | null
+  notes?: string | null
+  created_at: string
+  updated_at: string
+}
+
 export type Project = {
   id: string
   company_id: string
@@ -57,6 +70,7 @@ export type Project = {
   client?: Client
   sections?: ProjectSection[]
   status_history?: ProjectStatusHistory[]
+  expedientes?: ProjectExpediente[]
   
   // Campos de compatibilidad temporal
   architect?: string | null // @deprecated - usar director_obra
@@ -231,6 +245,7 @@ export type CreateProjectData = {
   dgro_file_number?: string
   project_type?: string
   project_usage?: string
+  expedientes?: ProjectExpediente[]
   
   // Informe de Dominio
   domain_report_file_url?: string
@@ -298,14 +313,15 @@ export async function getProjectById(projectId: string): Promise<Project | null>
       status_history:project_status_history(
         *,
         changed_by_user:user_profiles(full_name)
-      )
+      ),
+      expedientes:project_expedientes(*)
     `)
     .eq('id', projectId)
     .single()
 
   if (error) {
-    console.error('Error fetching project:', error)
-    return null
+    console.error('Error fetching project:', error.message || error)
+    throw new Error(`Error al cargar el proyecto: ${error.message || 'Error desconocido'}`)
   }
 
   return data as Project
@@ -661,9 +677,19 @@ export const mockProjectStages: ProjectStage[] = [
   {
     id: '4',
     company_id: '1',
+    name: 'Permiso de Demolición',
+    description: 'Permiso para trabajos de demolición cuando sea requerido',
+    order: 4,
+    color: '#F59E0B', // Amarillo
+    is_active: true,
+    created_at: '2024-01-01T10:00:00Z'
+  },
+  {
+    id: '5',
+    company_id: '1',
     name: 'Permiso de obra',
     description: 'Obtención del permiso municipal de construcción',
-    order: 4,
+    order: 5,
     color: '#F59E0B', // Amarillo
     is_active: true,
     created_at: '2024-01-01T10:00:00Z'
@@ -671,20 +697,10 @@ export const mockProjectStages: ProjectStage[] = [
   
   // EN EJECUCIÓN DE OBRA
   {
-    id: '5',
+    id: '6',
     company_id: '1',
     name: 'Demolición',
     description: 'Trabajos de demolición y preparación del terreno',
-    order: 5,
-    color: '#EF4444', // Rojo
-    is_active: true,
-    created_at: '2024-01-01T10:00:00Z'
-  },
-  {
-    id: '6',
-    company_id: '1',
-    name: 'Excavación',
-    description: 'Trabajos de excavación y movimiento de suelos',
     order: 6,
     color: '#EF4444', // Rojo
     is_active: true,
@@ -693,18 +709,18 @@ export const mockProjectStages: ProjectStage[] = [
   {
     id: '7',
     company_id: '1',
-    name: 'AVO 1',
-    description: 'Apto Verificación de Obra 1 - Estructura',
+    name: 'Excavación',
+    description: 'Trabajos de excavación y movimiento de suelos',
     order: 7,
-    color: '#10B981', // Verde
+    color: '#EF4444', // Rojo
     is_active: true,
     created_at: '2024-01-01T10:00:00Z'
   },
   {
     id: '8',
     company_id: '1',
-    name: 'AVO 2',
-    description: 'Apto Verificación de Obra 2 - Instalaciones',
+    name: 'AVO 1',
+    description: 'Apto Verificación de Obra 1 - Estructura',
     order: 8,
     color: '#10B981', // Verde
     is_active: true,
@@ -713,9 +729,19 @@ export const mockProjectStages: ProjectStage[] = [
   {
     id: '9',
     company_id: '1',
+    name: 'AVO 2',
+    description: 'Apto Verificación de Obra 2 - Instalaciones',
+    order: 9,
+    color: '#10B981', // Verde
+    is_active: true,
+    created_at: '2024-01-01T10:00:00Z'
+  },
+  {
+    id: '10',
+    company_id: '1',
     name: 'AVO 3',
     description: 'Apto Verificación de Obra 3 - Terminaciones',
-    order: 9,
+    order: 10,
     color: '#10B981', // Verde
     is_active: true,
     created_at: '2024-01-01T10:00:00Z'
@@ -723,21 +749,21 @@ export const mockProjectStages: ProjectStage[] = [
   
   // FINALIZACIÓN
   {
-    id: '10',
+    id: '11',
     company_id: '1',
     name: 'Conforme de obra',
     description: 'Obtención del conforme final de obra',
-    order: 10,
+    order: 11,
     color: '#059669', // Verde oscuro
     is_active: true,
     created_at: '2024-01-01T10:00:00Z'
   },
   {
-    id: '11',
+    id: '12',
     company_id: '1',
     name: 'MH-SUBDIVISION',
     description: 'Certificado de Mensura y Subdivisión',
-    order: 11,
+    order: 12,
     color: '#059669', // Verde oscuro
     is_active: true,
     created_at: '2024-01-01T10:00:00Z'
@@ -848,6 +874,99 @@ export function calculateTaxSummary(project: Project): TaxSummary {
       }
     }
   }
+}
+
+// =============================================
+// FUNCIONES PARA EXPEDIENTES
+// =============================================
+
+export type CreateExpedienteData = {
+  project_id: string
+  expediente_number: string
+  expediente_type: string
+  status?: string
+  submission_date?: string
+  approval_date?: string
+  notes?: string
+}
+
+export type UpdateExpedienteData = Partial<CreateExpedienteData> & {
+  id: string
+}
+
+// Función para crear un nuevo expediente
+export async function createExpediente(expedienteData: CreateExpedienteData): Promise<ProjectExpediente> {
+  const supabase = createClient()
+  
+  const { data, error } = await supabase
+    .from('project_expedientes')
+    .insert({
+      ...expedienteData,
+      status: expedienteData.status || 'Pendiente'
+    })
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error creating expediente:', error)
+    throw new Error('Error al crear el expediente')
+  }
+
+  return data as ProjectExpediente
+}
+
+// Función para actualizar un expediente
+export async function updateExpediente(expedienteData: UpdateExpedienteData): Promise<ProjectExpediente> {
+  const supabase = createClient()
+  
+  const { id, ...updateData } = expedienteData
+  
+  const { data, error } = await supabase
+    .from('project_expedientes')
+    .update(updateData)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating expediente:', error)
+    throw new Error('Error al actualizar el expediente')
+  }
+
+  return data as ProjectExpediente
+}
+
+// Función para eliminar un expediente
+export async function deleteExpediente(expedienteId: string): Promise<void> {
+  const supabase = createClient()
+  
+  const { error } = await supabase
+    .from('project_expedientes')
+    .delete()
+    .eq('id', expedienteId)
+
+  if (error) {
+    console.error('Error deleting expediente:', error)
+    throw new Error('Error al eliminar el expediente')
+  }
+}
+
+// Función para obtener expedientes de un proyecto
+export async function getProjectExpedientes(projectId: string): Promise<ProjectExpediente[]> {
+  const supabase = createClient()
+  
+  const { data, error } = await supabase
+    .from('project_expedientes')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching expedientes:', error)
+    return []
+  }
+
+  return data as ProjectExpediente[]
 }
 
 // =============================================

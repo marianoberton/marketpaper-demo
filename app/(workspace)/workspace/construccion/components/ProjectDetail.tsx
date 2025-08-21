@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { 
   ArrowLeft, 
@@ -39,6 +40,7 @@ import { Project, mockProjectStages, ProjectProfessional } from '@/lib/construct
 import { uploadProjectImage } from '@/lib/storage'
 import DomainReportSection from './DomainReportSection'
 import GovernmentTaxesSection from './GovernmentTaxesSection'
+import ExpedientesManager from '@/components/ExpedientesManager'
 
 interface ProjectDetailProps {
   project: Project
@@ -51,7 +53,9 @@ interface ProjectDetailProps {
 // Verificaciones actualizadas según nuevas etapas
 const verificationRequests = [
   { name: 'Consulta DGIUR', required: true },
-  { name: 'Registro etapa de proyecto', required: true },
+  { name: 'Permiso de Demolición', required: false },
+  { name: 'Registro etapa de proyecto - Informe', required: true },
+  { name: 'Registro etapa de proyecto - Plano', required: true },
   { name: 'Permiso de obra', required: true },
   { name: 'Demolición', required: false },
   { name: 'Excavación', required: false },
@@ -72,7 +76,7 @@ const projectPhases = [
   },
   {
     name: 'En Gestoria',
-    stages: ['Consulta DGIUR', 'Registro etapa de proyecto', 'Permiso de obra']
+    stages: ['Consulta DGIUR', 'Permiso de Demolición', 'Registro etapa de proyecto - Informe', 'Registro etapa de proyecto - Plano', 'Permiso de obra']
   },
   {
     name: 'En ejecución de obra',
@@ -144,11 +148,42 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
   const [uploading, setUploading] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [activeTab, setActiveTab] = useState('documentos')
+  const [dgiurNoDocsRequired, setDgiurNoDocsRequired] = useState(false)
+  const [demolicionNoDocsRequired, setDemolicionNoDocsRequired] = useState(false)
+  const [expedientes, setExpedientes] = useState(project.expedientes || [])
 
   useEffect(() => {
     setEditedProject(project)
+    setExpedientes(project.expedientes || [])
     loadProjectDocuments()
   }, [project])
+
+  const handleExpedientesChange = (newExpedientes: any[]) => {
+    setExpedientes(newExpedientes)
+    // Actualizar el proyecto con los nuevos expedientes
+    const updatedProject = { ...project, expedientes: newExpedientes }
+    if (onProjectUpdate) {
+      onProjectUpdate(updatedProject)
+    }
+  }
+
+  const handleProjectReload = async () => {
+    try {
+      // Importar getProjectById dinámicamente para evitar problemas de importación
+      const { getProjectById } = await import('@/lib/construction')
+      const updatedProject = await getProjectById(project.id)
+      if (updatedProject) {
+        setEditedProject(updatedProject)
+        setExpedientes(updatedProject.expedientes || [])
+        if (onProjectUpdate) {
+          onProjectUpdate(updatedProject)
+        }
+      }
+    } catch (error) {
+      console.error('Error reloading project:', error instanceof Error ? error.message : String(error))
+      // Silenciar el error para evitar interrumpir la experiencia del usuario
+    }
+  }
 
   const loadProjectDocuments = async () => {
     try {
@@ -174,10 +209,8 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
         const errorData = await response.json()
         if (errorData.error && errorData.error.includes('project_documents')) {
           setTableExists(false)
-          console.error('project_documents table does not exist - using mock data')
         } else if (errorData.error && errorData.error.includes('estructura correcta')) {
           setTableExists(false)
-          console.error('project_documents table has wrong structure - using mock data')
         }
         // Usar documentos mock en caso de error
         allDocuments = [...mockDocuments]
@@ -202,6 +235,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
         allDocuments.unshift(domainReportDoc)
       }
       
+      // Establecer documentos directamente
       setDocuments(allDocuments)
     } catch (error) {
       console.error('Error loading documents:', error)
@@ -335,18 +369,8 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
 
       const result = await response.json()
       
-      // Agregar documento a la lista
-      const newDocument: ProjectDocument = {
-        id: result.id || Date.now().toString(),
-        name: file.name,
-        section: section,
-        uploadDate: new Date().toISOString().split('T')[0],
-        size: `${(file.size / 1024 / 1024).toFixed(1)} MB`,
-        type: file.type.includes('pdf') ? 'pdf' : 'image',
-        url: result.file_url
-      }
-      
-      setDocuments(prev => [...prev, newDocument])
+      // Recargar documentos del proyecto para mantener sincronización
+      await loadProjectDocuments()
       
       // Mostrar mensaje de éxito
       alert(`Documento "${file.name}" cargado exitosamente`)
@@ -359,10 +383,34 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
     }
   }
 
-  const handleDeleteDocument = (documentId: string) => {
-    if (confirm('¿Estás seguro de que quieres eliminar este documento?')) {
+  const handleDeleteDocument = async (documentId: string) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar este documento?')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/workspace/construction/documents?id=${documentId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Error al eliminar el documento')
+      }
+
+      const data = await response.json()
+      
+      // Actualizar la lista de documentos
       setDocuments(prev => prev.filter(doc => doc.id !== documentId))
-      // TODO: Implementar eliminación real del servidor
+      
+      // Recargar documentos del proyecto para mantener sincronización
+      await loadProjectDocuments()
+      
+      alert(`✅ ${data.message}`)
+      
+    } catch (error: any) {
+      console.error('Error deleting document:', error)
+      alert(`❌ Error al eliminar el documento\n\nDetalles: ${error.message}`)
     }
   }
 
@@ -453,6 +501,23 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
   const hasVerificationCertificate = (verificationName: string) => {
     const docs = getVerificationDocuments(verificationName)
     return docs.length > 0
+  }
+
+  // Función para verificar si hay documentos específicos para Informe o Plano
+  const hasSpecificDocument = (verificationName: string, documentType: string = '') => {
+    // Para los nuevos nombres separados, buscar directamente por el nombre de verificación
+    if (verificationName.includes('Registro etapa de proyecto -')) {
+      const filteredDocs = documents.filter(doc => 
+        doc.section.includes(`Verificaciones - ${verificationName}`)
+      )
+      return filteredDocs.length > 0
+    }
+    
+    // Para compatibilidad con el código anterior
+    const filteredDocs = documents.filter(doc => 
+      doc.section.includes(`Verificaciones - ${verificationName} - ${documentType}`)
+    )
+    return filteredDocs.length > 0
   }
 
   // Funciones para manejar profesionales
@@ -642,21 +707,15 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
-                      <div>
-                        <Label className="text-sm font-medium text-muted-foreground">N° expediente DGROC</Label>
-                        {isEditing ? (
-                          <Input
-                            value={editedProject.dgro_file_number || ''}
-                            onChange={(e) => setEditedProject(prev => ({
-                              ...prev,
-                              dgro_file_number: e.target.value
-                            }))}
-                            className="mt-1"
-                  />
-                ) : (
-                          <p className="font-semibold text-lg">{project.dgro_file_number}</p>
-                )}
-              </div>
+                      <div className="col-span-full">
+                        <ExpedientesManager
+                          projectId={project.id}
+                          expedientes={expedientes}
+                          onExpedientesChange={handleExpedientesChange}
+                          onProjectReload={handleProjectReload}
+                          readOnly={!isEditing}
+                        />
+                      </div>
                       
                 <div>
                         <Label className="text-sm font-medium text-muted-foreground">Dirección</Label>
@@ -974,8 +1033,113 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                   <div className="w-3 h-3 rounded-full bg-purple-500"></div>
                   <h3 className="text-lg font-semibold text-purple-700">Prefactibilidad del proyecto</h3>
                 </div>
-                <div className="text-sm text-muted-foreground ml-6">
-                  Esta etapa no requiere verificaciones específicas de documentos.
+                <div className="ml-6">
+                  <Card className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-sm">Documentos de Prefactibilidad</h4>
+                        <Badge variant="secondary" className="text-xs">Opcional</Badge>
+                      </div>
+                      
+                      {hasVerificationCertificate('Prefactibilidad del proyecto') ? (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span className="text-xs text-green-600">Documentos cargados</span>
+                          </div>
+                          <div className="text-xs text-blue-600">📄 Documentos disponibles</div>
+                          
+                          {/* Botones para ver, descargar y eliminar documentos */}
+                            <div className="flex gap-1">
+                              {getVerificationDocuments('Prefactibilidad del proyecto').map((doc, docIndex) => (
+                                <div key={docIndex} className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={() => handleViewDocument(doc)}
+                                    title="Ver documento"
+                                  >
+                                    <Eye className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-6 px-2 text-xs"
+                                    onClick={() => handleDownloadDocument(doc)}
+                                    title="Descargar documento"
+                                  >
+                                    <Download className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-6 px-2 text-xs text-red-600 hover:text-red-700"
+                                    onClick={() => handleDeleteDocument(doc.id)}
+                                    title="Eliminar documento"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          
+                          <div className="space-y-2">
+                            <input
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              className="hidden"
+                              id="verification-prefactibilidad"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0]
+                                if (file) {
+                                  handleVerificationUpload('Prefactibilidad del proyecto', file)
+                                }
+                              }}
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full text-xs"
+                              onClick={() => document.getElementById('verification-prefactibilidad')?.click()}
+                            >
+                              <Upload className="h-3 w-3 mr-1" />
+                              Actualizar Doc.
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <div className="text-xs text-muted-foreground">
+                            Documentos iniciales del proyecto
+                          </div>
+                          <div className="space-y-2">
+                            <input
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              className="hidden"
+                              id="verification-prefactibilidad"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0]
+                                if (file) {
+                                  handleVerificationUpload('Prefactibilidad del proyecto', file)
+                                }
+                              }}
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full text-xs"
+                              onClick={() => document.getElementById('verification-prefactibilidad')?.click()}
+                            >
+                              <Upload className="h-3 w-3 mr-1" />
+                              Cargar Doc.
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
                 </div>
               </div>
 
@@ -987,7 +1151,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 ml-6">
                   {verificationRequests
-                    .filter(req => ['Consulta DGIUR', 'Registro etapa de proyecto', 'Permiso de obra'].includes(req.name))
+                    .filter(req => ['Consulta DGIUR', 'Permiso de Demolición', 'Registro etapa de proyecto - Informe', 'Registro etapa de proyecto - Plano', 'Permiso de obra'].includes(req.name))
                     .map((request, index) => (
                     <Card key={index} className="p-4">
                       <div className="space-y-3">
@@ -1000,6 +1164,34 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                           )}
                         </div>
                         
+                        {/* Checkbox especial para Consulta DGIUR */}
+                        {request.name === 'Consulta DGIUR' && (
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="dgiur-no-docs"
+                              checked={dgiurNoDocsRequired}
+                              onCheckedChange={(checked) => setDgiurNoDocsRequired(checked as boolean)}
+                            />
+                            <Label htmlFor="dgiur-no-docs" className="text-xs text-muted-foreground">
+                              No requiere documentación
+                            </Label>
+                          </div>
+                        )}
+                        
+                        {/* Checkbox especial para Permiso de Demolición */}
+                        {request.name === 'Permiso de Demolición' && (
+                          <div className="flex items-center space-x-2">
+                            <Checkbox
+                              id="demolicion-no-docs"
+                              checked={demolicionNoDocsRequired}
+                              onCheckedChange={(checked) => setDemolicionNoDocsRequired(checked as boolean)}
+                            />
+                            <Label htmlFor="demolicion-no-docs" className="text-xs text-muted-foreground">
+                              No requiere documentación
+                            </Label>
+                          </div>
+                        )}
+                        
                         {hasVerificationCertificate(request.name) ? (
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
@@ -1008,7 +1200,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                             </div>
                             <div className="text-xs text-blue-600">📄 Certificado disponible</div>
                             
-                            {/* Botones para ver y descargar documentos de verificación */}
+                            {/* Botones para ver, descargar y eliminar documentos de verificación */}
                             <div className="flex gap-1">
                               {getVerificationDocuments(request.name).map((doc, docIndex) => (
                                 <div key={docIndex} className="flex gap-1">
@@ -1029,6 +1221,15 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                                     title="Descargar documento"
                                   >
                                     <Download className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-6 px-2 text-xs text-red-600 hover:text-red-700"
+                                    onClick={() => handleDeleteDocument(doc.id)}
+                                    title="Eliminar documento"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
                                   </Button>
                                 </div>
                               ))}
@@ -1061,31 +1262,41 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                         ) : (
                           <div className="space-y-2">
                             <div className="text-xs text-muted-foreground">
-                              {request.required ? 'Pendiente' : 'No aplicable'}
+                              {(request.name === 'Consulta DGIUR' && dgiurNoDocsRequired) || 
+                               (request.name === 'Permiso de Demolición' && demolicionNoDocsRequired) ? 
+                                'No requiere documentación' : 
+                                (request.required ? 'Pendiente' : 'No aplicable')
+                              }
                             </div>
-                            <div className="space-y-2">
-                              <input
-                                type="file"
-                                accept=".pdf,.jpg,.jpeg,.png"
-                                className="hidden"
-                                id={`verification-gestoria-${index}`}
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0]
-                                  if (file) {
-                                    handleVerificationUpload(request.name, file)
-                                  }
-                                }}
-                              />
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="w-full text-xs"
-                                onClick={() => document.getElementById(`verification-gestoria-${index}`)?.click()}
-                              >
-                                <Upload className="h-3 w-3 mr-1" />
-                                Cargar Doc.
-                              </Button>
-                            </div>
+                            {!((request.name === 'Consulta DGIUR' && dgiurNoDocsRequired) || 
+                               (request.name === 'Permiso de Demolición' && demolicionNoDocsRequired)) && (
+                              <div className="space-y-2">
+                                {/* Campo único para documentos */}
+                                <div>
+                                  <input
+                                    type="file"
+                                    accept={request.name.includes('Plano') ? ".pdf,.dwg,.jpg,.jpeg,.png" : ".pdf,.doc,.docx"}
+                                    className="hidden"
+                                    id={`verification-gestoria-${index}`}
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0]
+                                      if (file) {
+                                        handleVerificationUpload(request.name, file)
+                                      }
+                                    }}
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="w-full text-xs"
+                                    onClick={() => document.getElementById(`verification-gestoria-${index}`)?.click()}
+                                  >
+                                    <Upload className="h-3 w-3 mr-1" />
+                                    Cargar Doc.
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -1123,7 +1334,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                             </div>
                             <div className="text-xs text-blue-600">📄 Certificado disponible</div>
                             
-                            {/* Botones para ver y descargar documentos de verificación */}
+                            {/* Botones para ver, descargar y eliminar documentos de verificación */}
                             <div className="flex gap-1">
                               {getVerificationDocuments(request.name).map((doc, docIndex) => (
                                 <div key={docIndex} className="flex gap-1">
@@ -1144,6 +1355,15 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                                     title="Descargar documento"
                                   >
                                     <Download className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-6 px-2 text-xs text-red-600 hover:text-red-700"
+                                    onClick={() => handleDeleteDocument(doc.id)}
+                                    title="Eliminar documento"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
                                   </Button>
                                 </div>
                               ))}
@@ -1238,7 +1458,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                             </div>
                             <div className="text-xs text-blue-600">📄 Certificado disponible</div>
                             
-                            {/* Botones para ver y descargar documentos de verificación */}
+                            {/* Botones para ver, descargar y eliminar documentos de verificación */}
                             <div className="flex gap-1">
                               {getVerificationDocuments(request.name).map((doc, docIndex) => (
                                 <div key={docIndex} className="flex gap-1">
@@ -1259,6 +1479,15 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                                     title="Descargar documento"
                                   >
                                     <Download className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-6 px-2 text-xs text-red-600 hover:text-red-700"
+                                    onClick={() => handleDeleteDocument(doc.id)}
+                                    title="Eliminar documento"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
                                   </Button>
                                 </div>
                               ))}
@@ -1748,4 +1977,4 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
     </div>
     </div>
   )
-} 
+}

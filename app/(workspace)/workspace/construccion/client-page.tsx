@@ -509,6 +509,9 @@ export default function ConstruccionClientPage() {
       if (updatedProject.dgro_file_number !== undefined) {
         updateData.dgro_file_number = updatedProject.dgro_file_number
       }
+      if (updatedProject.expedientes !== undefined) {
+        updateData.expedientes = updatedProject.expedientes
+      }
 
       console.log('Sending update data:', updateData)
 
