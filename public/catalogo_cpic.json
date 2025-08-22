@@ -1,0 +1,255 @@
+{
+  "schema_version": "cpic-visado.catalog.v1",
+  "generated_at": "2025-08-21",
+  "meta": {
+    "provider": "CPIC",
+    "city": "CABA",
+    "currency": "ARS",
+    "effective_from": "2025-07-01",
+    "source_url": "https://cpic.org.ar/wp-content/uploads/valores-encomienda-2025.pdf",
+    "notes": "Importes seg\u00fan tarifario CPIC julio/2025."
+  },
+  "rules": {
+    "surface_unit": "m2",
+    "rounding": "ceil",
+    "selection_logic": "first breakpoint where surface <= max_m2; else last",
+    "sum_strategy": "sum of selected items",
+    "iva_percent_default": 0
+  },
+  "categories": [
+    {
+      "id": "aviso_obra",
+      "label": "Trámite de Obra - Aviso de Obra",
+      "type": "obra_aviso",
+      "allows_multiple": false,
+      "requires_surface": false,
+      "items": [{ "code": "aviso_obra", "label": "Aviso de Obra", "price_ars": 21700 }]
+    },
+    {
+      "id": "obra_nueva",
+      "label": "Trámite de Obra Nueva (por m² construidos)",
+      "type": "obra",
+      "allows_multiple": false,
+      "requires_surface": true,
+      "breakpoints": [
+        { "max_m2": 250,   "price_ars": 78800 },
+        { "max_m2": 1000,  "price_ars": 176100 },
+        { "max_m2": 2500,  "price_ars": 355200 },
+        { "max_m2": 5000,  "price_ars": 749000 },
+        { "max_m2": 10000, "price_ars": 1555200 },
+        { "max_m2": null,  "price_ars": 2657900, "label": "Supera 10.000 m²" }
+      ]
+    },
+    {
+      "id": "obra_modificacion",
+      "label": "Obra: Modificación / Ampliación / Reformas (por m² intervenidos)",
+      "type": "obra",
+      "allows_multiple": false,
+      "requires_surface": true,
+      "breakpoints": [
+        { "max_m2": 250,   "price_ars": 78800 },
+        { "max_m2": 1000,  "price_ars": 176100 },
+        { "max_m2": 2500,  "price_ars": 355200 },
+        { "max_m2": 5000,  "price_ars": 749000 },
+        { "max_m2": 10000, "price_ars": 1555200 },
+        { "max_m2": null,  "price_ars": 2657900 }
+      ]
+    },
+    {
+      "id": "demolicion_excavacion",
+      "label": "Trámite de Obra: Demolición y/o Excavación (montos fijos)",
+      "type": "demolicion_excavacion",
+      "allows_multiple": true,
+      "requires_surface": false,
+      "items": [
+        { "code": "tarea", "label": "Encomienda por Tarea", "price_ars": 176100 },
+        { "code": "rt", "label": "Encomienda por Representante Técnico", "price_ars": 176100 },
+        { "code": "certificacion_tad", "label": "Certificación Formulario (TAD)", "price_ars": 63400 }
+      ]
+    },
+    {
+      "id": "calculo_estructuras",
+      "label": "Cálculo de Estructuras (por m² construidos)",
+      "type": "estructuras",
+      "allows_multiple": false,
+      "requires_surface": true,
+      "breakpoints": [
+        { "max_m2": 250,   "price_ars": 78800 },
+        { "max_m2": 1000,  "price_ars": 168300 },
+        { "max_m2": 2500,  "price_ars": 339800 },
+        { "max_m2": 5000,  "price_ars": 586900 },
+        { "max_m2": 10000, "price_ars": 843300 },
+        { "max_m2": null,  "price_ars": 1359100 }
+      ]
+    },
+    {
+      "id": "instalaciones_obra",
+      "label": "Instalaciones asociadas a Obra (por m² construidos) – MÚLTIPLE",
+      "type": "instalaciones_por_obra",
+      "allows_multiple": true,
+      "requires_surface": true,
+      "count_mode": "subtypes_count",
+      "quantity_hint": "Seleccioná una encomienda por cada instalación (sanitaria, eléctrica, etc.)",
+      "subtypes": [
+        { "code": "sanitaria", "label": "Sanitaria" },
+        { "code": "electrica", "label": "Eléctrica" },
+        { "code": "contra_incendio", "label": "Contra incendio" },
+        { "code": "termomecanica", "label": "Termomecánica (sin calderas)" },
+        { "code": "ventilacion", "label": "Ventilación" },
+        { "code": "electromecanicas", "label": "Electromecánicas" }
+      ],
+      "breakpoints": [
+        { "max_m2": 250,   "price_ars": 23200 },
+        { "max_m2": 1000,  "price_ars": 52500 },
+        { "max_m2": 2500,  "price_ars": 109700 },
+        { "max_m2": 5000,  "price_ars": 225500 },
+        { "max_m2": 10000, "price_ars": 466400 },
+        { "max_m2": null,  "price_ars": 798500 }
+      ]
+    },
+    {
+      "id": "tareas_varias",
+      "label": "Encomienda de Obra – Tareas Varias (monto fijo)",
+      "type": "tareas_varias",
+      "allows_multiple": true,
+      "requires_surface": false,
+      "items": [
+        { "code": "tareas_varias", "label": "Tareas varias (verif. estructuras transitorias, cambio de profesional, andamios, montacargas, fundaciones, informe técnico, planos, representación técnica)", "price_ars": 71100 }
+      ]
+    },
+    {
+      "id": "instalaciones_no_asociadas",
+      "label": "Instalaciones NO asociadas a obra civil (monto fijo)",
+      "type": "instalaciones_fuera_de_obra",
+      "allows_multiple": true,
+      "requires_surface": false,
+      "items": [{ "code": "inst_no_obra", "label": "Encomienda", "price_ars": 71100 }]
+    },
+    {
+      "id": "higiene_seguridad",
+      "label": "Higiene y Seguridad (monto fijo)",
+      "type": "hyseg",
+      "allows_multiple": true,
+      "requires_surface": false,
+      "items": [{ "code": "hyseg", "label": "Encomienda", "price_ars": 71100 }]
+    },
+    {
+      "id": "inflamables",
+      "label": "Inflamables (monto fijo)",
+      "type": "inflamables",
+      "allows_multiple": true,
+      "requires_surface": false,
+      "items": [{ "code": "inflamables", "label": "Registro de plano de instalación de inflamables", "price_ars": 75700 }]
+    },
+    {
+      "id": "mensura",
+      "label": "Mensura – Estados Parcelarios (monto fijo)",
+      "type": "mensura",
+      "allows_multiple": false,
+      "requires_surface": false,
+      "items": [{ "code": "mensura", "label": "Mensura y división PH", "price_ars": 71100 }]
+    },
+    {
+      "id": "autoproteccion",
+      "label": "Sistema de Autoprotección – Ley 5920/17 (monto fijo)",
+      "type": "autoproteccion",
+      "allows_multiple": false,
+      "requires_surface": false,
+      "items": [{ "code": "autoproteccion", "label": "Encomienda", "price_ars": 71100 }]
+    },
+    {
+      "id": "ajuste_obra",
+      "label": "Ajuste de Obra (monto fijo)",
+      "type": "ajuste_obra",
+      "allows_multiple": false,
+      "requires_surface": false,
+      "items": [{ "code": "ajuste_obra", "label": "Encomienda", "price_ars": 78800 }]
+    },
+    {
+      "id": "habilitaciones",
+      "label": "Habilitaciones (por m² del local)",
+      "type": "habilitaciones",
+      "allows_multiple": false,
+      "requires_surface": true,
+      "breakpoints": [
+        { "max_m2": 180,   "price_ars": 49400 },
+        { "max_m2": 360,   "price_ars": 78800 },
+        { "max_m2": 1000,  "price_ars": 168300 },
+        { "max_m2": 2500,  "price_ars": 339800 },
+        { "max_m2": 5000,  "price_ars": 586900 },
+        { "max_m2": null,  "price_ars": 1153700, "label": "Supera 5.001 m²" }
+      ],
+      "extras": [
+        { "code": "rectificatoria_vencida", "label": "Habilitación rectificatoria/vencida (monto fijo)", "price_ars": 21700 }
+      ]
+    },
+    {
+      "id": "ley257_fachadas",
+      "label": "Ley 257 – Verificación de Fachadas (por m² de frente)",
+      "type": "fachadas",
+      "allows_multiple": true,
+      "requires_surface": true,
+      "surface_hint": "m² de frente de fachada (solo frente a la vía pública)",
+      "breakpoints": [
+        { "max_m2": 600,   "price_ars": 49400 },
+        { "max_m2": 1200,  "price_ars": 71100 },
+        { "max_m2": null,  "price_ars": 159100 }
+      ]
+    },
+    {
+      "id": "otros_fijos",
+      "label": "Otros trámites fijos",
+      "type": "otros",
+      "allows_multiple": true,
+      "requires_surface": false,
+      "items": [
+        { "code": "impacto_ambiental", "label": "Impacto ambiental", "price_ars": 57100 },
+        { "code": "antena", "label": "Antena", "price_ars": 57100 },
+        { "code": "ascensores", "label": "Ascensores", "price_ars": 57100 },
+        { "code": "edificio_seguro", "label": "Edificio Seguro", "price_ars": 57100 },
+        { "code": "caldera", "label": "Caldera", "price_ars": 57100 },
+        { "code": "publicidad", "label": "Publicidad", "price_ars": 57100 }
+      ]
+    },
+    {
+      "id": "dci",
+      "label": "DCI – Suministro de Energía Eléctrica (monto fijo)",
+      "type": "dci",
+      "allows_multiple": true,
+      "requires_surface": false,
+      "items": [
+        { "code": "edesur_monofasico", "label": "EDESUR Monofásico", "price_ars": 57100 },
+        { "code": "edenor_monofasico", "label": "EDENOR Monofásico", "price_ars": 57100 },
+        { "code": "edenor_trifasico", "label": "EDENOR Trifásico", "price_ars": 57100 },
+        { "code": "edesur_pilar_obra", "label": "EDESUR Pilar de Obra", "price_ars": 57100 },
+        { "code": "edesur_trifasico", "label": "EDESUR Trifásico", "price_ars": 57100 },
+        { "code": "edenor_pilar_obra", "label": "EDENOR Pilar de Obra", "price_ars": 57100 }
+      ]
+    },
+    {
+      "id": "certificaciones",
+      "label": "Certificaciones / Trámites varios",
+      "type": "certificaciones",
+      "allows_multiple": true,
+      "requires_surface": false,
+      "items": [
+        { "code": "cert_matriculacion", "label": "Certificación de matriculación", "price_ars": 29400 },
+        { "code": "constancia_incumbencia", "label": "Constancia de incumbencia", "price_ars": 21700 },
+        { "code": "cert_inscripcion", "label": "Certificado de inscripción", "price_ars": 21700 }
+      ]
+    },
+    {
+      "id": "cva_cpic",
+      "label": "CVA – CPIC",
+      "type": "cva",
+      "allows_multiple": false,
+      "requires_surface": false,
+      "items": [
+        { "code": "carga_primera_vez", "label": "Carga CVA CPIC (primera vez)", "price_ars": 41700 },
+        { "code": "carga_primera_vez_adherido", "label": "Carga CVA CPIC (primera vez, matriculado adherido)", "price_ars": 21700 },
+        { "code": "modificaciones", "label": "Modificaciones al CVA (las primeras 2 dentro de 2 años, sin cargo)", "price_ars": 21700 },
+        { "code": "renovacion", "label": "Renovación del CVA (luego de 2 años)", "price_ars": 21700 }
+      ]
+    }
+  ]
+}

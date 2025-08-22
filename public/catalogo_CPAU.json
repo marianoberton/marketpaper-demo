@@ -1,0 +1,177 @@
+{
+  "schema_version": "cpau-visado.catalog.v1",
+  "generated_at": "2025-08-21",
+  "meta": {
+    "provider": "CPAU",
+    "city": "CABA",
+    "currency": "ARS",
+    "source_urls": [
+      "https://www.cpau.org/nota/33357",
+      "https://www.cpau.org/nota/38815"
+    ],
+    "notes": "Importes seg\u00fan 'Valores vigentes'. Completar los null cuando la tabla est\u00e9 visible en tu entorno."
+  },
+  "rules": {
+    "surface_unit": "m2",
+    "rounding": "ceil",
+    "selection_logic": "first breakpoint where surface <= max_m2; else last",
+    "sum_strategy": "sum of selected items",
+    "iva_percent_default": 0
+  },
+  "categories": [
+    {
+      "id": "obra",
+      "label": "Obra (Arquitectura)",
+      "platform": "RETP CPAU",
+      "allows_multiple": false,
+      "requires_surface": true,
+      "aux_items": [
+        { "code": "aviso_de_obra", "label": "Aviso de obra", "price_ars": 55000 }
+      ],
+      "breakpoints": [
+        { "max_m2": 250,   "price_ars": 55000 },
+        { "max_m2": 1000,  "price_ars": 133000 },
+        { "max_m2": 2500,  "price_ars": 280000 },
+        { "max_m2": 5000,  "price_ars": 580000 },
+        { "max_m2": 10000, "price_ars": 1450000 },
+        { "max_m2": null,  "price_ars": 2490000, "label": "Supera 10.000 m\u00b2" }
+      ],
+      "notes": "Escala de obra por tramos de m\u00b2."
+    },
+    {
+      "id": "instalaciones",
+      "label": "Instalaciones complementarias",
+      "platform": "RETP CPAU",
+      "allows_multiple": true,
+      "requires_surface": true,
+      "count_mode": "subtypes_count",
+      "count_field": "quantity",
+      "quantity_hint": "1 por cada instalaci\u00f3n/gesti\u00f3n seleccionada",
+      "breakpoints": [
+        { "max_m2": 250,   "price_ars": 21000 },
+        { "max_m2": 1000,  "price_ars": 45000 },
+        { "max_m2": 2500,  "price_ars": 85000 },
+        { "max_m2": 5000,  "price_ars": 184000 },
+        { "max_m2": 10000, "price_ars": null },
+        { "max_m2": null,  "price_ars": null }
+      ],
+      "subtypes": [
+        { "code": "electrica", "label": "Inst. El\u00e9ctrica" },
+        { "code": "sanitaria", "label": "Inst. Sanitaria" },
+        { "code": "gas", "label": "Inst. Gas" },
+        { "code": "contra_incendio", "label": "Inst. Contra Incendio" },
+        { "code": "termomecanica", "label": "Inst. Termomec\u00e1nica" },
+        { "code": "telecomunicaciones", "label": "Inst. Telecomunicaciones" },
+        { "code": "electromecanicas", "label": "Inst. Electromec\u00e1nicas" },
+        { "code": "pfa_bomberos", "label": "Presentaci\u00f3n ante Bomberos PFA" },
+        { "code": "luz_de_obra", "label": "Luz de Obra" },
+        { "code": "sala_maquinas", "label": "Sala de M\u00e1quinas" },
+        { "code": "gestion_solicitud_corte_suministro", "label": "Gesti\u00f3n: Solicitud de corte de suministro" },
+        { "code": "ajuste_contra_incendio", "label": "Ajuste Inst. Contra Incendio" },
+        { "code": "ajuste_electromecanica", "label": "Ajuste Inst. Electromec\u00e1nica" },
+        { "code": "ajuste_electrica", "label": "Ajuste Inst. El\u00e9ctrica" },
+        { "code": "ajuste_sanitaria", "label": "Ajuste Inst. Sanitaria" },
+        { "code": "ajuste_termomecanica", "label": "Ajuste Inst. Termomec\u00e1nica" },
+        { "code": "ajuste_telecomunicaciones", "label": "Ajuste Inst. Telecomunicaciones" },
+        { "code": "conforme_contra_incendio", "label": "Conforme Inst. Contra Incendio" },
+        { "code": "conforme_electromecanica", "label": "Conforme Inst. Electromec\u00e1nica" },
+        { "code": "conforme_electrica", "label": "Conforme Inst. El\u00e9ctrica" },
+        { "code": "conforme_sanitaria", "label": "Conforme Inst. Sanitaria" },
+        { "code": "conforme_termomecanica", "label": "Conforme Inst. Termomec\u00e1nica" },
+        { "code": "conforme_telecomunicaciones", "label": "Conforme Inst. Telecomunicaciones" }
+      ],
+      "notes": "Cada subtipo suma 1 unidad. Importes por tramos de m\u00b2."
+    },
+    {
+      "id": "habilitaciones",
+      "label": "Habilitaciones (GCBA)",
+      "platform": "AGC + validaci\u00f3n CPAU",
+      "allows_multiple": false,
+      "requires_surface": true,
+      "breakpoints": [
+        { "max_m2": 120,   "price_ars": null },
+        { "max_m2": 360,   "price_ars": null },
+        { "max_m2": 1000,  "price_ars": 130000 },
+        { "max_m2": 2500,  "price_ars": 276000 },
+        { "max_m2": 5000,  "price_ars": 475000 },
+        { "max_m2": null,  "price_ars": null, "label": "Supera 5.000 m\u00b2" }
+      ],
+      "special_rules": {
+        "always_min_scale": [
+          "declaracion_responsable_actualizacion_datos_o_transferencias",
+          "redistribucion_de_usos"
+        ],
+        "rectificatorias_con_cargo": [
+          "agregar_o_eliminar_rubro",
+          "cambio_o_modificacion_de_comitente",
+          "cambio_de_superficie_sin_cambiar_categoria",
+          "agregar_o_eliminar_sobrecarga",
+          "actualizacion_de_fecha",
+          "cambio_de_numero_de_puertas",
+          "agregar_o_quitar_plantas"
+        ]
+      },
+      "notes": "Escala espec\u00edfica de habilitaciones por m\u00b2."
+    },
+    {
+      "id": "frentes_fachadas",
+      "label": "Verificaci\u00f3n/Conservaci\u00f3n de frentes y fachadas (Ley 257)",
+      "platform": "AGC + validaci\u00f3n CPAU",
+      "allows_multiple": true,
+      "requires_surface": true,
+      "surface_hint": "m\u00b2 de frente por cada frente del inmueble",
+      "breakpoints": [
+        { "max_m2": 100,   "price_ars": 45000 },
+        { "max_m2": 300,   "price_ars": 85000 },
+        { "max_m2": 500,   "price_ars": 125000 },
+        { "max_m2": 1000,  "price_ars": 180000 },
+        { "max_m2": null,  "price_ars": 250000, "label": "Supera 1.000 m²" }
+      ],
+      "notes": "Modelado por m\u00b2 de frente. Si hay m\u00e1s de un frente, cargar un \u00edtem por frente."
+    },
+    {
+      "id": "demolicion",
+      "label": "Demolici\u00f3n",
+      "platform": "RETP CPAU",
+      "allows_multiple": false,
+      "requires_surface": false,
+      "pricing_rule": {
+        "type": "use_min_band_of",
+        "category_id": "obra",
+        "applied_price_ars": 55000,
+        "note": "Servicios que abonan por la categor\u00eda m\u00ednima (hasta 250 m\u00b2)."
+      },
+      "breakpoints": [],
+      "notes": "Se liquida a la categor\u00eda m\u00ednima de Obra salvo que la tabla espec\u00edfica indique otra cosa."
+    },
+    {
+      "id": "excavacion",
+      "label": "Excavaci\u00f3n",
+      "platform": "RETP CPAU",
+      "allows_multiple": false,
+      "requires_surface": false,
+      "pricing_rule": {
+        "type": "use_min_band_of",
+        "category_id": "obra",
+        "applied_price_ars": 55000,
+        "note": "Servicios que abonan por la categor\u00eda m\u00ednima (hasta 250 m\u00b2)."
+      },
+      "breakpoints": [],
+      "notes": "Se liquida a la categor\u00eda m\u00ednima de Obra salvo que la tabla espec\u00edfica indique otra cosa."
+    },
+    {
+      "id": "otros_tramites",
+      "label": "Otros tr\u00e1mites (montos fijos)",
+      "platform": "CPAU",
+      "allows_multiple": true,
+      "requires_surface": false,
+      "items": [
+        { "code": "impacto_ambiental", "label": "Impacto ambiental", "price_ars": 75000 },
+        { "code": "informe_tecnico", "label": "Informe técnico", "price_ars": 55000 },
+        { "code": "medicion_tasaciones", "label": "Medición o tasaciones", "price_ars": 65000 },
+        { "code": "pericias", "label": "Pericias", "price_ars": 85000 }
+      ],
+      "notes": "Completar seg\u00fan tabla de 'Valores vigentes' (montos fijos)."
+    }
+  ]
+}

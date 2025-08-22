@@ -1,10 +1,14 @@
-import { Suspense } from 'react';
-import ClientPage from './client-page';
+import { WorkspacePageWrapper } from '../workspace-page-wrapper'
+import ClientPage from './client-page'
 
-export default function SimuladordePagosPage() {
+export default async function SimuladordePagosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
   return (
-    <Suspense fallback={<div>Cargando...</div>}>
+    <WorkspacePageWrapper searchParams={searchParams}>
       <ClientPage />
-    </Suspense>
-  );
+    </WorkspacePageWrapper>
+  )
 }
