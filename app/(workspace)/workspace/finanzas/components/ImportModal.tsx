@@ -185,7 +185,7 @@ export default function ImportModal({ onImport, onCancel }: ImportModalProps) {
     }
 
     // Usar el hook para subir el archivo
-    await uploadFile(selectedFile)
+    await uploadFile(selectedFile, '/api/workspace/finanzas/import')
   }
 
   const getFileIcon = (file: File) => {

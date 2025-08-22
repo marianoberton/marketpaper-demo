@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { upload } from '@vercel/blob/client';
 import { toast } from 'sonner';
 
 interface UseFileUploadOptions {
@@ -27,8 +26,6 @@ const DEFAULT_ALLOWED_TYPES = [
   'application/vnd.dwg',
   'image/vnd.dwg'
 ];
-
-const VERCEL_LIMIT = 4.5 * 1024 * 1024; // 4.5MB - límite de Vercel Functions
 
 export function useFileUpload(options: UseFileUploadOptions = {}) {
   const {
@@ -57,29 +54,7 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
     return null;
   };
 
-  const uploadWithVercelBlob = async (file: File): Promise<string> => {
-    try {
-      setUploadProgress({ isUploading: true, progress: 10, fileName: file.name });
-      
-      const blob = await upload(file.name, file, {
-        access: 'public',
-        handleUploadUrl: '/api/blob/upload',
-        clientPayload: JSON.stringify({
-          size: file.size,
-          type: file.type,
-          name: file.name
-        })
-      });
-
-      setUploadProgress({ isUploading: true, progress: 100, fileName: file.name });
-      return blob.url;
-    } catch (error) {
-      console.error('Error uploading with Vercel Blob:', error);
-      throw new Error(error instanceof Error ? error.message : 'Error subiendo archivo');
-    }
-  };
-
-  const uploadWithTraditionalMethod = async (file: File, endpoint: string): Promise<string> => {
+  const uploadWithSupabase = async (file: File, endpoint: string): Promise<string> => {
     try {
       setUploadProgress({ isUploading: true, progress: 10, fileName: file.name });
       
@@ -108,7 +83,7 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
     }
   };
 
-  const uploadFile = async (file: File, traditionalEndpoint?: string): Promise<string> => {
+  const uploadFile = async (file: File, endpoint: string): Promise<string> => {
     // Validar archivo
     const validationError = validateFile(file);
     if (validationError) {
@@ -119,20 +94,8 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
     }
 
     try {
-      let fileUrl: string;
-
-      // Decidir método de subida basado en el tamaño del archivo
-      if (file.size > VERCEL_LIMIT) {
-        // Usar Vercel Blob para archivos grandes
-        toast.info('Archivo grande detectado, usando subida optimizada...');
-        fileUrl = await uploadWithVercelBlob(file);
-      } else if (traditionalEndpoint) {
-        // Usar método tradicional para archivos pequeños
-        fileUrl = await uploadWithTraditionalMethod(file, traditionalEndpoint);
-      } else {
-        // Si no hay endpoint tradicional, usar Vercel Blob siempre
-        fileUrl = await uploadWithVercelBlob(file);
-      }
+      // Usar siempre Supabase Storage para todos los archivos
+      const fileUrl = await uploadWithSupabase(file, endpoint);
 
       // Simular un pequeño delay para mostrar el progreso completo
       await new Promise(resolve => setTimeout(resolve, 500));

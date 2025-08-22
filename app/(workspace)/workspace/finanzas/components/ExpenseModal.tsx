@@ -172,7 +172,7 @@ export default function ExpenseModal({ expense, categories, onSave, onCancel }: 
       return
     }
 
-    await uploadFile(file)
+    await uploadFile(file, '/api/workspace/finanzas/upload')
   }
 
   const validateForm = () => {
