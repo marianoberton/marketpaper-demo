@@ -428,7 +428,7 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
       totalCpicFees: totalCpicFees,
       breakdown: breakdown
     })
-  }, [encomiendas, memoizedOnCalculationUpdate])
+  }, [encomiendas])
 
   const handleInstalacionChange = (instalacionId: string, checked: boolean) => {
     setNuevaEncomienda(prev => ({
