@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,9 +8,8 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Calculator, Building, FileText, CheckCircle, AlertCircle, Plus, Minus } from 'lucide-react'
+import { Calculator, FileText, CheckCircle, AlertCircle, Plus, Minus } from 'lucide-react'
 import { Project } from '@/lib/construction'
-import { formatCurrency } from '@/lib/construction'
 interface ProfessionalFeesSimulatorProps {
   project: Project
   onCalculationUpdate?: (calculation: ProfessionalFeesCalculation) => void
@@ -89,6 +88,17 @@ interface OtroTramite {
   nombre: string
   precio_fijo: number
   descripcion: string
+}
+
+interface CatalogSubtype {
+  code: string
+  label: string
+}
+
+interface CatalogItem {
+  code: string
+  label: string
+  price_ars?: number
 }
 
 // Función para cargar el catálogo CPAU
@@ -195,14 +205,14 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
   const FRENTES_FACHADAS_RATES = frentesFachadasCategory?.breakpoints || []
 
   // TIPOS DE INSTALACIONES COMPLEMENTARIAS disponibles
-  const TIPOS_INSTALACIONES: TipoInstalacion[] = instalacionesCategory?.subtypes?.map(subtype => ({
+  const TIPOS_INSTALACIONES: TipoInstalacion[] = instalacionesCategory?.subtypes?.map((subtype: CatalogSubtype) => ({
     id: subtype.code,
     nombre: subtype.label,
     descripcion: subtype.label
   })) || []
 
   // OTROS TRÁMITES con montos fijos
-  const OTROS_TRAMITES: OtroTramite[] = otrosTramitesCategory?.items?.map(item => ({
+  const OTROS_TRAMITES: OtroTramite[] = otrosTramitesCategory?.items?.map((item: CatalogItem) => ({
     id: item.code,
     nombre: item.label,
     precio_fijo: item.price_ars || 0,
@@ -374,6 +384,16 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
     }).format(amount)
   }
 
+  // Memoizar la función de callback para evitar re-renders innecesarios
+  const memoizedOnCalculationUpdate = useCallback(
+    (calculation: any) => {
+      if (onCalculationUpdate) {
+        onCalculationUpdate(calculation)
+      }
+    },
+    [onCalculationUpdate]
+  )
+
   // Calcular totales cuando cambian las encomiendas (según pseudocódigo RETP)
   useEffect(() => {
     const cpauEncomiendas = encomiendas.filter(enc => enc.consejo === 'CPAU')
@@ -401,16 +421,14 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
     
     setCalculation(newCalculation)
     
-    // Llamar al callback solo si existe, sin incluirlo en las dependencias
-    if (onCalculationUpdate) {
-      onCalculationUpdate({
-        totalFees: totalFees,
-        totalCpauFees: totalCpauFees,
-        totalCpicFees: totalCpicFees,
-        breakdown: breakdown
-      })
-    }
-  }, [encomiendas]) // Solo depende de encomiendas, no de onCalculationUpdate
+    // Llamar al callback memoizado
+    memoizedOnCalculationUpdate({
+      totalFees: totalFees,
+      totalCpauFees: totalCpauFees,
+      totalCpicFees: totalCpicFees,
+      breakdown: breakdown
+    })
+  }, [encomiendas, memoizedOnCalculationUpdate])
 
   const handleInstalacionChange = (instalacionId: string, checked: boolean) => {
     setNuevaEncomienda(prev => ({

@@ -149,7 +149,7 @@ export default function SimuladordePagosClientPage() {
                         id="surface"
                         type="number"
                         placeholder="Ej: 150"
-                        defaultValue={selectedProject.surface}
+                        defaultValue={selectedProject.surface || ''}
                       />
                     </div>
                     
@@ -169,7 +169,7 @@ export default function SimuladordePagosClientPage() {
                     
                     <div className="space-y-2">
                       <Label htmlFor="construction-type">Tipo de Construcción</Label>
-                      <Select defaultValue={selectedProject.project_type}>
+                      <Select defaultValue={selectedProject.project_type || 'Obra Mayor'}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
