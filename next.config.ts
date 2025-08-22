@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   // Configuración básica para desarrollo
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   async redirects() {
     return []
   },

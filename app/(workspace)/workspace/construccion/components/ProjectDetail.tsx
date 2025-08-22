@@ -1638,7 +1638,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                         <strong>Problema con la tabla de documentos</strong>
                       </div>
                       <p className="text-sm text-yellow-700 mt-2">
-                        La tabla 'project_documents' no existe o no tiene la estructura correcta. 
+                        La tabla &apos;project_documents&apos; no existe o no tiene la estructura correcta. 
                         Mostrando datos de ejemplo. Para arreglar esto:
                       </p>
                       <ol className="text-sm text-yellow-700 mt-2 ml-4 list-decimal">
