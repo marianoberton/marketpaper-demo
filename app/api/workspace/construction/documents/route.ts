@@ -17,58 +17,110 @@ export async function POST(request: NextRequest) {
     // En modo super admin, no verificamos autenticación de usuario
     // pero sí necesitamos una conexión válida a Supabase
     
-    const formData = await request.formData()
-    const file = formData.get('file') as File
-    const projectId = formData.get('projectId') as string
-    const sectionName = formData.get('sectionName') as string
-    const description = formData.get('description') as string
-
-    if (!file || !projectId || !sectionName) {
-      return NextResponse.json(
-        { error: 'Faltan datos requeridos' },
-        { status: 400 }
-      )
-    }
-
-    // Validar tipo de archivo
-    const allowedTypes = [
-      'application/pdf',
-      'image/jpeg',
-      'image/jpg', 
-      'image/png',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    ]
-
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json(
-        { error: 'Tipo de archivo no permitido' },
-        { status: 400 }
-      )
-    }
-
-    // Validar tamaño del archivo (máximo 50MB)
-    if (file.size > 50 * 1024 * 1024) {
-      return NextResponse.json(
-        { error: 'El archivo es demasiado grande. Máximo 50MB permitido.' },
-        { status: 400 }
-      );
-    }
-
-    // Generar nombre único para el archivo
-    const fileExt = file.name.split('.').pop()
-    const timestamp = Date.now()
-    const randomStr = Math.random().toString(36).substring(2)
+    const contentType = request.headers.get('content-type') || ''
     
-    // Sanitizar el nombre de la sección para evitar problemas con caracteres especiales
-    const sanitizedSectionName = sectionName
-      .replace(/[^a-zA-Z0-9\s]/g, '') // Remover caracteres especiales
-      .replace(/\s+/g, '_') // Reemplazar espacios con guiones bajos
-      .toLowerCase()
-    
-    const fileName = `${projectId}/${sanitizedSectionName}/${timestamp}-${randomStr}.${fileExt}`
+    // Manejar tanto FormData (subida tradicional) como JSON (Vercel Blob)
+    if (contentType.includes('application/json')) {
+      // Caso: archivo ya subido a Vercel Blob, solo guardar metadata
+      const { fileUrl, fileName, projectId, sectionName, description } = await request.json()
+      
+      if (!fileUrl || !fileName || !projectId || !sectionName) {
+        return NextResponse.json(
+          { error: 'Faltan datos requeridos para Vercel Blob' },
+          { status: 400 }
+        )
+      }
+      
+      // Guardar registro en la base de datos con URL de Vercel Blob
+      const { data: document, error: dbError } = await supabase
+        .from('project_documents')
+        .insert({
+          project_id: projectId,
+          section_name: sectionName,
+          filename: fileName,
+          original_filename: fileName,
+          file_url: fileUrl,
+          file_size: 0, // No conocemos el tamaño exacto desde Vercel Blob
+          mime_type: 'application/octet-stream', // Tipo genérico
+          description: description,
+          uploaded_by: 'super-admin'
+        })
+        .select()
+        .single()
 
-    try {
+      if (dbError) {
+        console.error('Database error:', dbError)
+        return NextResponse.json(
+          { error: 'Error al guardar la información del documento' },
+          { status: 500 }
+        )
+      }
+
+      return NextResponse.json({
+        id: document.id,
+        filename: document.filename,
+        original_filename: document.original_filename,
+        file_url: document.file_url,
+        file_size: document.file_size,
+        mime_type: document.mime_type,
+        section_name: document.section_name,
+        description: document.description,
+        created_at: document.created_at
+      })
+    } else {
+      // Caso: subida tradicional con FormData
+      const formData = await request.formData()
+      const file = formData.get('file') as File
+      const projectId = formData.get('projectId') as string
+      const sectionName = formData.get('sectionName') as string
+      const description = formData.get('description') as string
+
+      if (!file || !projectId || !sectionName) {
+        return NextResponse.json(
+          { error: 'Faltan datos requeridos' },
+          { status: 400 }
+        )
+      }
+
+      // Validar tipo de archivo
+      const allowedTypes = [
+        'application/pdf',
+        'image/jpeg',
+        'image/jpg', 
+        'image/png',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ]
+
+      if (!allowedTypes.includes(file.type)) {
+        return NextResponse.json(
+          { error: 'Tipo de archivo no permitido' },
+          { status: 400 }
+        )
+      }
+
+      // Validar tamaño del archivo (máximo 50MB)
+      if (file.size > 50 * 1024 * 1024) {
+        return NextResponse.json(
+          { error: 'El archivo es demasiado grande. Máximo 50MB permitido.' },
+          { status: 400 }
+        );
+      }
+
+      // Generar nombre único para el archivo
+      const fileExt = file.name.split('.').pop()
+      const timestamp = Date.now()
+      const randomStr = Math.random().toString(36).substring(2)
+      
+      // Sanitizar el nombre de la sección para evitar problemas con caracteres especiales
+      const sanitizedSectionName = sectionName
+        .replace(/[^a-zA-Z0-9\s]/g, '') // Remover caracteres especiales
+        .replace(/\s+/g, '_') // Reemplazar espacios con guiones bajos
+        .toLowerCase()
+      
+      const fileName = `${projectId}/${sanitizedSectionName}/${timestamp}-${randomStr}.${fileExt}`
+
+      try {
       // Subir archivo a Supabase Storage
       const { data: storageData, error: storageError } = await supabase.storage
         .from('construction-documents')
@@ -133,13 +185,14 @@ export async function POST(request: NextRequest) {
         created_at: document.created_at
       })
 
-    } catch (error) {
-      console.error('Upload error:', error)
-      return NextResponse.json(
-        { error: 'Error interno del servidor' },
-        { status: 500 }
-      )
-    }
+      } catch (error) {
+        console.error('Upload error:', error)
+        return NextResponse.json(
+          { error: 'Error interno del servidor' },
+          { status: 500 }
+        )
+      }
+    } // Cierre del bloque else
 
   } catch (error) {
     console.error('Request processing error:', error)

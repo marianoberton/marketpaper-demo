@@ -148,9 +148,10 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
   const [tableExists, setTableExists] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [currentUploadSection, setCurrentUploadSection] = useState<string | null>(null)
   
   // Hook para manejar subidas de imágenes con Vercel Blob
-  const { uploadFile, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useFileUpload({
+  const { uploadFile: uploadImageFile, uploadProgress: imageUploadProgress, isUploading: isUploadingImage } = useFileUpload({
     maxSize: 50 * 1024 * 1024, // 50MB
     allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
     onSuccess: async (fileUrl, fileName) => {
@@ -193,8 +194,8 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
   
   // Sincronizar estado del hook con estado local
   useEffect(() => {
-    setUploadingImage(hookIsUploading)
-  }, [hookIsUploading])
+    setUploadingImage(isUploadingImage)
+  }, [isUploadingImage])
   const [activeTab, setActiveTab] = useState('documentos')
   const [dgiurNoDocsRequired, setDgiurNoDocsRequired] = useState(false)
   const [demolicionNoDocsRequired, setDemolicionNoDocsRequired] = useState(false)
@@ -346,56 +347,69 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
     
     try {
       // El hook maneja automáticamente si usar Vercel Blob o método tradicional
-      await uploadFile(file, '/api/blob/upload')
+      await uploadImageFile(file, '/api/blob/upload')
     } catch (error) {
       console.error('Error uploading image:', error)
       // El error ya se maneja en el hook
     }
   }
 
+  // Hook para manejar subidas de documentos con Vercel Blob
+  const { uploadFile: uploadDocumentFile, isUploading: isUploadingDocument } = useFileUpload({
+    maxSize: 50 * 1024 * 1024, // 50MB
+    onSuccess: async (fileUrl, fileName) => {
+      try {
+        // Crear documento en la base de datos usando la URL de Vercel Blob
+        const response = await fetch('/api/workspace/construction/documents', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            fileUrl,
+            fileName,
+            projectId: project.id,
+            sectionName: currentUploadSection,
+            description: `Documento de ${currentUploadSection}`
+          })
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }))
+          throw new Error(errorData.error || `Error ${response.status}`)
+        }
+
+        // Recargar documentos del proyecto para mantener sincronización
+        await loadProjectDocuments()
+        
+        // Mostrar mensaje de éxito
+        alert(`Documento "${fileName}" cargado exitosamente`)
+      } catch (error) {
+        console.error('Error creating document:', error)
+        alert(`Error al crear el documento: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+      } finally {
+        setUploading(false)
+        setCurrentUploadSection(null)
+      }
+    },
+    onError: (error) => {
+      alert(`Error al subir el archivo: ${error}`)
+      setUploading(false)
+      setCurrentUploadSection(null)
+    }
+  })
+
   const handleFileUpload = async (file: File, section: string) => {
     try {
       setUploading(true)
+      setCurrentUploadSection(section)
       setUploadingTo(null)
       
-      // Crear FormData para enviar al API
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('projectId', project.id)
-      formData.append('sectionName', section)
-      formData.append('description', `Documento de ${section}`)
-
-      // Enviar al API
-      const response = await fetch('/api/workspace/construction/documents', {
-        method: 'POST',
-        body: formData
-      })
-
-      if (!response.ok) {
-        let errorMessage = 'Error al subir el archivo'
-        try {
-          const errorData = await response.json()
-          errorMessage = errorData.error || errorMessage
-        } catch (parseError) {
-          // Si no se puede parsear como JSON, usar el status text
-          errorMessage = `Error ${response.status}: ${response.statusText}`
-        }
-        throw new Error(errorMessage)
-      }
-
-      const result = await response.json()
-      
-      // Recargar documentos del proyecto para mantener sincronización
-      await loadProjectDocuments()
-      
-      // Mostrar mensaje de éxito
-      alert(`Documento "${file.name}" cargado exitosamente`)
-      
+      // El hook maneja automáticamente si usar Vercel Blob o método tradicional
+      await uploadDocumentFile(file, '/api/workspace/construction/documents')
     } catch (error) {
       console.error('Upload error:', error)
-      alert(`Error al subir el archivo: ${error instanceof Error ? error.message : 'Error desconocido'}`)
-    } finally {
-      setUploading(false)
+      // El error ya se maneja en el hook
     }
   }
 
