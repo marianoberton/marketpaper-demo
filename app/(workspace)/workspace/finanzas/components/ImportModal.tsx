@@ -104,9 +104,9 @@ export default function ImportModal({ onImport, onCancel }: ImportModalProps) {
       return
     }
 
-    // Validar tamaño (máximo 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setErrors({ file: 'El archivo es demasiado grande. Máximo 10MB permitido.' })
+    // Validar tamaño (máximo 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      setErrors({ file: 'El archivo es demasiado grande. Máximo 50MB permitido.' })
       return
     }
 
@@ -300,7 +300,7 @@ export default function ImportModal({ onImport, onCancel }: ImportModalProps) {
                     </Button>
                   </div>
                   <p className="text-sm text-gray-500">
-                    Tamaño máximo: 10MB
+                    Tamaño máximo: 50MB
                   </p>
                 </div>
               )}
@@ -439,4 +439,4 @@ export default function ImportModal({ onImport, onCancel }: ImportModalProps) {
       </DialogContent>
     </Dialog>
   )
-} 
+}

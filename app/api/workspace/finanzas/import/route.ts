@@ -31,10 +31,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validar tamaño del archivo (máximo 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      return NextResponse.json(
-        { error: 'El archivo es demasiado grande. Máximo 10MB.' },
+    // Validar tamaño del archivo (máximo 50MB)
+  if (file.size > 50 * 1024 * 1024) {
+    return NextResponse.json(
+      { error: 'El archivo es demasiado grande. Máximo 50MB.' },
         { status: 400 }
       )
     }
@@ -384,4 +384,4 @@ async function categorizarGastosAutomaticamente(gastos: any[], categorias: any[]
       category_name: categoriaEncontrada?.name
     }
   })
-} 
+}

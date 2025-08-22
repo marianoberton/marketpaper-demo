@@ -147,9 +147,9 @@ export default function CreateProjectModal({
         return
       }
       
-      // Validar tamaño (máximo 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors(prev => ({ ...prev, image: 'La imagen no debe superar los 5MB' }))
+      // Validar tamaño (máximo 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      setErrors(prev => ({ ...prev, image: 'La imagen no debe superar los 50MB' }))
         return
       }
       
@@ -485,7 +485,7 @@ export default function CreateProjectModal({
                         />
                       </div>
                       <p className="text-xs text-gray-500 mt-2">
-                        PNG, JPG, GIF hasta 5MB
+                        PNG, JPG, GIF hasta 50MB
                       </p>
                     </div>
                   )}

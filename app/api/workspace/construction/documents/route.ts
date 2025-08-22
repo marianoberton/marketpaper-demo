@@ -5,7 +5,7 @@ import { createClient } from '@/utils/supabase/server'
 export const config = {
   api: {
     bodyParser: {
-      sizeLimit: '10mb',
+      sizeLimit: '50mb',
     },
   },
 }
@@ -47,12 +47,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validar tamaño (máximo 10MB)
-    if (file.size > 10 * 1024 * 1024) {
+    // Validar tamaño del archivo (máximo 50MB)
+    if (file.size > 50 * 1024 * 1024) {
       return NextResponse.json(
-        { error: 'El archivo es demasiado grande. Máximo 10MB.' },
+        { error: 'El archivo es demasiado grande. Máximo 50MB permitido.' },
         { status: 400 }
-      )
+      );
     }
 
     // Generar nombre único para el archivo

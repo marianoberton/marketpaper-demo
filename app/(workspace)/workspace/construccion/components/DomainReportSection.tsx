@@ -142,11 +142,11 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
       return
     }
 
-    // Validar tamaño (máximo 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('❌ Error: El archivo no debe superar los 10MB\n\n💡 Intenta comprimir el PDF o usar una versión más pequeña')
-      return
-    }
+    // Validar tamaño (máximo 50MB)
+      if (file.size > 50 * 1024 * 1024) {
+        alert('❌ Error: El archivo no debe superar los 50MB\n\n💡 Intenta comprimir el PDF o usar una versión más pequeña')
+        return
+      }
 
     // Validar que se haya ingresado la fecha del documento
     if (!documentDate || documentDate.trim() === '') {
@@ -500,7 +500,7 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
                         }
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Máximo 10MB • Solo archivos PDF
+                        Máximo 50MB • Solo archivos PDF
                       </p>
                     </div>
                   </div>
@@ -667,4 +667,4 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
       </Card>
     </div>
   )
-} 
+}

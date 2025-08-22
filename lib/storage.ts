@@ -179,9 +179,9 @@ export async function uploadProjectImage(projectId: string, file: File): Promise
     throw new Error('El archivo debe ser una imagen')
   }
 
-  // Validar tamaño (máximo 10MB)
-  if (file.size > 10 * 1024 * 1024) {
-    throw new Error('La imagen no debe superar los 10MB')
+  // Validar tamaño (máximo 50MB)
+  if (file.size > 50 * 1024 * 1024) {
+    throw new Error('La imagen no debe superar los 50MB')
   }
 
   // Generar nombre único para la imagen
@@ -447,4 +447,4 @@ export async function listFiles(
       error: `Error interno: ${error instanceof Error ? error.message : 'Error desconocido'}`
     }
   }
-} 
+}

@@ -51,11 +51,11 @@ export async function POST(
       )
     }
     
-    // Validate file size (10MB)
-    const maxSize = 10 * 1024 * 1024 // 10MB
-    if (file.size > maxSize) {
-      return NextResponse.json(
-        { error: `File too large: ${(file.size / 1024 / 1024).toFixed(2)}MB. Maximum: 10MB` },
+    // Validate file size (50MB)
+  const maxSize = 50 * 1024 * 1024 // 50MB
+  if (file.size > maxSize) {
+    return NextResponse.json(
+      { error: `File too large: ${(file.size / 1024 / 1024).toFixed(2)}MB. Maximum: 50MB` },
         { status: 400 }
       )
     }
@@ -126,4 +126,4 @@ export async function POST(
       { status: 500 }
     )
   }
-} 
+}

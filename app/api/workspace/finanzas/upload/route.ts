@@ -16,10 +16,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validar tamaño del archivo (máximo 5MB para recibos)
-    if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json(
-        { error: 'El archivo es demasiado grande. Máximo 5MB.' },
+    // Validar tamaño del archivo (máximo 50MB para recibos)
+  if (file.size > 50 * 1024 * 1024) {
+    return NextResponse.json(
+      { error: 'El archivo es demasiado grande. Máximo 50MB.' },
         { status: 400 }
       )
     }
@@ -91,4 +91,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-} 
+}

@@ -291,11 +291,11 @@ export default function CompanyDetailsClient({
         return
       }
       
-      // Validate file size (5MB)
-      const maxSize = 5 * 1024 * 1024 // 5MB
+      // Validate file size (50MB)
+      const maxSize = 50 * 1024 * 1024 // 50MB
       if (file.size > maxSize) {
         console.error('❌ File too large:', file.size, 'bytes')
-        toast.error(`El archivo es muy grande: ${(file.size / 1024 / 1024).toFixed(2)}MB. Máximo permitido: 5MB`)
+        toast.error(`El archivo es muy grande: ${(file.size / 1024 / 1024).toFixed(2)}MB. Máximo permitido: 50MB`)
         e.target.value = '' // Clear the input
         return
       }
@@ -572,7 +572,7 @@ export default function CompanyDetailsClient({
                         Subir Nuevo Logo
                       </Label>
                       <p className="text-sm text-gray-500 mt-1">
-                        Formatos: JPEG, PNG, SVG, WebP, GIF. Tamaño máximo: 5MB
+                        Formatos: JPEG, PNG, SVG, WebP, GIF. Tamaño máximo: 50MB
                       </p>
                     </div>
                     
@@ -661,4 +661,4 @@ export default function CompanyDetailsClient({
       />
     </div>
   )
-} 
+}

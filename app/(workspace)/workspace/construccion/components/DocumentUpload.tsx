@@ -84,9 +84,9 @@ export default function DocumentUpload({
       return
     }
 
-    // Validar tamaño (máximo 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setError('El archivo es demasiado grande. Máximo 10MB.')
+    // Validar tamaño (máximo 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      setError('El archivo es demasiado grande. Máximo 50MB.')
       return
     }
 
@@ -245,7 +245,7 @@ export default function DocumentUpload({
                 className="mt-1"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Tipos permitidos: PDF, imágenes, documentos de Word/Excel. Máximo 10MB.
+                Tipos permitidos: PDF, imágenes, documentos de Word/Excel. Máximo 50MB.
               </p>
             </div>
 
@@ -322,4 +322,4 @@ export default function DocumentUpload({
       </CardContent>
     </Card>
   )
-} 
+}

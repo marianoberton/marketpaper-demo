@@ -293,11 +293,11 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
         return
       }
       
-      // Validar tamaño (máximo 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        alert('La imagen no debe superar los 10MB')
-        return
-      }
+      // Validar tamaño (máximo 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      alert('La imagen no debe superar los 50MB')
+      return
+    }
       
       // Subir imagen
       const imageUrl = await uploadProjectImage(project.id, file)
