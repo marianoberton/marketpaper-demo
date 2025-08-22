@@ -6,7 +6,7 @@ VALUES (
   'construction-documents',
   'construction-documents',
   true,
-  10485760, -- 10MB
+  20971520, -- 20MB
   ARRAY[
     'application/pdf',
     'image/jpeg',
@@ -94,4 +94,4 @@ TO authenticated
 USING (
   bucket_id = 'project-images'
   AND auth.uid()::text = (storage.foldername(name))[1]
-); 
+);
