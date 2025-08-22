@@ -64,11 +64,11 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
       const blob = await upload(file.name, file, {
         access: 'public',
         handleUploadUrl: '/api/blob/upload',
-        clientPayload: {
+        clientPayload: JSON.stringify({
           size: file.size,
           type: file.type,
           name: file.name
-        }
+        })
       });
 
       setUploadProgress({ isUploading: true, progress: 100, fileName: file.name });

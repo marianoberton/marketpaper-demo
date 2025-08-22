@@ -25,8 +25,17 @@ export async function POST(request: Request): Promise<NextResponse> {
         // Validaciones de seguridad
         const maxSize = 50 * 1024 * 1024; // 50MB
         
-        if (clientPayload && typeof clientPayload === 'object' && 'size' in clientPayload) {
-          const fileSize = clientPayload.size as number;
+        let parsedPayload: any = null;
+        if (clientPayload && typeof clientPayload === 'string') {
+          try {
+            parsedPayload = JSON.parse(clientPayload);
+          } catch (error) {
+            console.error('Error parsing clientPayload:', error);
+          }
+        }
+        
+        if (parsedPayload && parsedPayload.size) {
+          const fileSize = parsedPayload.size as number;
           if (fileSize > maxSize) {
             throw new Error('El archivo excede el límite de 50MB');
           }
@@ -44,8 +53,8 @@ export async function POST(request: Request): Promise<NextResponse> {
           'image/vnd.dwg'
         ];
 
-        if (clientPayload && typeof clientPayload === 'object' && 'type' in clientPayload) {
-          const fileType = clientPayload.type as string;
+        if (parsedPayload && parsedPayload.type) {
+          const fileType = parsedPayload.type as string;
           if (!allowedTypes.includes(fileType)) {
             throw new Error('Tipo de archivo no permitido');
           }
@@ -64,7 +73,6 @@ export async function POST(request: Request): Promise<NextResponse> {
         console.log('Archivo subido exitosamente:', {
           url: blob.url,
           pathname: blob.pathname,
-          size: blob.size,
           tokenPayload,
         });
         
@@ -74,7 +82,6 @@ export async function POST(request: Request): Promise<NextResponse> {
             user_id: user.id,
             file_url: blob.url,
             file_name: blob.pathname,
-            file_size: blob.size,
             upload_method: 'vercel_blob'
           });
         } catch (error) {

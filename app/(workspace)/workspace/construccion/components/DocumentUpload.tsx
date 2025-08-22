@@ -47,13 +47,58 @@ export default function DocumentUpload({
   const [documents, setDocuments] = useState<ProjectDocument[]>([])
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [error, setError] = useState<string | null>(null)
+  
+  // Hook para manejar subidas de archivos con Vercel Blob
+  const { uploadFile, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useFileUpload({
+    maxSize: 50 * 1024 * 1024, // 50MB
+    onSuccess: async (fileUrl, fileName) => {
+      try {
+        // Crear documento en la base de datos usando la URL de Vercel Blob
+        const dummyFile = {
+          name: fileName,
+          size: 0,
+          type: 'application/octet-stream'
+        } as File
+        const uploadData: DocumentUpload = {
+          file: dummyFile, // Archivo dummy para compatibilidad
+          projectId,
+          sectionName,
+          description: description.trim() || undefined,
+          fileUrl // Pasar la URL de Vercel Blob
+        }
+
+        const document = await uploadProjectDocument(uploadData)
+        
+        // Actualizar lista de documentos
+        setDocuments(prev => [document, ...prev])
+        
+        // Notificar al componente padre
+        onDocumentUploaded?.(document)
+        
+        // Limpiar formulario
+        setDescription('')
+        setShowUploadForm(false)
+        
+        // Limpiar input de archivo
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
+      } catch (error: any) {
+        console.error('Error creating document:', error)
+        setError('Error al crear el documento en la base de datos')
+      }
+    },
+    onError: (error) => {
+      setError(`Error al subir el archivo: ${error}`)
+    }
+  })
   
   // Sincronizar estado del hook con estado local
   useEffect(() => {
     setUploading(hookIsUploading)
     setUploadProgress(hookUploadProgress.progress)
   }, [hookIsUploading, hookUploadProgress.progress])
-  const [error, setError] = useState<string | null>(null)
   const [showUploadForm, setShowUploadForm] = useState(false)
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(true)
@@ -100,43 +145,7 @@ export default function DocumentUpload({
     handleUpload(file)
   }
 
-  // Hook para manejar subidas de archivos con Vercel Blob
-  const { uploadFile, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useFileUpload({
-    maxSize: 50 * 1024 * 1024, // 50MB
-    onSuccess: async (fileUrl, fileName) => {
-      try {
-        // Crear documento en la base de datos usando la URL de Vercel Blob
-        const uploadData: DocumentUpload = {
-          file: new File([], fileName), // Archivo dummy para compatibilidad
-          projectId,
-          sectionName,
-          description: description.trim() || undefined,
-          fileUrl // Pasar la URL de Vercel Blob
-        }
 
-        const document = await uploadProjectDocument(uploadData)
-        
-        // Actualizar lista de documentos
-        setDocuments(prev => [document, ...prev])
-        
-        // Limpiar formulario
-        setDescription('')
-        setShowUploadForm(false)
-        if (fileInputRef.current) {
-          fileInputRef.current.value = ''
-        }
-
-        // Notificar al componente padre
-        onDocumentUploaded?.(document)
-      } catch (error: any) {
-        console.error('Error saving document to database:', error)
-        setError(error.message || 'Error al guardar el documento')
-      }
-    },
-    onError: (error) => {
-      setError(error)
-    }
-  })
 
   const handleUpload = async (file: File) => {
     try {
