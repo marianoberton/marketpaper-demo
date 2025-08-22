@@ -38,6 +38,7 @@ import Image from 'next/image'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Project, mockProjectStages, ProjectProfessional } from '@/lib/construction'
 import { uploadProjectImage } from '@/lib/storage'
+import { useFileUpload } from '@/lib/hooks/useFileUpload'
 import DomainReportSection from './DomainReportSection'
 import GovernmentTaxesSection from './GovernmentTaxesSection'
 import ExpedientesManager from '@/components/ExpedientesManager'
@@ -147,6 +148,53 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
   const [tableExists, setTableExists] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+  
+  // Hook para manejar subidas de imágenes con Vercel Blob
+  const { uploadFile, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useFileUpload({
+    maxSize: 50 * 1024 * 1024, // 50MB
+    allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+    onSuccess: async (fileUrl, fileName) => {
+      try {
+        // Actualizar proyecto con la nueva imagen
+        const response = await fetch('/api/workspace/construction/projects', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: project.id,
+            cover_image_url: fileUrl
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error('Error al actualizar el proyecto')
+        }
+
+        const data = await response.json()
+        const updatedProject = data.project
+        
+        // Actualizar el proyecto local
+        setEditedProject(updatedProject)
+        
+        // Notificar al componente padre si existe la función
+        if (onProjectUpdate) {
+          onProjectUpdate(updatedProject)
+        }
+      } catch (error) {
+        console.error('Error updating project with image URL:', error)
+        alert('Error al actualizar el proyecto con la imagen. Por favor, inténtalo de nuevo.')
+      }
+    },
+    onError: (error) => {
+      alert(`Error al subir la imagen: ${error}`)
+    }
+  })
+  
+  // Sincronizar estado del hook con estado local
+  useEffect(() => {
+    setUploadingImage(hookIsUploading)
+  }, [hookIsUploading])
   const [activeTab, setActiveTab] = useState('documentos')
   const [dgiurNoDocsRequired, setDgiurNoDocsRequired] = useState(false)
   const [demolicionNoDocsRequired, setDemolicionNoDocsRequired] = useState(false)
@@ -284,56 +332,24 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
   }
 
   const handleImageUpload = async (file: File) => {
-    try {
-      setUploadingImage(true)
-      
-      // Validar que sea una imagen
-      if (!file.type.startsWith('image/')) {
-        alert('El archivo debe ser una imagen')
-        return
-      }
-      
-      // Validar tamaño (máximo 50MB)
+    // Validar que sea una imagen
+    if (!file.type.startsWith('image/')) {
+      alert('El archivo debe ser una imagen')
+      return
+    }
+    
+    // Validar tamaño (máximo 50MB)
     if (file.size > 50 * 1024 * 1024) {
       alert('La imagen no debe superar los 50MB')
       return
     }
-      
-      // Subir imagen
-      const imageUrl = await uploadProjectImage(project.id, file)
-      
-      // Actualizar proyecto con la nueva imagen
-      const response = await fetch('/api/workspace/construction/projects', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: project.id,
-          cover_image_url: imageUrl
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Error al actualizar el proyecto')
-      }
-
-      const data = await response.json()
-      const updatedProject = data.project
-      
-      // Actualizar el proyecto local
-      setEditedProject(updatedProject)
-      
-      // Notificar al componente padre si existe la función
-      if (onProjectUpdate) {
-        onProjectUpdate(updatedProject)
-      }
-      
+    
+    try {
+      // El hook maneja automáticamente si usar Vercel Blob o método tradicional
+      await uploadFile(file, '/api/blob/upload')
     } catch (error) {
       console.error('Error uploading image:', error)
-      alert('Error al subir la imagen. Por favor, inténtalo de nuevo.')
-    } finally {
-      setUploadingImage(false)
+      // El error ya se maneja en el hook
     }
   }
 

@@ -1,0 +1,20 @@
+{
+  "functions": {
+    "app/api/workspace/construction/documents/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/workspace/finanzas/import/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/workspace/finanzas/upload/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/admin/companies/[id]/logo/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/blob/upload/route.ts": {
+      "maxDuration": 30
+    }
+  },
+  "framework": "nextjs"
+}

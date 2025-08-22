@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +15,7 @@ import Image from 'next/image'
 import { ProjectProfessional } from '@/lib/construction'
 import ExpedientesManager from '@/components/ExpedientesManager'
 import { ProjectExpediente } from '@/lib/construction'
+import { useFileUpload } from '@/lib/hooks/useFileUpload'
 
 interface CreateProjectModalProps {
   isOpen: boolean
@@ -58,6 +59,25 @@ export default function CreateProjectModal({
   const [uploadingImage, setUploadingImage] = useState(false)
   const [enableTaxManagement, setEnableTaxManagement] = useState(false)
   const [expedientes, setExpedientes] = useState<ProjectExpediente[]>([])
+  
+  // Hook para manejar subidas de imágenes con Vercel Blob
+  const { uploadFile, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useFileUpload({
+    maxSize: 50 * 1024 * 1024, // 50MB
+    allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+    onSuccess: (fileUrl, fileName) => {
+      // La imagen se subió exitosamente a Vercel Blob
+      // Actualizar el estado con la URL
+      setFormData(prev => ({ ...prev, cover_image_url: fileUrl }))
+    },
+    onError: (error) => {
+      setErrors(prev => ({ ...prev, image: error }))
+    }
+  })
+
+  // Sincronizar estado del hook con estado local para imágenes
+  useEffect(() => {
+    setUploadingImage(hookIsUploading)
+  }, [hookIsUploading])
 
   // Función para calcular estimaciones de tasas gubernamentales
   const calculateTaxEstimates = () => {
@@ -138,7 +158,7 @@ export default function CreateProjectModal({
     return Object.keys(newErrors).length === 0
   }
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       // Validar que sea una imagen
@@ -148,8 +168,8 @@ export default function CreateProjectModal({
       }
       
       // Validar tamaño (máximo 50MB)
-    if (file.size > 50 * 1024 * 1024) {
-      setErrors(prev => ({ ...prev, image: 'La imagen no debe superar los 50MB' }))
+      if (file.size > 50 * 1024 * 1024) {
+        setErrors(prev => ({ ...prev, image: 'La imagen no debe superar los 50MB' }))
         return
       }
       
@@ -169,6 +189,14 @@ export default function CreateProjectModal({
           delete newErrors.image
           return newErrors
         })
+      }
+      
+      // Subir imagen usando el hook (maneja automáticamente Vercel Blob vs método tradicional)
+      try {
+        await uploadFile(file, '/api/blob/upload')
+      } catch (error) {
+        console.error('Error uploading image:', error)
+        // El error ya se maneja en el hook
       }
     }
   }

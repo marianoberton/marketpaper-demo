@@ -29,6 +29,7 @@ import {
   type ProjectDocument,
   type DocumentUpload
 } from '@/lib/storage'
+import { useFileUpload } from '@/lib/hooks/useFileUpload'
 
 interface DocumentUploadProps {
   projectId: string
@@ -46,6 +47,12 @@ export default function DocumentUpload({
   const [documents, setDocuments] = useState<ProjectDocument[]>([])
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  
+  // Sincronizar estado del hook con estado local
+  useEffect(() => {
+    setUploading(hookIsUploading)
+    setUploadProgress(hookUploadProgress.progress)
+  }, [hookIsUploading, hookUploadProgress.progress])
   const [error, setError] = useState<string | null>(null)
   const [showUploadForm, setShowUploadForm] = useState(false)
   const [description, setDescription] = useState('')
@@ -93,56 +100,52 @@ export default function DocumentUpload({
     handleUpload(file)
   }
 
+  // Hook para manejar subidas de archivos con Vercel Blob
+  const { uploadFile, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useFileUpload({
+    maxSize: 50 * 1024 * 1024, // 50MB
+    onSuccess: async (fileUrl, fileName) => {
+      try {
+        // Crear documento en la base de datos usando la URL de Vercel Blob
+        const uploadData: DocumentUpload = {
+          file: new File([], fileName), // Archivo dummy para compatibilidad
+          projectId,
+          sectionName,
+          description: description.trim() || undefined,
+          fileUrl // Pasar la URL de Vercel Blob
+        }
+
+        const document = await uploadProjectDocument(uploadData)
+        
+        // Actualizar lista de documentos
+        setDocuments(prev => [document, ...prev])
+        
+        // Limpiar formulario
+        setDescription('')
+        setShowUploadForm(false)
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
+
+        // Notificar al componente padre
+        onDocumentUploaded?.(document)
+      } catch (error: any) {
+        console.error('Error saving document to database:', error)
+        setError(error.message || 'Error al guardar el documento')
+      }
+    },
+    onError: (error) => {
+      setError(error)
+    }
+  })
+
   const handleUpload = async (file: File) => {
     try {
-      setUploading(true)
       setError(null)
-      setUploadProgress(0)
-
-      // Simular progreso de subida
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 90) {
-            clearInterval(progressInterval)
-            return 90
-          }
-          return prev + 10
-        })
-      }, 200)
-
-      const uploadData: DocumentUpload = {
-        file,
-        projectId,
-        sectionName,
-        description: description.trim() || undefined
-      }
-
-      const document = await uploadProjectDocument(uploadData)
-      
-      // Completar progreso
-      clearInterval(progressInterval)
-      setUploadProgress(100)
-
-      // Actualizar lista de documentos
-      setDocuments(prev => [document, ...prev])
-      
-      // Limpiar formulario
-      setDescription('')
-      setShowUploadForm(false)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
-
-      // Notificar al componente padre
-      onDocumentUploaded?.(document)
-
-      setTimeout(() => setUploadProgress(0), 1000)
-
+      // El hook maneja automáticamente si usar Vercel Blob o método tradicional
+      await uploadFile(file, '/api/workspace/construction/documents')
     } catch (error: any) {
       console.error('Upload error:', error)
-      setError(error.message || 'Error al subir el archivo')
-    } finally {
-      setUploading(false)
+      // El error ya se maneja en el hook
     }
   }
 
@@ -253,10 +256,20 @@ export default function DocumentUpload({
             {uploading && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span>Subiendo archivo...</span>
+                  <span>
+                    {hookUploadProgress.fileName ? 
+                      `Subiendo ${hookUploadProgress.fileName}...` : 
+                      'Subiendo archivo...'
+                    }
+                  </span>
                   <span>{uploadProgress}%</span>
                 </div>
                 <Progress value={uploadProgress} className="h-2" />
+                {uploadProgress > 90 && (
+                  <p className="text-xs text-muted-foreground">
+                    Finalizando subida y guardando en base de datos...
+                  </p>
+                )}
               </div>
             )}
           </div>

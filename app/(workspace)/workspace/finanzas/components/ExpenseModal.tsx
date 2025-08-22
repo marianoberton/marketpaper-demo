@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 import { CalendarIcon, X, Upload, DollarSign, Tag, CreditCard, Receipt, Repeat } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { useFileUpload } from '@/lib/hooks/useFileUpload'
 
 interface Expense {
   id: string
@@ -86,6 +87,23 @@ export default function ExpenseModal({ expense, categories, onSave, onCancel }: 
   const [newTag, setNewTag] = useState('')
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
+  
+  // Hook para manejar subidas de archivos con Vercel Blob
+  const { uploadFile, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useFileUpload({
+    maxSize: 50 * 1024 * 1024, // 50MB
+    allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'],
+    onSuccess: async (fileUrl, fileName) => {
+      setFormData(prev => ({ ...prev, receipt_url: fileUrl }))
+    },
+    onError: (error) => {
+      alert(`Error al subir el archivo: ${error}`)
+    }
+  })
+  
+  // Sincronizar estado del hook con estado local
+  useEffect(() => {
+    setUploading(hookIsUploading)
+  }, [hookIsUploading])
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   // Cargar datos del gasto al editar
@@ -141,29 +159,20 @@ export default function ExpenseModal({ expense, categories, onSave, onCancel }: 
   const handleFileUpload = async (file: File) => {
     if (!file) return
 
-    setUploading(true)
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('type', 'receipt')
-
-      const response = await fetch('/api/workspace/finanzas/upload', {
-        method: 'POST',
-        body: formData
-      })
-
-      if (!response.ok) {
-        throw new Error('Error al subir el archivo')
-      }
-
-      const data = await response.json()
-      handleInputChange('receipt_url', data.url)
-    } catch (error) {
-      console.error('Error uploading file:', error)
-      alert('Error al subir el archivo')
-    } finally {
-      setUploading(false)
+    // Validar tipo de archivo
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']
+    if (!allowedTypes.includes(file.type)) {
+      alert('Tipo de archivo no permitido. Solo se permiten imágenes (JPEG, PNG, GIF, WEBP) y PDFs.')
+      return
     }
+
+    // Validar tamaño (50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      alert('El archivo es demasiado grande. El tamaño máximo es 50MB.')
+      return
+    }
+
+    await uploadFile(file)
   }
 
   const validateForm = () => {
@@ -462,4 +471,4 @@ export default function ExpenseModal({ expense, categories, onSave, onCancel }: 
       </DialogContent>
     </Dialog>
   )
-} 
+}

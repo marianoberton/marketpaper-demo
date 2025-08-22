@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useFileUpload } from '@/lib/hooks/useFileUpload'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -77,6 +78,26 @@ export default function ImportModal({ onImport, onCancel }: ImportModalProps) {
   const [fileType, setFileType] = useState('')
   const [dragOver, setDragOver] = useState(false)
   const [uploading, setUploading] = useState(false)
+  
+  // Hook para manejar subidas de archivos con Vercel Blob
+  const { uploadFile, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useFileUpload({
+    maxSize: 50 * 1024 * 1024, // 50MB
+    allowedTypes: ['application/pdf', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel', 'text/csv', 'image/jpeg', 'image/jpg', 'image/png', 'text/plain'],
+    onSuccess: async (fileUrl, fileName) => {
+      // El archivo se subió exitosamente, ahora procesamos la importación
+      if (selectedFile) {
+        onImport(selectedFile, fileType)
+      }
+    },
+    onError: (error) => {
+      setErrors({ file: `Error al subir el archivo: ${error}` })
+    }
+  })
+  
+  // Sincronizar estado del hook con estado local
+  useEffect(() => {
+    setUploading(hookIsUploading)
+  }, [hookIsUploading])
   const [processingOptions, setProcessingOptions] = useState({
     auto_categorize: true,
     detect_duplicates: true,
@@ -163,18 +184,8 @@ export default function ImportModal({ onImport, onCancel }: ImportModalProps) {
       return
     }
 
-    setUploading(true)
-    try {
-      // Aquí podrías agregar lógica adicional antes de la importación
-      // como validaciones específicas del tipo de archivo
-      
-      await onImport(selectedFile, fileType)
-    } catch (error) {
-      console.error('Error during import:', error)
-      setErrors({ general: 'Error al importar el archivo' })
-    } finally {
-      setUploading(false)
-    }
+    // Usar el hook para subir el archivo
+    await uploadFile(selectedFile)
   }
 
   const getFileIcon = (file: File) => {

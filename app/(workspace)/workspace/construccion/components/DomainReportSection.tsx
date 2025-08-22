@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -21,6 +21,7 @@ import {
   Trash2
 } from 'lucide-react'
 import { Project, formatDomainReportStatus, calculateDomainReportDaysRemaining } from '@/lib/construction'
+import { useFileUpload } from '@/lib/hooks/useFileUpload'
 
 interface DomainReportSectionProps {
   project: Project
@@ -29,6 +30,62 @@ interface DomainReportSectionProps {
 
 export default function DomainReportSection({ project, onProjectUpdate }: DomainReportSectionProps) {
   const [uploading, setUploading] = useState(false)
+  
+  // Hook para manejar subidas de archivos con Vercel Blob
+  const { uploadFile, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useFileUpload({
+    maxSize: 50 * 1024 * 1024, // 50MB
+    allowedTypes: ['application/pdf'],
+    onSuccess: async (fileUrl, fileName) => {
+      try {
+        // Usar la fecha del documento ingresada por el usuario (no la fecha actual)
+        const documentDateTime = new Date(documentDate + 'T12:00:00').toISOString() // Agregar hora del mediodía para evitar problemas de zona horaria
+
+        // Actualizar proyecto con nuevo informe
+        const response = await fetch('/api/workspace/construction/projects', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: project.id,
+            domain_report_file_url: fileUrl,
+            domain_report_upload_date: documentDateTime, // Esta es la fecha del documento
+            domain_report_notes: notes.trim() || null
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error('Error al actualizar el proyecto')
+        }
+
+        const data = await response.json()
+        
+        if (onProjectUpdate) {
+          onProjectUpdate(data.project)
+        }
+
+        setShowUploadForm(false)
+        setSelectedFile(null) // Limpiar archivo seleccionado
+        
+        // Calcular fecha de vencimiento para mostrar en el mensaje
+        const selectedDate = new Date(documentDate)
+        const expiryDate = new Date(selectedDate.getTime() + (90 * 24 * 60 * 60 * 1000))
+        
+        alert(`✅ Informe de dominio subido exitosamente\n\n📅 Fecha del documento: ${selectedDate.toLocaleDateString('es-AR')}\n⏰ Válido hasta: ${expiryDate.toLocaleDateString('es-AR')}\n\n💡 El informe tiene una validez de 90 días desde la fecha del documento.`)
+      } catch (error) {
+        console.error('Error updating project with domain report:', error)
+        alert('Error al actualizar el proyecto con el informe. Por favor, inténtalo de nuevo.')
+      }
+    },
+    onError: (error) => {
+      alert(`❌ Error al subir el informe de dominio\n\nDetalles: ${error}\n\n💡 Verifica:\n• Que el archivo sea un PDF válido\n• Que tengas conexión a internet\n• Que la fecha del documento sea correcta`)
+    }
+  })
+  
+  // Sincronizar estado del hook con estado local
+  useEffect(() => {
+    setUploading(hookIsUploading)
+  }, [hookIsUploading])
   const [notes, setNotes] = useState(project.domain_report_notes || '')
   const [showUploadForm, setShowUploadForm] = useState(!project.domain_report_file_url)
   const [documentDate, setDocumentDate] = useState(
@@ -45,90 +102,33 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
   const handleFileUpload = async (file: File) => {
     if (!file) return
 
-    try {
-      setUploading(true)
+    // Validar que la fecha no sea futura
+    const selectedDate = new Date(documentDate)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // Reset time to compare only dates
+    
+    if (selectedDate > today) {
+      alert('❌ Error: La fecha del documento no puede ser futura.\n\n📅 Ingresa la fecha que aparece en el informe, no la fecha de hoy.')
+      return
+    }
 
-      // Validar que la fecha no sea futura
-      const selectedDate = new Date(documentDate)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0) // Reset time to compare only dates
-      
-      if (selectedDate > today) {
-        alert('❌ Error: La fecha del documento no puede ser futura.\n\n📅 Ingresa la fecha que aparece en el informe, no la fecha de hoy.')
+    // Validar que la fecha no sea muy antigua (más de 2 años)
+    const twoYearsAgo = new Date()
+    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2)
+    
+    if (selectedDate < twoYearsAgo) {
+      const confirm = window.confirm('⚠️ Advertencia: La fecha del documento es de hace más de 2 años.\n\n¿Estás seguro que es correcta?')
+      if (!confirm) {
         return
       }
+    }
 
-      // Validar que la fecha no sea muy antigua (más de 2 años)
-      const twoYearsAgo = new Date()
-      twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2)
-      
-      if (selectedDate < twoYearsAgo) {
-        const confirm = window.confirm('⚠️ Advertencia: La fecha del documento es de hace más de 2 años.\n\n¿Estás seguro que es correcta?')
-        if (!confirm) {
-          return
-        }
-      }
-
-      // Subir archivo a Supabase Storage
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('projectId', project.id)
-      formData.append('sectionName', 'Informe de Dominio')
-      formData.append('description', `Informe de dominio - Fecha: ${documentDate}`)
-
-      const uploadResponse = await fetch('/api/workspace/construction/documents', {
-        method: 'POST',
-        body: formData
-      })
-
-      if (!uploadResponse.ok) {
-        const errorData = await uploadResponse.json()
-        throw new Error(errorData.error || 'Error al subir el archivo')
-      }
-
-      const uploadResult = await uploadResponse.json()
-      const fileUrl = uploadResult.file_url
-      
-      // Usar la fecha del documento ingresada por el usuario (no la fecha actual)
-      const documentDateTime = new Date(documentDate + 'T12:00:00').toISOString() // Agregar hora del mediodía para evitar problemas de zona horaria
-
-      // Actualizar proyecto con nuevo informe
-      const response = await fetch('/api/workspace/construction/projects', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: project.id,
-          domain_report_file_url: fileUrl,
-          domain_report_upload_date: documentDateTime, // Esta es la fecha del documento
-          domain_report_notes: notes.trim() || null
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Error al actualizar el proyecto')
-      }
-
-      const data = await response.json()
-      
-      if (onProjectUpdate) {
-        onProjectUpdate(data.project)
-      }
-
-      setShowUploadForm(false)
-      setSelectedFile(null) // Limpiar archivo seleccionado
-      
-      // Calcular fecha de vencimiento para mostrar en el mensaje
-      const expiryDate = new Date(selectedDate.getTime() + (90 * 24 * 60 * 60 * 1000))
-      
-      alert(`✅ ¡Informe de dominio subido exitosamente!\n\n📅 Fecha del documento: ${selectedDate.toLocaleDateString('es-AR')}\n⏰ Vence el: ${expiryDate.toLocaleDateString('es-AR')}\n🗓️ Días restantes: ${Math.ceil((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))}`)
-      
+    try {
+      // El hook maneja automáticamente si usar Vercel Blob o método tradicional
+      await uploadFile(file, '/api/blob/upload')
     } catch (error) {
       console.error('Error uploading domain report:', error)
-      alert(`❌ Error al subir el informe de dominio\n\nDetalles: ${error instanceof Error ? error.message : 'Error desconocido'}\n\n💡 Verifica:\n• Que el archivo sea un PDF válido\n• Que tengas conexión a internet\n• Que la fecha del documento sea correcta`)
-    } finally {
-      setUploading(false)
+      // El error ya se maneja en el hook
     }
   }
 

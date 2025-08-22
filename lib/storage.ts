@@ -12,6 +12,7 @@ export interface DocumentUpload {
   projectId: string
   sectionName: string
   description?: string
+  fileUrl?: string // URL de Vercel Blob para archivos grandes
 }
 
 export interface ProjectDocument {
@@ -57,28 +58,48 @@ export async function uploadProjectDocument(uploadData: DocumentUpload): Promise
     throw new Error('Usuario no autenticado')
   }
 
-  // Generar nombre único para el archivo
-  const fileExt = uploadData.file.name.split('.').pop()
-  const fileName = `${uploadData.projectId}/${uploadData.sectionName}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+  let fileName: string
+  let publicUrl: string
+  let fileSize: number
+  let mimeType: string
+  let originalFilename: string
 
   try {
-    // Subir archivo a Supabase Storage
-    const { data: storageData, error: storageError } = await supabase.storage
-      .from(STORAGE_BUCKETS.CONSTRUCTION_DOCUMENTS)
-      .upload(fileName, uploadData.file, {
-        cacheControl: '3600',
-        upsert: false
-      })
+    // Si se proporciona fileUrl (Vercel Blob), usar esa URL directamente
+    if (uploadData.fileUrl) {
+      publicUrl = uploadData.fileUrl
+      fileName = uploadData.fileUrl.split('/').pop() || 'unknown'
+      fileSize = uploadData.file.size || 0
+      mimeType = uploadData.file.type || 'application/octet-stream'
+      originalFilename = uploadData.file.name || fileName
+    } else {
+      // Método tradicional: subir a Supabase Storage
+      const fileExt = uploadData.file.name.split('.').pop()
+      fileName = `${uploadData.projectId}/${uploadData.sectionName}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
 
-    if (storageError) {
-      console.error('Storage error:', storageError)
-      throw new Error('Error al subir el archivo')
+      // Subir archivo a Supabase Storage
+      const { data: storageData, error: storageError } = await supabase.storage
+        .from(STORAGE_BUCKETS.CONSTRUCTION_DOCUMENTS)
+        .upload(fileName, uploadData.file, {
+          cacheControl: '3600',
+          upsert: false
+        })
+
+      if (storageError) {
+        console.error('Storage error:', storageError)
+        throw new Error('Error al subir el archivo')
+      }
+
+      // Obtener URL pública del archivo
+      const { data: { publicUrl: supabaseUrl } } = supabase.storage
+        .from(STORAGE_BUCKETS.CONSTRUCTION_DOCUMENTS)
+        .getPublicUrl(fileName)
+      
+      publicUrl = supabaseUrl
+      fileSize = uploadData.file.size
+      mimeType = uploadData.file.type
+      originalFilename = uploadData.file.name
     }
-
-    // Obtener URL pública del archivo
-    const { data: { publicUrl } } = supabase.storage
-      .from(STORAGE_BUCKETS.CONSTRUCTION_DOCUMENTS)
-      .getPublicUrl(fileName)
 
     // Guardar registro en la base de datos
     const { data: document, error: dbError } = await supabase
@@ -87,10 +108,10 @@ export async function uploadProjectDocument(uploadData: DocumentUpload): Promise
         project_id: uploadData.projectId,
         section_name: uploadData.sectionName,
         filename: fileName,
-        original_filename: uploadData.file.name,
+        original_filename: originalFilename,
         file_url: publicUrl,
-        file_size: uploadData.file.size,
-        mime_type: uploadData.file.type,
+        file_size: fileSize,
+        mime_type: mimeType,
         description: uploadData.description,
         uploaded_by: user.id
       })
@@ -98,10 +119,12 @@ export async function uploadProjectDocument(uploadData: DocumentUpload): Promise
       .single()
 
     if (dbError) {
-      // Si hay error en la DB, intentar eliminar el archivo subido
-      await supabase.storage
-        .from(STORAGE_BUCKETS.CONSTRUCTION_DOCUMENTS)
-        .remove([fileName])
+      // Si hay error en la DB y no es Vercel Blob, intentar eliminar el archivo subido
+      if (!uploadData.fileUrl) {
+        await supabase.storage
+          .from(STORAGE_BUCKETS.CONSTRUCTION_DOCUMENTS)
+          .remove([fileName])
+      }
       
       console.error('Database error:', dbError)
       throw new Error('Error al guardar la información del documento')
