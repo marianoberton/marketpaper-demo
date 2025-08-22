@@ -6,6 +6,17 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Configuración para archivos grandes
+  experimental: {
+    serverComponentsExternalPackages: [],
+  },
+  // Configuración de API para archivos grandes
+  api: {
+    bodyParser: {
+      sizeLimit: '50mb',
+    },
+    responseLimit: '50mb',
+  },
   async redirects() {
     return []
   },
