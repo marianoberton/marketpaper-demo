@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useDirectFileUpload } from '@/lib/hooks/useDirectFileUpload'
 import { useWorkspace } from '@/components/workspace-context'
-import { sanitizeFileName } from '@/lib/utils/file-utils'
+import { sanitizeFileName, generateUniqueFilePath } from '@/lib/utils/file-utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -177,11 +177,13 @@ export default function ImportModal({ onImport, onCancel }: ImportModalProps) {
     }
 
     try {
-      // Generar ruta sanitizada para el archivo
-      const timestamp = new Date().toISOString().split('T')[0]
+      // Generar ruta única para el archivo
       const sanitizedFileType = fileType.replace(/[^a-z0-9]/gi, '-')
-      const sanitizedFileName = sanitizeFileName(selectedFile.name)
-      const path = `${workspace.companyId}/imports/${sanitizedFileType}/${timestamp}/${sanitizedFileName}`
+      const path = generateUniqueFilePath({
+        companyId: workspace.companyId,
+        section: `imports/${sanitizedFileType}`,
+        fileName: selectedFile.name
+      })
       
       // Subir archivo usando subida directa con URL firmada
       const result = await uploadFile({

@@ -20,8 +20,10 @@ export function sanitizeFileName(fileName: string): string {
     // Normalizar caracteres Unicode (remover acentos)
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    // Reemplazar espacios y caracteres especiales con guiones
-    .replace(/[^a-zA-Z0-9._-]/g, '-')
+    // Reemplazar caracteres problemáticos específicos
+    .replace(/[|\\/:*?"<>]/g, '-')  // Caracteres no permitidos en nombres de archivo
+    .replace(/[\s]+/g, '-')         // Espacios múltiples a guión simple
+    .replace(/[^a-zA-Z0-9._-]/g, '-') // Otros caracteres especiales
     // Remover múltiples guiones consecutivos
     .replace(/-+/g, '-')
     // Remover guiones al inicio y final
@@ -74,12 +76,17 @@ export function generateUniqueFilePath({
   section: string;
   fileName: string;
 }): string {
-  const timestamp = Date.now();
+  // Generar timestamp más preciso con microsegundos
+  const now = new Date();
+  const timestamp = `${now.getTime()}-${Math.random().toString(36).substring(2, 8)}`;
+  
   const sanitizedFileName = sanitizeFileName(fileName);
   const sanitizedSection = section
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9._-]/g, '-')
+    .replace(/[|\\/:*?"<>]/g, '-')  // Caracteres problemáticos
+    .replace(/[\s]+/g, '-')         // Espacios múltiples
+    .replace(/[^a-zA-Z0-9._-]/g, '-') // Otros caracteres especiales
     .replace(/-+/g, '-')
     .replace(/^-+|-+$/g, '')
     .toLowerCase();

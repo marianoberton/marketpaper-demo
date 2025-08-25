@@ -40,7 +40,7 @@ import { Project, mockProjectStages, ProjectProfessional } from '@/lib/construct
 import { uploadProjectImage } from '@/lib/storage'
 import { useDirectFileUpload } from '@/lib/hooks/useDirectFileUpload'
 import { useWorkspace } from '@/components/workspace-context'
-import { sanitizeFileName } from '@/lib/utils/file-utils'
+import { sanitizeFileName, generateUniqueFilePath } from '@/lib/utils/file-utils'
 import DomainReportSection from './DomainReportSection'
 import GovernmentTaxesSection from './GovernmentTaxesSection'
 import ExpedientesManager from '@/components/ExpedientesManager'
@@ -409,10 +409,13 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
       setCurrentUploadSection(section)
       setUploadingTo(null)
       
-      // Generar ruta para el archivo
-      const timestamp = new Date().toISOString().split('T')[0]
-      const sanitizedSectionName = section.toLowerCase().replace(/\s+/g, '-')
-      const path = `${companyId || 'default'}/projects/${project.id}/${sanitizedSectionName}/${timestamp}/${file.name}`
+      // Generar ruta única para el archivo
+      const path = generateUniqueFilePath({
+        companyId: companyId || 'default',
+        projectId: project.id,
+        section: section,
+        fileName: file.name
+      })
       
       // Subir documento usando subida directa con URL firmada
       const result = await uploadDocument({
