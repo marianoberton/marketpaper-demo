@@ -16,6 +16,7 @@ import { ProjectProfessional } from '@/lib/construction'
 import ExpedientesManager from '@/components/ExpedientesManager'
 import { ProjectExpediente } from '@/lib/construction'
 import { useFileUpload } from '@/lib/hooks/useFileUpload'
+import { useWorkspace } from '@/components/workspace-context'
 
 interface CreateProjectModalProps {
   isOpen: boolean
@@ -60,19 +61,11 @@ export default function CreateProjectModal({
   const [enableTaxManagement, setEnableTaxManagement] = useState(false)
   const [expedientes, setExpedientes] = useState<ProjectExpediente[]>([])
   
-  // Hook para manejar subidas de imágenes con Vercel Blob
-  const { uploadFile, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useFileUpload({
-    maxSize: 50 * 1024 * 1024, // 50MB
-    allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
-    onSuccess: (fileUrl, fileName) => {
-      // La imagen se subió exitosamente a Vercel Blob
-      // Actualizar el estado con la URL
-      setFormData(prev => ({ ...prev, cover_image_url: fileUrl }))
-    },
-    onError: (error) => {
-      setErrors(prev => ({ ...prev, image: error }))
-    }
-  })
+  // Hook para obtener el workspace actual
+  const { companyId } = useWorkspace()
+  
+  // Hook para manejar subidas de imágenes con Supabase Storage
+  const { upload, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useFileUpload()
 
   // Sincronizar estado del hook con estado local para imágenes
   useEffect(() => {
@@ -191,12 +184,22 @@ export default function CreateProjectModal({
         })
       }
       
-      // Subir imagen usando el hook (maneja automáticamente Vercel Blob vs método tradicional)
+      // Subir imagen usando el nuevo sistema de upload directo a Supabase Storage
       try {
-        await uploadFile(file, '/api/blob/upload')
+        const result = await upload({
+          file,
+          bucket: 'company-logos',
+          workspaceId: companyId || 'default',
+          folder: 'projects'
+        })
+        
+        // La imagen se subió exitosamente - actualizar el estado con la URL
+        if (result.publicUrl) {
+          setFormData(prev => ({ ...prev, cover_image_url: result.publicUrl }))
+        }
       } catch (error) {
         console.error('Error uploading image:', error)
-        // El error ya se maneja en el hook
+        setErrors(prev => ({ ...prev, image: error instanceof Error ? error.message : 'Error subiendo imagen' }))
       }
     }
   }

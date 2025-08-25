@@ -39,6 +39,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Project, mockProjectStages, ProjectProfessional } from '@/lib/construction'
 import { uploadProjectImage } from '@/lib/storage'
 import { useFileUpload } from '@/lib/hooks/useFileUpload'
+import { useWorkspace } from '@/components/workspace-context'
 import DomainReportSection from './DomainReportSection'
 import GovernmentTaxesSection from './GovernmentTaxesSection'
 import ExpedientesManager from '@/components/ExpedientesManager'
@@ -150,11 +151,13 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
   const [uploadingImage, setUploadingImage] = useState(false)
   const [currentUploadSection, setCurrentUploadSection] = useState<string | null>(null)
   
-  // Hook para manejar subidas de imágenes con Vercel Blob
-  const { uploadFile: uploadImageFile, uploadProgress: imageUploadProgress, isUploading: isUploadingImage } = useFileUpload({
-    maxSize: 50 * 1024 * 1024, // 50MB
-    allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
-    onSuccess: async (fileUrl, fileName) => {
+  // Hook para obtener el workspace actual
+  const { companyId } = useWorkspace()
+  
+  // Hook para manejar subidas de imágenes con Supabase Storage
+  const { upload, uploadProgress: imageUploadProgress, isUploading: isUploadingImage } = useFileUpload()
+  
+  const handleImageUploadSuccess = async (fileUrl: string, fileName: string) => {
       try {
         // Actualizar proyecto con la nueva imagen
         const response = await fetch('/api/workspace/construction/projects', {
@@ -186,11 +189,11 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
         console.error('Error updating project with image URL:', error)
         alert('Error al actualizar el proyecto con la imagen. Por favor, inténtalo de nuevo.')
       }
-    },
-    onError: (error) => {
-      alert(`Error al subir la imagen: ${error}`)
-    }
-  })
+  }
+  
+  const handleImageUploadError = (error: string) => {
+    alert(`Error al subir la imagen: ${error}`)
+  }
   
   // Sincronizar estado del hook con estado local
   useEffect(() => {
@@ -333,71 +336,69 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
   }
 
   const handleImageUpload = async (file: File) => {
-    // Validar que sea una imagen
-    if (!file.type.startsWith('image/')) {
-      alert('El archivo debe ser una imagen')
-      return
-    }
-    
-    // Validar tamaño (máximo 50MB)
-    if (file.size > 50 * 1024 * 1024) {
-      alert('La imagen no debe superar los 50MB')
-      return
-    }
-    
     try {
-      // El hook maneja automáticamente si usar Vercel Blob o método tradicional
-      await uploadImageFile(file, '/api/blob/upload')
+      // Subir imagen usando el nuevo sistema de upload directo a Supabase Storage
+      const result = await upload({
+        file,
+        bucket: 'company-logos',
+        workspaceId: companyId || 'default',
+        folder: 'project-covers'
+      })
+      
+      // Manejar éxito de la subida
+      if (result.publicUrl) {
+        await handleImageUploadSuccess(result.publicUrl, file.name)
+      }
     } catch (error) {
       console.error('Error uploading image:', error)
-      // El error ya se maneja en el hook
+      handleImageUploadError(error instanceof Error ? error.message : 'Error desconocido')
     }
   }
 
-  // Hook para manejar subidas de documentos con Vercel Blob
-  const { uploadFile: uploadDocumentFile, isUploading: isUploadingDocument } = useFileUpload({
-    maxSize: 50 * 1024 * 1024, // 50MB
-    onSuccess: async (fileUrl, fileName) => {
-      try {
-        // Crear documento en la base de datos usando la URL de Vercel Blob
-        const response = await fetch('/api/workspace/construction/documents', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            fileUrl,
-            fileName,
-            projectId: project.id,
-            sectionName: currentUploadSection,
-            description: `Documento de ${currentUploadSection}`
-          })
+  // Hook adicional para manejar subidas de documentos con Supabase Storage
+  const { upload: uploadDocument, isUploading: isUploadingDocument } = useFileUpload()
+  
+  const handleDocumentUploadSuccess = async (fileUrl: string, fileName: string) => {
+    try {
+      // Crear documento en la base de datos usando la URL de Supabase Storage
+      const response = await fetch('/api/workspace/construction/documents', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileUrl,
+          fileName,
+          projectId: project.id,
+          sectionName: currentUploadSection,
+          description: `Documento de ${currentUploadSection}`
         })
+      })
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }))
-          throw new Error(errorData.error || `Error ${response.status}`)
-        }
-
-        // Recargar documentos del proyecto para mantener sincronización
-        await loadProjectDocuments()
-        
-        // Mostrar mensaje de éxito
-        alert(`Documento "${fileName}" cargado exitosamente`)
-      } catch (error) {
-        console.error('Error creating document:', error)
-        alert(`Error al crear el documento: ${error instanceof Error ? error.message : 'Error desconocido'}`)
-      } finally {
-        setUploading(false)
-        setCurrentUploadSection(null)
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }))
+        throw new Error(errorData.error || `Error ${response.status}`)
       }
-    },
-    onError: (error) => {
-      alert(`Error al subir el archivo: ${error}`)
+
+      // Recargar documentos del proyecto para mantener sincronización
+      await loadProjectDocuments()
+      
+      // Mostrar mensaje de éxito
+      alert(`Documento "${fileName}" cargado exitosamente`)
+    } catch (error) {
+      console.error('Error creating document:', error)
+      alert(`Error al crear el documento: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+    } finally {
       setUploading(false)
       setCurrentUploadSection(null)
     }
-  })
+  }
+  
+  const handleDocumentUploadError = (error: string) => {
+    alert(`Error al subir el archivo: ${error}`)
+    setUploading(false)
+    setCurrentUploadSection(null)
+  }
 
   const handleFileUpload = async (file: File, section: string) => {
     try {
@@ -405,11 +406,21 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
       setCurrentUploadSection(section)
       setUploadingTo(null)
       
-      // El hook maneja automáticamente si usar Vercel Blob o método tradicional
-      await uploadDocumentFile(file, '/api/workspace/construction/documents')
+      // Subir documento usando el nuevo sistema de upload directo a Supabase Storage
+      const result = await uploadDocument({
+        file,
+        bucket: 'construction-documents',
+        workspaceId: companyId || 'default',
+        folder: 'project-documents'
+      })
+      
+      // Manejar éxito de la subida
+      if (result.publicUrl) {
+        await handleDocumentUploadSuccess(result.publicUrl, file.name)
+      }
     } catch (error) {
       console.error('Upload error:', error)
-      // El error ya se maneja en el hook
+      handleDocumentUploadError(error instanceof Error ? error.message : 'Error desconocido')
     }
   }
 

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { Project, formatDomainReportStatus, calculateDomainReportDaysRemaining } from '@/lib/construction'
 import { useFileUpload } from '@/lib/hooks/useFileUpload'
+import { useWorkspace } from '@/components/workspace-context'
 
 interface DomainReportSectionProps {
   project: Project
@@ -31,11 +32,13 @@ interface DomainReportSectionProps {
 export default function DomainReportSection({ project, onProjectUpdate }: DomainReportSectionProps) {
   const [uploading, setUploading] = useState(false)
   
-  // Hook para manejar subidas de archivos con Vercel Blob
-  const { uploadFile, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useFileUpload({
-    maxSize: 50 * 1024 * 1024, // 50MB
-    allowedTypes: ['application/pdf'],
-    onSuccess: async (fileUrl, fileName) => {
+  // Hook para obtener el workspace actual
+  const { companyId } = useWorkspace()
+  
+  // Hook para manejar subidas de archivos con Supabase Storage
+  const { upload, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useFileUpload()
+  
+  const handleUploadSuccess = async (fileUrl: string, fileName: string) => {
       try {
         // Usar la fecha del documento ingresada por el usuario (no la fecha actual)
         const documentDateTime = new Date(documentDate + 'T12:00:00').toISOString() // Agregar hora del mediodía para evitar problemas de zona horaria
@@ -76,11 +79,11 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
         console.error('Error updating project with domain report:', error)
         alert('Error al actualizar el proyecto con el informe. Por favor, inténtalo de nuevo.')
       }
-    },
-    onError: (error) => {
+  }
+  
+  const handleUploadError = (error: string) => {
       alert(`❌ Error al subir el informe de dominio\n\nDetalles: ${error}\n\n💡 Verifica:\n• Que el archivo sea un PDF válido\n• Que tengas conexión a internet\n• Que la fecha del documento sea correcta`)
     }
-  })
   
   // Sincronizar estado del hook con estado local
   useEffect(() => {
@@ -124,11 +127,21 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
     }
 
     try {
-      // El hook maneja automáticamente si usar Vercel Blob o método tradicional
-      await uploadFile(file, '/api/blob/upload')
+      // Subir archivo usando el nuevo sistema de upload directo a Supabase Storage
+      const result = await upload({
+        file,
+        bucket: 'construction-documents',
+        workspaceId: companyId || 'default',
+        folder: 'domain-reports'
+      })
+      
+      // Manejar éxito de la subida
+      if (result.publicUrl) {
+        await handleUploadSuccess(result.publicUrl, file.name)
+      }
     } catch (error) {
       console.error('Error uploading domain report:', error)
-      // El error ya se maneja en el hook
+      handleUploadError(error instanceof Error ? error.message : 'Error desconocido')
     }
   }
 
@@ -136,17 +149,7 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
     const file = event.target.files?.[0]
     if (!file) return
 
-    // Validar que sea PDF
-    if (file.type !== 'application/pdf') {
-      alert('❌ Error: El archivo debe ser un PDF\n\n💡 Verifica que el archivo tenga extensión .pdf')
-      return
-    }
-
-    // Validar tamaño (máximo 50MB)
-      if (file.size > 50 * 1024 * 1024) {
-        alert('❌ Error: El archivo no debe superar los 50MB\n\n💡 Intenta comprimir el PDF o usar una versión más pequeña')
-        return
-      }
+    // Las validaciones de tipo y tamaño ahora se manejan en el hook useFileUpload
 
     // Validar que se haya ingresado la fecha del documento
     if (!documentDate || documentDate.trim() === '') {

@@ -39,7 +39,6 @@ export async function POST(request: NextRequest) {
       .from(bucket)
       .createSignedUploadUrl(path, {
         upsert: false,
-        expiresIn: validExpiresIn,
       });
 
     if (error) {
