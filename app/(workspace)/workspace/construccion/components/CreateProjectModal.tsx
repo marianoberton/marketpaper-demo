@@ -17,6 +17,7 @@ import ExpedientesManager from '@/components/ExpedientesManager'
 import { ProjectExpediente } from '@/lib/construction'
 import { useDirectFileUpload } from '@/lib/hooks/useDirectFileUpload'
 import { useWorkspace } from '@/components/workspace-context'
+import { sanitizeFileName } from '@/lib/utils/file-utils'
 
 interface CreateProjectModalProps {
   isOpen: boolean
@@ -186,9 +187,10 @@ export default function CreateProjectModal({
       
       // Subir imagen usando subida directa con URL firmada
       try {
-        // Generar ruta para la imagen
+        // Generar ruta sanitizada para la imagen
         const timestamp = new Date().toISOString().split('T')[0]
-        const path = `${companyId || 'default'}/projects/covers/${timestamp}/${file.name}`
+        const sanitizedFileName = sanitizeFileName(file.name)
+        const path = `${companyId || 'default'}/projects/covers/${timestamp}/${sanitizedFileName}`
         
         const result = await uploadFile({
           bucket: 'company-logos',

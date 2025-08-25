@@ -40,6 +40,7 @@ import { Project, mockProjectStages, ProjectProfessional } from '@/lib/construct
 import { uploadProjectImage } from '@/lib/storage'
 import { useDirectFileUpload } from '@/lib/hooks/useDirectFileUpload'
 import { useWorkspace } from '@/components/workspace-context'
+import { sanitizeFileName } from '@/lib/utils/file-utils'
 import DomainReportSection from './DomainReportSection'
 import GovernmentTaxesSection from './GovernmentTaxesSection'
 import ExpedientesManager from '@/components/ExpedientesManager'
@@ -339,7 +340,8 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
     try {
       // Subir imagen usando el nuevo sistema de upload directo a Supabase Storage
       const timestamp = Date.now()
-      const fileName = `${timestamp}-${file.name}`
+      const sanitizedFileName = sanitizeFileName(file.name)
+      const fileName = `${timestamp}-${sanitizedFileName}`
       const result = await uploadFile({
         bucket: 'company-logos',
         path: `project-covers/${fileName}`,

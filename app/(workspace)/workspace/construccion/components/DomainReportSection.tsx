@@ -21,8 +21,9 @@ import {
   Trash2
 } from 'lucide-react'
 import { Project, formatDomainReportStatus, calculateDomainReportDaysRemaining } from '@/lib/construction'
-import { useFileUpload } from '@/lib/hooks/useFileUpload'
+import { useDirectFileUpload } from '@/lib/hooks/useDirectFileUpload'
 import { useWorkspace } from '@/components/workspace-context'
+import { sanitizeFileName } from '@/lib/utils/file-utils'
 
 interface DomainReportSectionProps {
   project: Project
@@ -36,7 +37,7 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
   const { companyId } = useWorkspace()
   
   // Hook para manejar subidas de archivos con Supabase Storage
-  const { upload, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useFileUpload()
+  const { uploadFile, progress: hookUploadProgress, isUploading: hookIsUploading } = useDirectFileUpload()
   
   const handleUploadSuccess = async (fileUrl: string, fileName: string) => {
       try {
@@ -127,17 +128,23 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
     }
 
     try {
+      // Generar ruta sanitizada para el archivo
+      const timestamp = Date.now()
+      const sanitizedFileName = sanitizeFileName(file.name)
+      const path = `${companyId || 'default'}/domain-reports/${project.id}/${timestamp}-${sanitizedFileName}`
+      
       // Subir archivo usando el nuevo sistema de upload directo a Supabase Storage
-      const result = await upload({
-        file,
+      const result = await uploadFile({
         bucket: 'construction-documents',
-        workspaceId: companyId || 'default',
-        folder: 'domain-reports'
+        path,
+        file
       })
       
       // Manejar éxito de la subida
-      if (result.publicUrl) {
+      if (result.success && result.publicUrl) {
         await handleUploadSuccess(result.publicUrl, file.name)
+      } else {
+        throw new Error(result.error || 'Error al subir el archivo')
       }
     } catch (error) {
       console.error('Error uploading domain report:', error)

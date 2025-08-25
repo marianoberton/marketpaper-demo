@@ -14,8 +14,9 @@ import { cn } from '@/lib/utils'
 import { CalendarIcon, X, Upload, DollarSign, Tag, CreditCard, Receipt, Repeat } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { useFileUpload } from '@/lib/hooks/useFileUpload'
+import { useDirectFileUpload } from '@/lib/hooks/useDirectFileUpload'
 import { useWorkspace } from '@/components/workspace-context'
+import { sanitizeFileName } from '@/lib/utils/file-utils'
 
 interface Expense {
   id: string
@@ -92,7 +93,7 @@ export default function ExpenseModal({ expense, categories, onSave, onCancel }: 
   const workspace = useWorkspace()
   
   // Hook para manejar subidas de archivos con Supabase Storage
-  const { upload, isUploading: hookIsUploading } = useFileUpload()
+  const { uploadFile, isUploading: hookIsUploading } = useDirectFileUpload()
   
   // Sincronizar estado del hook con estado local
   useEffect(() => {
@@ -154,17 +155,24 @@ export default function ExpenseModal({ expense, categories, onSave, onCancel }: 
     if (!file || !workspace.companyId) return
 
     try {
-      const result = await upload({
+      const timestamp = Date.now()
+      const sanitizedFileName = sanitizeFileName(file.name)
+      const path = `${workspace.companyId}/receipts/${timestamp}-${sanitizedFileName}`
+      
+      const result = await uploadFile({
         bucket: 'finance-imports',
-        workspaceId: workspace.companyId,
-        file,
-        folder: 'receipts'
+        path,
+        file
       })
       
-      setFormData(prev => ({ 
-        ...prev, 
-        receipt_url: result.publicUrl || result.path 
-      }))
+      if (result.success && result.publicUrl) {
+        setFormData(prev => ({ 
+          ...prev, 
+          receipt_url: result.publicUrl 
+        }))
+      } else {
+        throw new Error(result.error || 'Error al subir el archivo')
+      }
     } catch (error) {
       console.error('Error uploading file:', error)
       alert(`Error al subir el archivo: ${error instanceof Error ? error.message : 'Error desconocido'}`)

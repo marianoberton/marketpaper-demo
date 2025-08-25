@@ -31,6 +31,7 @@ import {
 } from '@/lib/storage'
 import { useDirectFileUpload } from '@/lib/hooks/useDirectFileUpload'
 import { useWorkspace } from '@/components/workspace-context'
+import { generateUniqueFilePath } from '@/lib/utils/file-utils'
 
 interface DocumentUploadProps {
   projectId: string
@@ -111,10 +112,13 @@ export default function DocumentUpload({
         return
       }
       
-      // Generar ruta para el archivo
-      const timestamp = new Date().toISOString().split('T')[0]
-      const sanitizedSectionName = sectionName.toLowerCase().replace(/\s+/g, '-')
-      const path = `${workspace.companyId}/projects/${projectId}/${sanitizedSectionName}/${timestamp}/${file.name}`
+      // Generar ruta sanitizada para el archivo
+      const path = generateUniqueFilePath({
+        companyId: workspace.companyId,
+        projectId,
+        section: sectionName,
+        fileName: file.name
+      })
       
       // Subir archivo usando subida directa con URL firmada
       const result = await uploadFile({
