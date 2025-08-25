@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import { sanitizeFileName, generateUniqueFileName, validateFileType, validateFileSize } from '@/lib/files';
 import type { AllowedBucket, SignedUploadResponse, CommitUploadResponse } from '@/types/storage';
 
@@ -38,16 +38,9 @@ const DEFAULT_ALLOWED_TYPES = [
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
-// Create Supabase client for direct uploads
+// Use centralized Supabase client to avoid multiple GoTrueClient instances
 const getSupabaseClient = () => {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Missing Supabase environment variables');
-  }
-
-  return createClient(supabaseUrl, supabaseAnonKey);
+  return supabase;
 };
 
 export function useFileUpload() {
