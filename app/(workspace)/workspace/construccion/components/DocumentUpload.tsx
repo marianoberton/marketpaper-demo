@@ -29,7 +29,7 @@ import {
   type ProjectDocument,
   type DocumentUpload
 } from '@/lib/storage'
-import { useFileUpload } from '@/lib/hooks/useFileUpload'
+import { useDirectFileUpload } from '@/lib/hooks/useDirectFileUpload'
 import { useWorkspace } from '@/components/workspace-context'
 
 interface DocumentUploadProps {
@@ -52,14 +52,14 @@ export default function DocumentUpload({
   
   const workspace = useWorkspace()
   
-  // Hook para manejar subidas de archivos con Supabase Storage
-  const { upload, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useFileUpload()
+  // Hook para manejar subidas directas de archivos con URLs firmadas
+  const { uploadFile, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useDirectFileUpload()
   
   // Sincronizar estado del hook con estado local
   useEffect(() => {
     setUploading(hookIsUploading)
-    setUploadProgress(hookUploadProgress.progress)
-  }, [hookIsUploading, hookUploadProgress.progress])
+    setUploadProgress(hookUploadProgress)
+  }, [hookIsUploading, hookUploadProgress])
   const [showUploadForm, setShowUploadForm] = useState(false)
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(true)
@@ -104,21 +104,36 @@ export default function DocumentUpload({
     try {
       setError(null)
       
-      // Subir archivo usando el nuevo sistema de direct-to-storage
-      const result = await upload({
+      // Validar tipo de archivo
+      const allowedTypes = [...(ALLOWED_FILE_TYPES[sectionName as keyof typeof ALLOWED_FILE_TYPES] || [])]
+      if (!validateFileType(file, allowedTypes)) {
+        setError('Tipo de archivo no permitido para esta sección')
+        return
+      }
+      
+      // Generar ruta para el archivo
+      const timestamp = new Date().toISOString().split('T')[0]
+      const sanitizedSectionName = sectionName.toLowerCase().replace(/\s+/g, '-')
+      const path = `${workspace.companyId}/projects/${projectId}/${sanitizedSectionName}/${timestamp}/${file.name}`
+      
+      // Subir archivo usando subida directa con URL firmada
+      const result = await uploadFile({
         bucket: 'construction-documents',
-        workspaceId: workspace.companyId,
-        file: file,
-        folder: sectionName.toLowerCase().replace(/\s+/g, '-')
+        path,
+        file
       })
       
-      // Crear documento en la base de datos usando la URL de Supabase Storage
+      if (!result.success) {
+        throw new Error(result.error || 'Error al subir el archivo')
+      }
+      
+      // Crear documento en la base de datos usando la URL pública
       const uploadData: DocumentUpload = {
         file: file,
         projectId,
         sectionName,
         description: description.trim() || undefined,
-        fileUrl: result.publicUrl || result.path
+        fileUrl: result.publicUrl!
       }
 
       const document = await uploadProjectDocument(uploadData)

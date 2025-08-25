@@ -38,7 +38,7 @@ import Image from 'next/image'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Project, mockProjectStages, ProjectProfessional } from '@/lib/construction'
 import { uploadProjectImage } from '@/lib/storage'
-import { useFileUpload } from '@/lib/hooks/useFileUpload'
+import { useDirectFileUpload } from '@/lib/hooks/useDirectFileUpload'
 import { useWorkspace } from '@/components/workspace-context'
 import DomainReportSection from './DomainReportSection'
 import GovernmentTaxesSection from './GovernmentTaxesSection'
@@ -355,8 +355,8 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
     }
   }
 
-  // Hook adicional para manejar subidas de documentos con Supabase Storage
-  const { upload: uploadDocument, isUploading: isUploadingDocument } = useFileUpload()
+  // Hook adicional para manejar subidas directas de documentos con URLs firmadas
+  const { uploadFile: uploadDocument, isUploading: isUploadingDocument } = useDirectFileUpload()
   
   const handleDocumentUploadSuccess = async (fileUrl: string, fileName: string) => {
     try {
@@ -406,13 +406,21 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
       setCurrentUploadSection(section)
       setUploadingTo(null)
       
-      // Subir documento usando el nuevo sistema de upload directo a Supabase Storage
+      // Generar ruta para el archivo
+      const timestamp = new Date().toISOString().split('T')[0]
+      const sanitizedSectionName = section.toLowerCase().replace(/\s+/g, '-')
+      const path = `${companyId || 'default'}/projects/${project.id}/${sanitizedSectionName}/${timestamp}/${file.name}`
+      
+      // Subir documento usando subida directa con URL firmada
       const result = await uploadDocument({
-        file,
         bucket: 'construction-documents',
-        workspaceId: companyId || 'default',
-        folder: 'project-documents'
+        path,
+        file
       })
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Error al subir el archivo')
+      }
       
       // Manejar éxito de la subida
       if (result.publicUrl) {

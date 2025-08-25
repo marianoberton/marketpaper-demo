@@ -15,7 +15,7 @@ import Image from 'next/image'
 import { ProjectProfessional } from '@/lib/construction'
 import ExpedientesManager from '@/components/ExpedientesManager'
 import { ProjectExpediente } from '@/lib/construction'
-import { useFileUpload } from '@/lib/hooks/useFileUpload'
+import { useDirectFileUpload } from '@/lib/hooks/useDirectFileUpload'
 import { useWorkspace } from '@/components/workspace-context'
 
 interface CreateProjectModalProps {
@@ -64,8 +64,8 @@ export default function CreateProjectModal({
   // Hook para obtener el workspace actual
   const { companyId } = useWorkspace()
   
-  // Hook para manejar subidas de imágenes con Supabase Storage
-  const { upload, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useFileUpload()
+  // Hook para manejar subidas directas de imágenes con URLs firmadas
+  const { uploadFile, isUploading: hookIsUploading } = useDirectFileUpload()
 
   // Sincronizar estado del hook con estado local para imágenes
   useEffect(() => {
@@ -184,14 +184,21 @@ export default function CreateProjectModal({
         })
       }
       
-      // Subir imagen usando el nuevo sistema de upload directo a Supabase Storage
+      // Subir imagen usando subida directa con URL firmada
       try {
-        const result = await upload({
-          file,
+        // Generar ruta para la imagen
+        const timestamp = new Date().toISOString().split('T')[0]
+        const path = `${companyId || 'default'}/projects/covers/${timestamp}/${file.name}`
+        
+        const result = await uploadFile({
           bucket: 'company-logos',
-          workspaceId: companyId || 'default',
-          folder: 'projects'
+          path,
+          file
         })
+        
+        if (!result.success) {
+          throw new Error(result.error || 'Error al subir la imagen')
+        }
         
         // La imagen se subió exitosamente - actualizar el estado con la URL
         if (result.publicUrl) {

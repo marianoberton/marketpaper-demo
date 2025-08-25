@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { useFileUpload } from '@/lib/hooks/useFileUpload'
+import { useDirectFileUpload } from '@/lib/hooks/useDirectFileUpload'
 import { useWorkspace } from '@/components/workspace-context'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
@@ -82,8 +82,8 @@ export default function ImportModal({ onImport, onCancel }: ImportModalProps) {
   
   const workspace = useWorkspace()
   
-  // Hook para manejar subidas de archivos con Supabase Storage
-  const { upload, isUploading: hookIsUploading } = useFileUpload()
+  // Hook para manejar subidas directas de archivos con URLs firmadas
+  const { uploadFile, isUploading: hookIsUploading } = useDirectFileUpload()
   
   // Sincronizar estado del hook con estado local
   useEffect(() => {
@@ -176,13 +176,21 @@ export default function ImportModal({ onImport, onCancel }: ImportModalProps) {
     }
 
     try {
-      // Subir archivo usando el nuevo sistema de direct-to-storage
-      const result = await upload({
+      // Generar ruta para el archivo
+      const timestamp = new Date().toISOString().split('T')[0]
+      const sanitizedFileType = fileType.replace(/[^a-z0-9]/gi, '-')
+      const path = `${workspace.companyId}/imports/${sanitizedFileType}/${timestamp}/${selectedFile.name}`
+      
+      // Subir archivo usando subida directa con URL firmada
+      const result = await uploadFile({
         bucket: 'finance-imports',
-        workspaceId: workspace.companyId,
-        file: selectedFile,
-        folder: 'imports'
+        path,
+        file: selectedFile
       })
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Error al subir el archivo')
+      }
       
       // El archivo se subió exitosamente, ahora procesamos la importación
       onImport(selectedFile, fileType)
