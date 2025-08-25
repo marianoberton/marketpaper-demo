@@ -361,7 +361,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
   // Hook adicional para manejar subidas directas de documentos con URLs firmadas
   const { uploadFile: uploadDocument, isUploading: isUploadingDocument } = useDirectFileUpload()
   
-  const handleDocumentUploadSuccess = async (fileUrl: string, fileName: string) => {
+  const handleDocumentUploadSuccess = async (fileUrl: string, fileName: string, originalFileName: string, fileSize: number, mimeType: string) => {
     try {
       // Crear documento en la base de datos usando la URL de Supabase Storage
       const response = await fetch('/api/workspace/construction/documents', {
@@ -372,9 +372,12 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
         body: JSON.stringify({
           fileUrl,
           fileName,
+          originalFileName,
           projectId: project.id,
           sectionName: currentUploadSection,
-          description: `Documento de ${currentUploadSection}`
+          description: `Documento de ${currentUploadSection}`,
+          fileSize,
+          mimeType
         })
       })
 
@@ -430,7 +433,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
       
       // Manejar éxito de la subida
       if (result.publicUrl) {
-        await handleDocumentUploadSuccess(result.publicUrl, file.name)
+        await handleDocumentUploadSuccess(result.publicUrl, path, file.name, file.size, file.type)
       }
     } catch (error) {
       console.error('Upload error:', error)

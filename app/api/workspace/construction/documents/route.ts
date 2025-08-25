@@ -19,29 +19,29 @@ export async function POST(request: NextRequest) {
     
     const contentType = request.headers.get('content-type') || ''
     
-    // Manejar tanto FormData (subida tradicional) como JSON (Vercel Blob)
+    // Manejar tanto FormData (subida tradicional) como JSON (Supabase Storage)
     if (contentType.includes('application/json')) {
-      // Caso: archivo ya subido a Vercel Blob, solo guardar metadata
-      const { fileUrl, fileName, projectId, sectionName, description } = await request.json()
+      // Caso: archivo ya subido a Supabase Storage, solo guardar metadata
+      const { fileUrl, fileName, originalFileName, projectId, sectionName, description, fileSize, mimeType } = await request.json()
       
       if (!fileUrl || !fileName || !projectId || !sectionName) {
         return NextResponse.json(
-          { error: 'Faltan datos requeridos para Vercel Blob' },
+          { error: 'Faltan datos requeridos para Supabase Storage' },
           { status: 400 }
         )
       }
       
-      // Guardar registro en la base de datos con URL de Vercel Blob
+      // Guardar registro en la base de datos con URL de Supabase Storage
       const { data: document, error: dbError } = await supabase
         .from('project_documents')
         .insert({
           project_id: projectId,
           section_name: sectionName,
           filename: fileName,
-          original_filename: fileName,
+          original_filename: originalFileName || fileName,
           file_url: fileUrl,
-          file_size: 0, // No conocemos el tamaño exacto desde Vercel Blob
-          mime_type: 'application/octet-stream', // Tipo genérico
+          file_size: fileSize || 0,
+          mime_type: mimeType || 'application/octet-stream',
           description: description,
           uploaded_by: 'super-admin'
         })

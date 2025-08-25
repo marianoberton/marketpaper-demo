@@ -73,10 +73,13 @@ function TestPrefactibilidadPageContent() {
         },
         body: JSON.stringify({
           fileUrl: result.publicUrl,
-          fileName: file.name,
+          fileName: path,
+          originalFileName: file.name,
           projectId: 'test-project-123',
           sectionName: 'Verificaciones - Prefactibilidad del proyecto',
-          description: 'Documento de prueba de Prefactibilidad del proyecto'
+          description: 'Documento de prueba de Prefactibilidad del proyecto',
+          fileSize: file.size,
+          mimeType: file.type
         })
       })
       
