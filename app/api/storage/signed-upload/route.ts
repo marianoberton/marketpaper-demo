@@ -37,10 +37,7 @@ export async function POST(request: NextRequest) {
     // Create signed upload URL
     const { data, error } = await supabaseAdmin.storage
       .from(bucket)
-      .createSignedUploadUrl(path, {
-        upsert: false,
-        contentType: contentType,
-      });
+      .createSignedUploadUrl(path);
 
     if (error) {
       console.error('Error creating signed upload URL:', error);
