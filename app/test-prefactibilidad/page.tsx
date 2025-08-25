@@ -168,7 +168,13 @@ function TestPrefactibilidadPageContent() {
 
 export default function TestPrefactibilidadPage() {
   return (
-    <WorkspaceProvider>
+    <WorkspaceProvider 
+      companyFeatures={['construction']}
+      companyId="test-company"
+      companyName="Test Company"
+      isLoading={false}
+      availableModules={[]}
+    >
       <TestPrefactibilidadPageContent />
     </WorkspaceProvider>
   )
