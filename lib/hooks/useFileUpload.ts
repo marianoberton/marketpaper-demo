@@ -3,8 +3,16 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-import { sanitizeFileName, generateUniqueFileName, validateFileType, validateFileSize } from '@/lib/files';
-import type { AllowedBucket, SignedUploadResponse, CommitUploadResponse } from '@/types/storage';
+import {
+  generateUniqueFileName,
+  validateFileType,
+  validateFileSize,
+} from '@/lib/files';
+import type {
+  AllowedBucket,
+  SignedUploadResponse,
+  CommitUploadResponse,
+} from '@/types/storage';
 
 interface UploadOptions {
   bucket: AllowedBucket;
@@ -33,94 +41,78 @@ const DEFAULT_ALLOWED_TYPES = [
   'image/png',
   'image/jpg',
   'application/vnd.dwg',
-  'image/vnd.dwg'
+  'image/vnd.dwg',
 ];
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
-// Use centralized Supabase client to avoid multiple GoTrueClient instances
-const getSupabaseClient = () => {
-  return supabase;
-};
-
 export function useFileUpload() {
   const [uploadProgress, setUploadProgress] = useState<UploadProgress>({
     isUploading: false,
-    progress: 0
+    progress: 0,
   });
 
   const validateFile = (file: File): string | null => {
-    // Validar tamaño
     if (!validateFileSize(file, MAX_FILE_SIZE)) {
-      return `El archivo excede el límite de ${Math.round(MAX_FILE_SIZE / (1024 * 1024))}MB`;
+      return `El archivo excede el límite de ${Math.round(
+        MAX_FILE_SIZE / (1024 * 1024)
+      )}MB`;
     }
-
-    // Validar tipo
     if (!validateFileType(file, DEFAULT_ALLOWED_TYPES)) {
       return 'Tipo de archivo no permitido';
     }
-
     return null;
   };
 
   const upload = async (options: UploadOptions): Promise<UploadResult> => {
     const { bucket, workspaceId, file, folder = 'misc' } = options;
 
+    setUploadProgress({ isUploading: true, progress: 10, fileName: file.name });
+
+    const uniqueFileName = generateUniqueFileName(file.name);
+    const path = `${workspaceId}/${folder}/${uniqueFileName}`;
+    const contentType = file.type || 'application/octet-stream';
+
     try {
-      setUploadProgress({ isUploading: true, progress: 10, fileName: file.name });
-
-      // Generate unique file path
-      const uniqueFileName = generateUniqueFileName(file.name);
-      const path = `${workspaceId}/${folder}/${uniqueFileName}`;
-      const contentType = file.type || 'application/octet-stream';
-
       // Step 1: Get signed upload URL
       setUploadProgress({ isUploading: true, progress: 20, fileName: file.name });
-      
       const signedResponse = await fetch('/api/storage/signed-upload', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          bucket,
-          path,
-          contentType,
-          expiresIn: 120,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bucket, path, contentType }),
       });
 
       if (!signedResponse.ok) {
-        const errorData = await signedResponse.json().catch(() => ({ error: 'Error obteniendo URL firmada' }));
-        throw new Error(errorData.error || 'Error obteniendo URL firmada');
+        const errorData = await signedResponse.json().catch(() => ({}));
+        console.error('Error getting signed URL:', {
+          status: signedResponse.status,
+          statusText: signedResponse.statusText,
+          body: errorData,
+        });
+        throw new Error(
+          errorData.error || 'No se pudo obtener la URL de subida firmada.'
+        );
       }
-
       const signedData: SignedUploadResponse = await signedResponse.json();
-      
+
       // Step 2: Upload directly to Supabase Storage
       setUploadProgress({ isUploading: true, progress: 40, fileName: file.name });
-      
-      const supabase = getSupabaseClient();
       const { error: uploadError } = await supabase.storage
         .from(bucket)
         .uploadToSignedUrl(path, signedData.token, file, {
-          contentType,
-          cacheControl: '3600',
+          upsert: false, // Ensure we don't overwrite existing files
         });
 
       if (uploadError) {
         console.error('Error uploading to signed URL:', uploadError);
-        throw new Error('Error subiendo archivo a storage');
+        throw new Error('Error al subir el archivo a Supabase Storage.');
       }
 
       // Step 3: Commit the upload
       setUploadProgress({ isUploading: true, progress: 80, fileName: file.name });
-      
       const commitResponse = await fetch('/api/storage/commit', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           bucket,
           path,
@@ -130,22 +122,28 @@ export function useFileUpload() {
       });
 
       if (!commitResponse.ok) {
-        const errorData = await commitResponse.json().catch(() => ({ error: 'Error confirmando subida' }));
-        throw new Error(errorData.error || 'Error confirmando subida');
+        const errorData = await commitResponse.json().catch(() => ({}));
+        console.error('Error committing upload:', {
+          status: commitResponse.status,
+          statusText: commitResponse.statusText,
+          body: errorData,
+        });
+        throw new Error(errorData.error || 'No se pudo confirmar la subida.');
       }
 
       const commitData: CommitUploadResponse = await commitResponse.json();
       setUploadProgress({ isUploading: true, progress: 100, fileName: file.name });
-      
+
       return commitData;
     } catch (error) {
-      console.error('Error in direct upload:', error);
-      throw new Error(error instanceof Error ? error.message : 'Error subiendo archivo');
+      console.error('Direct upload process failed:', error);
+      throw new Error(
+        error instanceof Error ? error.message : 'Ocurrió un error inesperado durante la subida.'
+      );
     }
   };
 
   const uploadFile = async (options: UploadOptions): Promise<UploadResult> => {
-    // Validar archivo
     const validationError = validateFile(options.file);
     if (validationError) {
       toast.error(validationError);
@@ -153,19 +151,15 @@ export function useFileUpload() {
     }
 
     try {
-      // Upload using direct-to-storage method
       const result = await upload(options);
-
-      // Simular un pequeño delay para mostrar el progreso completo
       await new Promise(resolve => setTimeout(resolve, 500));
-      
       setUploadProgress({ isUploading: false, progress: 0 });
-      toast.success('Archivo subido exitosamente');
-      
+      toast.success('Archivo subido exitosamente.');
       return result;
     } catch (error) {
       setUploadProgress({ isUploading: false, progress: 0 });
-      const errorMessage = error instanceof Error ? error.message : 'Error subiendo archivo';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Error subiendo archivo.';
       toast.error(errorMessage);
       throw error;
     }
@@ -179,11 +173,10 @@ export function useFileUpload() {
     upload: uploadFile,
     uploadProgress,
     resetUpload,
-    isUploading: uploadProgress.isUploading
+    isUploading: uploadProgress.isUploading,
   };
 }
 
 export default useFileUpload;
 
-// Export types for external use
 export type { UploadOptions, UploadResult, UploadProgress };

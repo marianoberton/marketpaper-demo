@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
       .from(bucket)
       .createSignedUploadUrl(path, {
         upsert: false,
+        contentType: contentType,
       });
 
     if (error) {
