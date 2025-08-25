@@ -15,6 +15,7 @@ import { CalendarIcon, X, Upload, DollarSign, Tag, CreditCard, Receipt, Repeat }
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { useFileUpload } from '@/lib/hooks/useFileUpload'
+import { useWorkspace } from '@/components/workspace-context'
 
 interface Expense {
   id: string
@@ -88,17 +89,10 @@ export default function ExpenseModal({ expense, categories, onSave, onCancel }: 
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   
-  // Hook para manejar subidas de archivos con Vercel Blob
-  const { uploadFile, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useFileUpload({
-    maxSize: 50 * 1024 * 1024, // 50MB
-    allowedTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'],
-    onSuccess: async (fileUrl, fileName) => {
-      setFormData(prev => ({ ...prev, receipt_url: fileUrl }))
-    },
-    onError: (error) => {
-      alert(`Error al subir el archivo: ${error}`)
-    }
-  })
+  const workspace = useWorkspace()
+  
+  // Hook para manejar subidas de archivos con Supabase Storage
+  const { upload, isUploading: hookIsUploading } = useFileUpload()
   
   // Sincronizar estado del hook con estado local
   useEffect(() => {
@@ -157,22 +151,24 @@ export default function ExpenseModal({ expense, categories, onSave, onCancel }: 
   }
 
   const handleFileUpload = async (file: File) => {
-    if (!file) return
+    if (!file || !workspace.companyId) return
 
-    // Validar tipo de archivo
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']
-    if (!allowedTypes.includes(file.type)) {
-      alert('Tipo de archivo no permitido. Solo se permiten imágenes (JPEG, PNG, GIF, WEBP) y PDFs.')
-      return
+    try {
+      const result = await upload({
+        bucket: 'finance-imports',
+        workspaceId: workspace.companyId,
+        file,
+        folder: 'receipts'
+      })
+      
+      setFormData(prev => ({ 
+        ...prev, 
+        receipt_url: result.publicUrl || result.path 
+      }))
+    } catch (error) {
+      console.error('Error uploading file:', error)
+      alert(`Error al subir el archivo: ${error instanceof Error ? error.message : 'Error desconocido'}`)
     }
-
-    // Validar tamaño (50MB)
-    if (file.size > 50 * 1024 * 1024) {
-      alert('El archivo es demasiado grande. El tamaño máximo es 50MB.')
-      return
-    }
-
-    await uploadFile(file, '/api/workspace/finanzas/upload')
   }
 
   const validateForm = () => {

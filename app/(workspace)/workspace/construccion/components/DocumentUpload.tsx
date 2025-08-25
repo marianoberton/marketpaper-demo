@@ -30,6 +30,7 @@ import {
   type DocumentUpload
 } from '@/lib/storage'
 import { useFileUpload } from '@/lib/hooks/useFileUpload'
+import { useWorkspace } from '@/components/workspace-context'
 
 interface DocumentUploadProps {
   projectId: string
@@ -49,50 +50,10 @@ export default function DocumentUpload({
   const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
   
-  // Hook para manejar subidas de archivos con Vercel Blob
-  const { uploadFile, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useFileUpload({
-    maxSize: 50 * 1024 * 1024, // 50MB
-    onSuccess: async (fileUrl, fileName) => {
-      try {
-        // Crear documento en la base de datos usando la URL de Vercel Blob
-        const dummyFile = {
-          name: fileName,
-          size: 0,
-          type: 'application/octet-stream'
-        } as File
-        const uploadData: DocumentUpload = {
-          file: dummyFile, // Archivo dummy para compatibilidad
-          projectId,
-          sectionName,
-          description: description.trim() || undefined,
-          fileUrl // Pasar la URL de Vercel Blob
-        }
-
-        const document = await uploadProjectDocument(uploadData)
-        
-        // Actualizar lista de documentos
-        setDocuments(prev => [document, ...prev])
-        
-        // Notificar al componente padre
-        onDocumentUploaded?.(document)
-        
-        // Limpiar formulario
-        setDescription('')
-        setShowUploadForm(false)
-        
-        // Limpiar input de archivo
-        if (fileInputRef.current) {
-          fileInputRef.current.value = ''
-        }
-      } catch (error: any) {
-        console.error('Error creating document:', error)
-        setError('Error al crear el documento en la base de datos')
-      }
-    },
-    onError: (error) => {
-      setError(`Error al subir el archivo: ${error}`)
-    }
-  })
+  const workspace = useWorkspace()
+  
+  // Hook para manejar subidas de archivos con Supabase Storage
+  const { upload, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useFileUpload()
   
   // Sincronizar estado del hook con estado local
   useEffect(() => {
@@ -129,32 +90,56 @@ export default function DocumentUpload({
     const file = event.target.files?.[0]
     if (!file) return
 
-    // Validar tipo de archivo
-    const allowedTypes = [...(ALLOWED_FILE_TYPES[sectionName as keyof typeof ALLOWED_FILE_TYPES] || [])]
-    if (!validateFileType(file, allowedTypes)) {
-      setError('Tipo de archivo no permitido para esta sección')
-      return
-    }
-
-    // Validar tamaño (máximo 50MB)
-    if (file.size > 50 * 1024 * 1024) {
-      setError('El archivo es demasiado grande. Máximo 50MB.')
-      return
-    }
-
     handleUpload(file)
   }
 
 
 
   const handleUpload = async (file: File) => {
+    if (!workspace.companyId) {
+      setError('No se pudo obtener el ID del workspace')
+      return
+    }
+
     try {
       setError(null)
-      // El hook maneja automáticamente si usar Vercel Blob o método tradicional
-      await uploadFile(file, '/api/workspace/construction/documents')
+      
+      // Subir archivo usando el nuevo sistema de direct-to-storage
+      const result = await upload({
+        bucket: 'construction-documents',
+        workspaceId: workspace.companyId,
+        file: file,
+        folder: sectionName.toLowerCase().replace(/\s+/g, '-')
+      })
+      
+      // Crear documento en la base de datos usando la URL de Supabase Storage
+      const uploadData: DocumentUpload = {
+        file: file,
+        projectId,
+        sectionName,
+        description: description.trim() || undefined,
+        fileUrl: result.publicUrl || result.path
+      }
+
+      const document = await uploadProjectDocument(uploadData)
+      
+      // Actualizar lista de documentos
+      setDocuments(prev => [document, ...prev])
+      
+      // Notificar al componente padre
+      onDocumentUploaded?.(document)
+      
+      // Limpiar formulario
+      setDescription('')
+      setShowUploadForm(false)
+      
+      // Limpiar input de archivo
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
     } catch (error: any) {
       console.error('Upload error:', error)
-      // El error ya se maneja en el hook
+      setError(`Error al subir el archivo: ${error instanceof Error ? error.message : 'Error desconocido'}`)
     }
   }
 

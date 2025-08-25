@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useFileUpload } from '@/lib/hooks/useFileUpload'
+import { useWorkspace } from '@/components/workspace-context'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -79,20 +80,10 @@ export default function ImportModal({ onImport, onCancel }: ImportModalProps) {
   const [dragOver, setDragOver] = useState(false)
   const [uploading, setUploading] = useState(false)
   
-  // Hook para manejar subidas de archivos con Vercel Blob
-  const { uploadFile, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useFileUpload({
-    maxSize: 50 * 1024 * 1024, // 50MB
-    allowedTypes: ['application/pdf', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel', 'text/csv', 'image/jpeg', 'image/jpg', 'image/png', 'text/plain'],
-    onSuccess: async (fileUrl, fileName) => {
-      // El archivo se subió exitosamente, ahora procesamos la importación
-      if (selectedFile) {
-        onImport(selectedFile, fileType)
-      }
-    },
-    onError: (error) => {
-      setErrors({ file: `Error al subir el archivo: ${error}` })
-    }
-  })
+  const workspace = useWorkspace()
+  
+  // Hook para manejar subidas de archivos con Supabase Storage
+  const { upload, isUploading: hookIsUploading } = useFileUpload()
   
   // Sincronizar estado del hook con estado local
   useEffect(() => {
@@ -180,12 +171,25 @@ export default function ImportModal({ onImport, onCancel }: ImportModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!validateForm() || !selectedFile) {
+    if (!validateForm() || !selectedFile || !workspace.companyId) {
       return
     }
 
-    // Usar el hook para subir el archivo
-    await uploadFile(selectedFile, '/api/workspace/finanzas/import')
+    try {
+      // Subir archivo usando el nuevo sistema de direct-to-storage
+      const result = await upload({
+        bucket: 'finance-imports',
+        workspaceId: workspace.companyId,
+        file: selectedFile,
+        folder: 'imports'
+      })
+      
+      // El archivo se subió exitosamente, ahora procesamos la importación
+      onImport(selectedFile, fileType)
+    } catch (error) {
+      console.error('Error uploading file:', error)
+      setErrors({ file: `Error al subir el archivo: ${error instanceof Error ? error.message : 'Error desconocido'}` })
+    }
   }
 
   const getFileIcon = (file: File) => {
