@@ -155,7 +155,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
   const { companyId } = useWorkspace()
   
   // Hook para manejar subidas de imágenes con Supabase Storage
-  const { upload, uploadProgress: imageUploadProgress, isUploading: isUploadingImage } = useFileUpload()
+  const { uploadFile, progress: imageUploadProgress, isUploading: isUploadingImage } = useDirectFileUpload()
   
   const handleImageUploadSuccess = async (fileUrl: string, fileName: string) => {
       try {
@@ -338,11 +338,12 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
   const handleImageUpload = async (file: File) => {
     try {
       // Subir imagen usando el nuevo sistema de upload directo a Supabase Storage
-      const result = await upload({
-        file,
+      const timestamp = Date.now()
+      const fileName = `${timestamp}-${file.name}`
+      const result = await uploadFile({
         bucket: 'company-logos',
-        workspaceId: companyId || 'default',
-        folder: 'project-covers'
+        path: `project-covers/${fileName}`,
+        file
       })
       
       // Manejar éxito de la subida

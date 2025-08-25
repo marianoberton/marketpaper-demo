@@ -53,7 +53,7 @@ export default function DocumentUpload({
   const workspace = useWorkspace()
   
   // Hook para manejar subidas directas de archivos con URLs firmadas
-  const { uploadFile, uploadProgress: hookUploadProgress, isUploading: hookIsUploading } = useDirectFileUpload()
+  const { uploadFile, progress: hookUploadProgress, isUploading: hookIsUploading } = useDirectFileUpload()
   
   // Sincronizar estado del hook con estado local
   useEffect(() => {
@@ -265,12 +265,7 @@ export default function DocumentUpload({
             {uploading && (
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span>
-                    {hookUploadProgress.fileName ? 
-                      `Subiendo ${hookUploadProgress.fileName}...` : 
-                      'Subiendo archivo...'
-                    }
-                  </span>
+                  <span>Subiendo archivo...</span>
                   <span>{uploadProgress}%</span>
                 </div>
                 <Progress value={uploadProgress} className="h-2" />
