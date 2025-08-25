@@ -79,7 +79,7 @@ export default function ExpenseModal({ expense, categories, onSave, onCancel }: 
     category_id: '',
     date: new Date().toISOString().split('T')[0],
     payment_method: 'credit_card' as 'credit_card' | 'debit_card' | 'cash' | 'bank_transfer' | 'other',
-    receipt_url: '',
+    receipt_url: '' as string | undefined,
     notes: '',
     tags: [] as string[],
     is_recurring: false,
@@ -110,7 +110,7 @@ export default function ExpenseModal({ expense, categories, onSave, onCancel }: 
         category_id: expense.category_id,
         date: expense.date,
         payment_method: expense.payment_method,
-        receipt_url: expense.receipt_url || '',
+        receipt_url: expense.receipt_url || undefined,
         notes: expense.notes || '',
         tags: expense.tags || [],
         is_recurring: expense.is_recurring,
@@ -168,7 +168,7 @@ export default function ExpenseModal({ expense, categories, onSave, onCancel }: 
       if (result.success && result.publicUrl) {
         setFormData(prev => ({ 
           ...prev, 
-          receipt_url: result.publicUrl 
+          receipt_url: result.publicUrl || undefined 
         }))
       } else {
         throw new Error(result.error || 'Error al subir el archivo')
