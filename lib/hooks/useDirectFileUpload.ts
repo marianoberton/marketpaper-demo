@@ -60,7 +60,7 @@ export function useDirectFileUpload() {
 
       // Paso 3: Obtener URL pública si el bucket es público
       let publicUrl: string | undefined;
-      const publicBuckets = ['company-logos'];
+      const publicBuckets = ['company-logos', 'construction-documents'];
       
       if (publicBuckets.includes(bucket)) {
         const { data: urlData } = supabase.storage
