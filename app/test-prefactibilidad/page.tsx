@@ -40,7 +40,7 @@ function TestPrefactibilidadPageContent() {
       // Generar ruta única para el archivo
       const path = generateUniqueFilePath({
         companyId: workspace.companyId,
-        projectId: 'test-project-123',
+        projectId: '33333333-3333-3333-3333-333333333333',
         section: 'Verificaciones - Prefactibilidad del proyecto',
         fileName: file.name
       })
@@ -75,7 +75,7 @@ function TestPrefactibilidadPageContent() {
           fileUrl: result.publicUrl,
           fileName: path,
           originalFileName: file.name,
-          projectId: 'test-project-123',
+          projectId: '33333333-3333-3333-3333-333333333333',
           sectionName: 'Verificaciones - Prefactibilidad del proyecto',
           description: 'Documento de prueba de Prefactibilidad del proyecto',
           fileSize: file.size,

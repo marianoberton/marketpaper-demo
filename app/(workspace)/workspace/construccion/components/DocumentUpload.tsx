@@ -1,37 +1,26 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Progress } from '@/components/ui/progress'
-import { Badge } from '@/components/ui/badge'
 import { 
-  Upload, 
   File, 
   FileText, 
   Image as ImageIcon, 
-  X, 
   Download, 
   Trash2,
   Plus,
   AlertCircle 
 } from 'lucide-react'
 import { 
-  uploadProjectDocument, 
   getProjectDocuments, 
   deleteProjectDocument,
-  validateFileType,
   formatFileSize,
   ALLOWED_FILE_TYPES,
-  type ProjectDocument,
-  type DocumentUpload
+  type ProjectDocument
 } from '@/lib/storage'
-import { useDirectFileUpload } from '@/lib/hooks/useDirectFileUpload'
 import { useWorkspace } from '@/components/workspace-context'
-import { generateUniqueFilePath } from '@/lib/utils/file-utils'
+import { UnifiedFileUpload } from '@/components/UnifiedFileUpload'
 
 interface DocumentUploadProps {
   projectId: string
@@ -47,25 +36,11 @@ export default function DocumentUpload({
   onDocumentDeleted 
 }: DocumentUploadProps) {
   const [documents, setDocuments] = useState<ProjectDocument[]>([])
-  const [uploading, setUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
-  
-  const workspace = useWorkspace()
-  
-  // Hook para manejar subidas directas de archivos con URLs firmadas
-  const { uploadFile, progress: hookUploadProgress, isUploading: hookIsUploading } = useDirectFileUpload()
-  
-  // Sincronizar estado del hook con estado local
-  useEffect(() => {
-    setUploading(hookIsUploading)
-    setUploadProgress(hookUploadProgress)
-  }, [hookIsUploading, hookUploadProgress])
   const [showUploadForm, setShowUploadForm] = useState(false)
-  const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(true)
   
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const workspace = useWorkspace()
 
   // Cargar documentos al montar el componente
   useEffect(() => {
@@ -87,79 +62,24 @@ export default function DocumentUpload({
     }
   }
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
 
-    handleUpload(file)
+
+
+
+  const handleUploadSuccess = (document: any) => {
+    // Actualizar lista de documentos
+    setDocuments(prev => [document, ...prev])
+    
+    // Notificar al componente padre
+    onDocumentUploaded?.(document)
+    
+    // Cerrar formulario de subida
+    setShowUploadForm(false)
+    setError(null)
   }
 
-
-
-  const handleUpload = async (file: File) => {
-    if (!workspace.companyId) {
-      setError('No se pudo obtener el ID del workspace')
-      return
-    }
-
-    try {
-      setError(null)
-      
-      // Validar tipo de archivo
-      const allowedTypes = [...(ALLOWED_FILE_TYPES[sectionName as keyof typeof ALLOWED_FILE_TYPES] || [])]
-      if (!validateFileType(file, allowedTypes)) {
-        setError('Tipo de archivo no permitido para esta sección')
-        return
-      }
-      
-      // Generar ruta sanitizada para el archivo
-      const path = generateUniqueFilePath({
-        companyId: workspace.companyId,
-        projectId,
-        section: sectionName,
-        fileName: file.name
-      })
-      
-      // Subir archivo usando subida directa con URL firmada
-      const result = await uploadFile({
-        bucket: 'construction-documents',
-        path,
-        file
-      })
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Error al subir el archivo')
-      }
-      
-      // Crear documento en la base de datos usando la URL pública
-      const uploadData: DocumentUpload = {
-        file: file,
-        projectId,
-        sectionName,
-        description: description.trim() || undefined,
-        fileUrl: result.publicUrl!
-      }
-
-      const document = await uploadProjectDocument(uploadData)
-      
-      // Actualizar lista de documentos
-      setDocuments(prev => [document, ...prev])
-      
-      // Notificar al componente padre
-      onDocumentUploaded?.(document)
-      
-      // Limpiar formulario
-      setDescription('')
-      setShowUploadForm(false)
-      
-      // Limpiar input de archivo
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
-    } catch (error: any) {
-      console.error('Upload error:', error)
-      setError(`Error al subir el archivo: ${error instanceof Error ? error.message : 'Error desconocido'}`)
-    }
+  const handleUploadError = (errorMessage: string) => {
+    setError(errorMessage)
   }
 
   const handleDelete = async (documentId: string) => {
@@ -237,49 +157,14 @@ export default function DocumentUpload({
 
         {/* Formulario de subida */}
         {showUploadForm && (
-          <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-            <div>
-              <Label htmlFor="description">Descripción (opcional)</Label>
-              <Textarea
-                id="description"
-                placeholder="Describe brevemente el documento..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={2}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="file">Seleccionar archivo</Label>
-              <Input
-                ref={fileInputRef}
-                id="file"
-                type="file"
-                accept={acceptString}
-                onChange={handleFileSelect}
-                disabled={uploading}
-                className="mt-1"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Tipos permitidos: PDF, imágenes, documentos de Word/Excel. Máximo 50MB.
-              </p>
-            </div>
-
-            {/* Barra de progreso */}
-            {uploading && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span>Subiendo archivo...</span>
-                  <span>{uploadProgress}%</span>
-                </div>
-                <Progress value={uploadProgress} className="h-2" />
-                {uploadProgress > 90 && (
-                  <p className="text-xs text-muted-foreground">
-                    Finalizando subida y guardando en base de datos...
-                  </p>
-                )}
-              </div>
-            )}
+          <div className="p-4 bg-gray-50 rounded-lg">
+            <UnifiedFileUpload
+              projectId={projectId}
+              sectionName={sectionName}
+              onUploadSuccess={handleUploadSuccess}
+              onUploadError={handleUploadError}
+              allowedTypes={allowedTypes}
+            />
           </div>
         )}
 

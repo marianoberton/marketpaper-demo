@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { sanitizeFileName } from '@/lib/utils/file-utils';
 
 export function DirectFileUploadTest() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -24,8 +25,8 @@ export function DirectFileUploadTest() {
 
     const workspaceId = 'test-workspace-123';
     const timestamp = new Date().toISOString().split('T')[0];
-    const fileName = selectedFile.name;
-    const path = `${workspaceId}/documents/${timestamp}/${fileName}`;
+    const sanitizedFileName = sanitizeFileName(selectedFile.name);
+    const path = `${workspaceId}/documents/${timestamp}/${sanitizedFileName}`;
 
     const uploadResult = await uploadFile({
       bucket: 'construction-documents',

@@ -31,27 +31,56 @@ export async function POST(request: NextRequest) {
         )
       }
       
+      // Validar que el proyecto existe
+      const { data: project, error: projectError } = await supabase
+        .from('construction_projects')
+        .select('id')
+        .eq('id', projectId)
+        .single()
+
+      if (projectError || !project) {
+        console.error('Project validation error:', projectError)
+        return NextResponse.json(
+          { error: `Proyecto no encontrado: ${projectId}` },
+          { status: 404 }
+        )
+      }
+
       // Guardar registro en la base de datos con URL de Supabase Storage
+      const documentData = {
+        project_id: projectId,
+        section_name: sectionName,
+        filename: fileName,
+        original_filename: originalFileName || fileName,
+        file_url: fileUrl,
+        file_size: fileSize || 0,
+        mime_type: mimeType || 'application/octet-stream',
+        description: description,
+        uploaded_by: 'super-admin'
+      }
+
+      console.log('Insertando documento:', documentData)
+
       const { data: document, error: dbError } = await supabase
         .from('project_documents')
-        .insert({
-          project_id: projectId,
-          section_name: sectionName,
-          filename: fileName,
-          original_filename: originalFileName || fileName,
-          file_url: fileUrl,
-          file_size: fileSize || 0,
-          mime_type: mimeType || 'application/octet-stream',
-          description: description,
-          uploaded_by: 'super-admin'
-        })
+        .insert(documentData)
         .select()
         .single()
 
       if (dbError) {
-        console.error('Database error:', dbError)
+        console.error('Database error details:', {
+          error: dbError,
+          code: dbError.code,
+          message: dbError.message,
+          details: dbError.details,
+          hint: dbError.hint
+        })
         return NextResponse.json(
-          { error: 'Error al guardar la información del documento' },
+          { 
+            error: 'Error al guardar la información del documento',
+            details: dbError.message,
+            code: dbError.code
+          },
           { status: 500 }
         )
       }
