@@ -10,7 +10,8 @@ import {
   Download, 
   Trash2,
   Plus,
-  AlertCircle 
+  AlertCircle,
+  Upload 
 } from 'lucide-react'
 import { 
   getProjectDocuments, 
@@ -161,9 +162,10 @@ export default function DocumentUpload({
             <UnifiedFileUpload
               projectId={projectId}
               sectionName={sectionName}
+              workspaceId={workspace?.companyId || ''}
               onUploadSuccess={handleUploadSuccess}
               onUploadError={handleUploadError}
-              allowedTypes={allowedTypes}
+              acceptedTypes={acceptString}
             />
           </div>
         )}
