@@ -159,14 +159,21 @@ export default function DocumentUpload({
         {/* Formulario de subida */}
         {showUploadForm && (
           <div className="p-4 bg-gray-50 rounded-lg">
-            <UnifiedFileUpload
-              projectId={projectId}
-              sectionName={sectionName}
-              workspaceId={workspace?.companyId || ''}
-              onUploadSuccess={handleUploadSuccess}
-              onUploadError={handleUploadError}
-              acceptedTypes={acceptString}
-            />
+            {workspace?.companyId ? (
+              <UnifiedFileUpload
+                projectId={projectId}
+                sectionName={sectionName}
+                workspaceId={workspace.companyId}
+                onUploadSuccess={handleUploadSuccess}
+                onUploadError={handleUploadError}
+                acceptedTypes={acceptString}
+              />
+            ) : (
+              <div className="text-center py-4">
+                <AlertCircle className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
+                <p className="text-sm text-gray-600">Cargando información del workspace...</p>
+              </div>
+            )}
           </div>
         )}
 

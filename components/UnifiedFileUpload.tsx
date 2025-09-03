@@ -70,6 +70,19 @@ export function UnifiedFileUpload({
   const handleUpload = async () => {
     if (!selectedFile) return;
 
+    // Validar que todos los datos requeridos estén presentes
+    if (!projectId || !sectionName || !workspaceId) {
+      const missingData = [];
+      if (!projectId) missingData.push('projectId');
+      if (!sectionName) missingData.push('sectionName');
+      if (!workspaceId) missingData.push('workspaceId');
+      
+      const errorMessage = `Faltan datos requeridos para Supabase Storage: ${missingData.join(', ')}`;
+      setResult({ success: false, error: errorMessage });
+      onUploadError?.(errorMessage);
+      return;
+    }
+
     try {
       setResult(null);
       setLogs([]);
@@ -79,6 +92,7 @@ export function UnifiedFileUpload({
       addLog(`Archivo: ${selectedFile.name} (${selectedFile.size} bytes)`);
       addLog(`Proyecto: ${projectId}`);
       addLog(`Sección: ${sectionName}`);
+      addLog(`Workspace: ${workspaceId}`);
 
       // Generar ruta única para el archivo
       const path = generateUniqueFilePath({
