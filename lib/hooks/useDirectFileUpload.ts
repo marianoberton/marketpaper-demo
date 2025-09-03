@@ -28,15 +28,14 @@ export function useDirectFileUpload() {
 
     try {
       // Paso 1: Obtener URL firmada del endpoint correcto
-      const response = await fetch('/api/storage/signed-upload', {
+      const response = await fetch('/api/storage/create-upload-url', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
           bucket, 
-          path, 
-          contentType: file.type || 'application/octet-stream' 
+          path
         }),
       });
 
