@@ -153,7 +153,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
   const [currentUploadSection, setCurrentUploadSection] = useState<string | null>(null)
   
   // Hook para obtener el workspace actual
-  const { companyId } = useWorkspace()
+  const { companyId, isLoading: workspaceLoading } = useWorkspace()
   
   // Hook para manejar subidas de imágenes con Supabase Storage
   const { uploadFile, progress: imageUploadProgress, isUploading: isUploadingImage } = useDirectFileUpload()
@@ -408,13 +408,18 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
 
   const handleFileUpload = async (file: File, section: string) => {
     try {
+      // Validar que companyId esté disponible
+      if (!companyId) {
+        throw new Error('Faltan datos requeridos para Supabase Storage: companyId no disponible')
+      }
+      
       setUploading(true)
       setCurrentUploadSection(section)
       setUploadingTo(null)
       
       // Generar ruta única para el archivo
       const path = generateUniqueFilePath({
-        companyId: companyId || 'default',
+        companyId: companyId,
         projectId: project.id,
         section: section,
         fileName: file.name
@@ -1159,10 +1164,11 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                               size="sm"
                               variant="outline"
                               className="w-full text-xs"
+                              disabled={!companyId || workspaceLoading}
                               onClick={() => document.getElementById('verification-prefactibilidad')?.click()}
                             >
                               <Upload className="h-3 w-3 mr-1" />
-                              Actualizar Doc.
+                              {!companyId && !workspaceLoading ? 'Workspace no disponible' : 'Actualizar Doc.'}
                             </Button>
                           </div>
                         </div>
@@ -1188,10 +1194,11 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                               size="sm"
                               variant="outline"
                               className="w-full text-xs"
+                              disabled={!companyId || workspaceLoading}
                               onClick={() => document.getElementById('verification-prefactibilidad')?.click()}
                             >
                               <Upload className="h-3 w-3 mr-1" />
-                              Cargar Doc.
+                              {!companyId && !workspaceLoading ? 'Workspace no disponible' : 'Cargar Doc.'}
                             </Button>
                           </div>
                         </div>
