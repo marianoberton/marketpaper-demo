@@ -140,8 +140,11 @@ export default function ConstruccionClientPage() {
 
   // Cargar datos reales desde las APIs
   useEffect(() => {
-    loadClients()
-    loadProjects()
+    // Temporalmente usar datos mock para testing
+    setProjects(mockProjects)
+    setLoading(false)
+    // loadClients()
+    // loadProjects()
   }, [])
 
   const loadClients = async () => {

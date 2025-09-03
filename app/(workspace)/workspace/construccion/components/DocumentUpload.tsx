@@ -21,7 +21,7 @@ import {
   type ProjectDocument
 } from '@/lib/storage'
 import { useWorkspace } from '@/components/workspace-context'
-import { useFileUpload } from '@/hooks/useFileUpload'
+import { useFileUpload, type UseFileUploadOptions } from '@/hooks/useFileUpload'
 
 interface DocumentUploadProps {
   projectId: string
@@ -42,7 +42,44 @@ export default function DocumentUpload({
   const [loading, setLoading] = useState(true)
   
   const workspace = useWorkspace()
-  const { upload, uploading, error: uploadError } = useFileUpload('construction-documents')
+  
+  // Configuración del hook de upload
+  const uploadOptions: UseFileUploadOptions = {
+    defaultBucket: 'construction-documents',
+    onProgress: (progress) => {
+      // El progreso se maneja automáticamente por el hook
+    },
+    onSuccess: (result) => {
+      console.log('Upload exitoso:', result)
+    },
+    onError: (error) => {
+      console.error('Error en upload:', error)
+    },
+    validateFile: (file) => {
+      // Validación personalizada si es necesaria
+      const allowedTypes = ALLOWED_FILE_TYPES[sectionName as keyof typeof ALLOWED_FILE_TYPES] || []
+      
+      if (allowedTypes.length > 0) {
+        const isAllowed = allowedTypes.some(allowedType => {
+          if (allowedType.endsWith('/*')) {
+            return file.type.startsWith(allowedType.replace('/*', '/'))
+          }
+          return file.type === allowedType
+        })
+        
+        if (!isAllowed) {
+          return {
+            isValid: false,
+            error: `Tipo de archivo no permitido para ${sectionName}. Tipos permitidos: ${allowedTypes.join(', ')}`
+          }
+        }
+      }
+      
+      return { isValid: true }
+    }
+  }
+  
+  const { upload, uploading, error: uploadError, progress, cancel, reset } = useFileUpload(uploadOptions)
 
   // Cargar documentos al montar el componente
   useEffect(() => {
@@ -151,9 +188,22 @@ export default function DocumentUpload({
       <CardContent className="space-y-4">
         {/* Mostrar errores */}
         {(error || uploadError) && (
-          <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <AlertCircle className="h-4 w-4 text-red-500" />
-            <span className="text-sm text-red-700">{error || uploadError}</span>
+          <div className="flex items-center justify-between gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-red-500" />
+              <span className="text-sm text-red-700">{error || uploadError}</span>
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setError(null)
+                reset()
+              }}
+              className="text-red-600 hover:text-red-700"
+            >
+              ✕
+            </Button>
           </div>
         )}
 
@@ -161,51 +211,93 @@ export default function DocumentUpload({
         {showUploadForm && (
           <div className="p-4 bg-gray-50 rounded-lg">
             <div className="space-y-4">
-              <input
-                type="file"
-                accept={acceptString}
-                disabled={uploading}
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  
-                  try {
-                    const result = await upload(file);
-                    // Guardar metadatos en la base de datos
-                    const response = await fetch('/api/workspace/construction/documents', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        projectId,
-                        sectionName,
-                        fileName: file.name,
-                        originalFileName: file.name,
-                        fileUrl: `https://${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('https://', '')}/storage/v1/object/public/${result.bucket}/${result.path}`,
-                        fileSize: file.size,
-                        mimeType: file.type,
-                        description: `Documento de ${sectionName}`
-                      })
-                    });
+              <div className="flex items-center gap-4">
+                <input
+                  type="file"
+                  accept={acceptString}
+                  disabled={uploading}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
                     
-                    if (!response.ok) {
-                      const errorData = await response.json();
-                      throw new Error(errorData.error || 'Error al guardar el documento');
+                    try {
+                      // Resetear errores previos
+                      setError(null);
+                      reset();
+                      
+                      // Subir archivo usando el nuevo hook
+                      const result = await upload(file, 'construction-documents');
+                      
+                      // Guardar metadatos en la base de datos
+                      const response = await fetch('/api/workspace/construction/documents', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          projectId,
+                          sectionName,
+                          fileName: result.path.split('/').pop() || file.name,
+                          originalFileName: file.name,
+                          fileUrl: result.publicUrl,
+                          fileSize: file.size,
+                          mimeType: file.type,
+                          description: `Documento de ${sectionName}`
+                        })
+                      });
+                      
+                      if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error || 'Error al guardar el documento');
+                      }
+                      
+                      const document = await response.json();
+                      handleUploadSuccess(document);
+                      
+                    } catch (error: any) {
+                      console.error('Error creating document:', error);
+                      setError('Error al crear el documento: ' + error.message);
+                    } finally {
+                      e.currentTarget.value = '';
                     }
-                    
-                    const document = await response.json();
-                    handleUploadSuccess(document);
-                    
-                  } catch (error: any) {
-                    console.error('Error creating document:', error);
-                    setError('Error al crear el documento: ' + error.message);
-                  } finally {
-                    e.currentTarget.value = '';
-                  }
-                }}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-              />
-              {uploading && <p className="text-sm text-blue-600">Subiendo archivo...</p>}
-              {uploadError && <p className="text-sm text-red-500">{uploadError}</p>}
+                  }}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+                
+                {/* Botón de cancelar si está subiendo */}
+                {uploading && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={cancel}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    Cancelar
+                  </Button>
+                )}
+              </div>
+              
+              {/* Barra de progreso */}
+              {uploading && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-blue-600">Subiendo archivo...</span>
+                    <span className="text-blue-600">{Math.round(progress)}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                      style={{ width: `${progress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Información sobre tipos de archivo permitidos */}
+              {!uploading && (
+                <div className="text-xs text-gray-500">
+                  <p>Tipos de archivo permitidos: {allowedTypes.join(', ')}</p>
+                  <p>Tamaño máximo: 100MB</p>
+                </div>
+              )}
             </div>
           </div>
         )}

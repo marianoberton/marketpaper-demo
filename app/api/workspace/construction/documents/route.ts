@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
       
     // Validar que el proyecto existe
     const { data: project, error: projectError } = await supabase
-      .from('construction_projects')
+      .from('projects')
       .select('id')
       .eq('id', projectId)
       .single()
