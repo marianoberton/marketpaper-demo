@@ -21,7 +21,7 @@ import {
   type ProjectDocument
 } from '@/lib/storage'
 import { useWorkspace } from '@/components/workspace-context'
-import { UnifiedFileUpload } from '@/components/UnifiedFileUpload'
+import { useFileUpload } from '@/hooks/useFileUpload'
 
 interface DocumentUploadProps {
   projectId: string
@@ -42,6 +42,7 @@ export default function DocumentUpload({
   const [loading, setLoading] = useState(true)
   
   const workspace = useWorkspace()
+  const { upload, uploading, error: uploadError } = useFileUpload('construction-documents')
 
   // Cargar documentos al montar el componente
   useEffect(() => {
@@ -149,31 +150,63 @@ export default function DocumentUpload({
 
       <CardContent className="space-y-4">
         {/* Mostrar errores */}
-        {error && (
-          <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-md">
+        {(error || uploadError) && (
+          <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
             <AlertCircle className="h-4 w-4 text-red-500" />
-            <span className="text-sm text-red-600">{error}</span>
+            <span className="text-sm text-red-700">{error || uploadError}</span>
           </div>
         )}
 
         {/* Formulario de subida */}
         {showUploadForm && (
           <div className="p-4 bg-gray-50 rounded-lg">
-            {workspace?.companyId ? (
-              <UnifiedFileUpload
-                projectId={projectId}
-                sectionName={sectionName}
-                workspaceId={workspace.companyId}
-                onUploadSuccess={handleUploadSuccess}
-                onUploadError={handleUploadError}
-                acceptedTypes={acceptString}
+            <div className="space-y-4">
+              <input
+                type="file"
+                accept={acceptString}
+                disabled={uploading}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  
+                  try {
+                    const result = await upload(file);
+                    // Guardar metadatos en la base de datos
+                    const response = await fetch('/api/workspace/construction/documents', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        projectId,
+                        sectionName,
+                        fileName: file.name,
+                        originalFileName: file.name,
+                        fileUrl: `https://${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('https://', '')}/storage/v1/object/public/${result.bucket}/${result.path}`,
+                        fileSize: file.size,
+                        mimeType: file.type,
+                        description: `Documento de ${sectionName}`
+                      })
+                    });
+                    
+                    if (!response.ok) {
+                      const errorData = await response.json();
+                      throw new Error(errorData.error || 'Error al guardar el documento');
+                    }
+                    
+                    const document = await response.json();
+                    handleUploadSuccess(document);
+                    
+                  } catch (error: any) {
+                    console.error('Error creating document:', error);
+                    setError('Error al crear el documento: ' + error.message);
+                  } finally {
+                    e.currentTarget.value = '';
+                  }
+                }}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               />
-            ) : (
-              <div className="text-center py-4">
-                <AlertCircle className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
-                <p className="text-sm text-gray-600">Cargando información del workspace...</p>
-              </div>
-            )}
+              {uploading && <p className="text-sm text-blue-600">Subiendo archivo...</p>}
+              {uploadError && <p className="text-sm text-red-500">{uploadError}</p>}
+            </div>
           </div>
         )}
 

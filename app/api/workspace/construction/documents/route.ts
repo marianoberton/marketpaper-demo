@@ -1,227 +1,87 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 
-// Configuración para permitir archivos más grandes
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '50mb',
-    },
-  },
-}
+// Configuración ya no necesaria - archivos van directo a Supabase Storage
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
     
-    // En modo super admin, no verificamos autenticación de usuario
-    // pero sí necesitamos una conexión válida a Supabase
+    // Solo manejar JSON (archivo ya subido a Supabase Storage)
+    const { fileUrl, fileName, originalFileName, projectId, sectionName, description, fileSize, mimeType } = await request.json()
     
-    const contentType = request.headers.get('content-type') || ''
-    
-    // Manejar tanto FormData (subida tradicional) como JSON (Supabase Storage)
-    if (contentType.includes('application/json')) {
-      // Caso: archivo ya subido a Supabase Storage, solo guardar metadata
-      const { fileUrl, fileName, originalFileName, projectId, sectionName, description, fileSize, mimeType } = await request.json()
+    if (!fileUrl || !fileName || !projectId || !sectionName) {
+      return NextResponse.json(
+        { error: 'Faltan datos requeridos para Supabase Storage' },
+        { status: 400 }
+      )
+    }
       
-      if (!fileUrl || !fileName || !projectId || !sectionName) {
-        return NextResponse.json(
-          { error: 'Faltan datos requeridos para Supabase Storage' },
-          { status: 400 }
-        )
-      }
-      
-      // Validar que el proyecto existe
-      const { data: project, error: projectError } = await supabase
-        .from('construction_projects')
-        .select('id')
-        .eq('id', projectId)
-        .single()
+    // Validar que el proyecto existe
+    const { data: project, error: projectError } = await supabase
+      .from('construction_projects')
+      .select('id')
+      .eq('id', projectId)
+      .single()
 
-      if (projectError || !project) {
-        console.error('Project validation error:', projectError)
-        return NextResponse.json(
-          { error: `Proyecto no encontrado: ${projectId}` },
-          { status: 404 }
-        )
-      }
+    if (projectError || !project) {
+      console.error('Project validation error:', projectError)
+      return NextResponse.json(
+        { error: `Proyecto no encontrado: ${projectId}` },
+        { status: 404 }
+      )
+    }
 
-      // Guardar registro en la base de datos con URL de Supabase Storage
-      const documentData = {
-        project_id: projectId,
-        section_name: sectionName,
-        filename: fileName,
-        original_filename: originalFileName || fileName,
-        file_url: fileUrl,
-        file_size: fileSize || 0,
-        mime_type: mimeType || 'application/octet-stream',
-        description: description,
-        uploaded_by: 'super-admin'
-      }
+    // Guardar registro en la base de datos con URL de Supabase Storage
+    const documentData = {
+      project_id: projectId,
+      section_name: sectionName,
+      filename: fileName,
+      original_filename: originalFileName || fileName,
+      file_url: fileUrl,
+      file_size: fileSize || 0,
+      mime_type: mimeType || 'application/octet-stream',
+      description: description,
+      uploaded_by: 'super-admin'
+    }
 
-      console.log('Insertando documento:', documentData)
+    console.log('Insertando documento:', documentData)
 
-      const { data: document, error: dbError } = await supabase
-        .from('project_documents')
-        .insert(documentData)
-        .select()
-        .single()
+    const { data: document, error: dbError } = await supabase
+      .from('project_documents')
+      .insert(documentData)
+      .select()
+      .single()
 
-      if (dbError) {
-        console.error('Database error details:', {
-          error: dbError,
-          code: dbError.code,
-          message: dbError.message,
-          details: dbError.details,
-          hint: dbError.hint
-        })
-        return NextResponse.json(
-          { 
-            error: 'Error al guardar la información del documento',
-            details: dbError.message,
-            code: dbError.code
-          },
-          { status: 500 }
-        )
-      }
-
-      return NextResponse.json({
-        id: document.id,
-        filename: document.filename,
-        original_filename: document.original_filename,
-        file_url: document.file_url,
-        file_size: document.file_size,
-        mime_type: document.mime_type,
-        section_name: document.section_name,
-        description: document.description,
-        created_at: document.created_at
+    if (dbError) {
+      console.error('Database error details:', {
+        error: dbError,
+        code: dbError.code,
+        message: dbError.message,
+        details: dbError.details,
+        hint: dbError.hint
       })
-    } else {
-      // Caso: subida tradicional con FormData
-      const formData = await request.formData()
-      const file = formData.get('file') as File
-      const projectId = formData.get('projectId') as string
-      const sectionName = formData.get('sectionName') as string
-      const description = formData.get('description') as string
+      return NextResponse.json(
+        { 
+          error: 'Error al guardar la información del documento',
+          details: dbError.message,
+          code: dbError.code
+        },
+        { status: 500 }
+      )
+    }
 
-      if (!file || !projectId || !sectionName) {
-        return NextResponse.json(
-          { error: 'Faltan datos requeridos' },
-          { status: 400 }
-        )
-      }
-
-      // Validar tipo de archivo
-      const allowedTypes = [
-        'application/pdf',
-        'image/jpeg',
-        'image/jpg', 
-        'image/png',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-      ]
-
-      if (!allowedTypes.includes(file.type)) {
-        return NextResponse.json(
-          { error: 'Tipo de archivo no permitido' },
-          { status: 400 }
-        )
-      }
-
-      // Validar tamaño del archivo (máximo 50MB)
-      if (file.size > 50 * 1024 * 1024) {
-        return NextResponse.json(
-          { error: 'El archivo es demasiado grande. Máximo 50MB permitido.' },
-          { status: 400 }
-        );
-      }
-
-      // Generar nombre único para el archivo
-      const fileExt = file.name.split('.').pop()
-      const timestamp = Date.now()
-      const randomStr = Math.random().toString(36).substring(2)
-      
-      // Sanitizar el nombre de la sección para evitar problemas con caracteres especiales
-      const sanitizedSectionName = sectionName
-        .replace(/[^a-zA-Z0-9\s]/g, '') // Remover caracteres especiales
-        .replace(/\s+/g, '_') // Reemplazar espacios con guiones bajos
-        .toLowerCase()
-      
-      const fileName = `${projectId}/${sanitizedSectionName}/${timestamp}-${randomStr}.${fileExt}`
-
-      try {
-      // Subir archivo a Supabase Storage
-      const { data: storageData, error: storageError } = await supabase.storage
-        .from('construction-documents')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        })
-
-      if (storageError) {
-        console.error('Storage error:', storageError)
-        return NextResponse.json(
-          { error: 'Error al subir el archivo al storage' },
-          { status: 500 }
-        )
-      }
-
-      // Obtener URL pública del archivo
-      const { data: { publicUrl } } = supabase.storage
-        .from('construction-documents')
-        .getPublicUrl(fileName)
-
-      // Guardar registro en la base de datos
-      const { data: document, error: dbError } = await supabase
-        .from('project_documents')
-        .insert({
-          project_id: projectId,
-          section_name: sectionName,
-          filename: fileName,
-          original_filename: file.name,
-          file_url: publicUrl,
-          file_size: file.size,
-          mime_type: file.type,
-          description: description,
-          uploaded_by: 'super-admin' // En modo super admin
-        })
-        .select()
-        .single()
-
-      if (dbError) {
-        console.error('Database error:', dbError)
-        
-        // Si hay error en la DB, intentar eliminar el archivo subido
-        await supabase.storage
-          .from('construction-documents')
-          .remove([fileName])
-        
-        return NextResponse.json(
-          { error: 'Error al guardar la información del documento' },
-          { status: 500 }
-        )
-      }
-
-      return NextResponse.json({
-        id: document.id,
-        filename: document.filename,
-        original_filename: document.original_filename,
-        file_url: document.file_url,
-        file_size: document.file_size,
-        mime_type: document.mime_type,
-        section_name: document.section_name,
-        description: document.description,
-        created_at: document.created_at
-      })
-
-      } catch (error) {
-        console.error('Upload error:', error)
-        return NextResponse.json(
-          { error: 'Error interno del servidor' },
-          { status: 500 }
-        )
-      }
-    } // Cierre del bloque else
+    return NextResponse.json({
+      id: document.id,
+      filename: document.filename,
+      original_filename: document.original_filename,
+      file_url: document.file_url,
+      file_size: document.file_size,
+      mime_type: document.mime_type,
+      section_name: document.section_name,
+      description: document.description,
+      created_at: document.created_at
+    })
 
   } catch (error) {
     console.error('Request processing error:', error)
