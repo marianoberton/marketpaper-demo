@@ -1,9 +1,8 @@
 import { createBrowserClient } from '@supabase/ssr'
-import type { Database } from '@/types/database'
 
 // Cliente de Supabase optimizado para el navegador
 export function createSupabaseBrowserClient() {
-  return createBrowserClient<Database>(
+  return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
