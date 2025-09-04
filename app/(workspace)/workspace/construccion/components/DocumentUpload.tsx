@@ -41,8 +41,14 @@ export default function DocumentUpload({
   const [error, setError] = useState<string | null>(null)
   const [showUploadForm, setShowUploadForm] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [logs, setLogs] = useState<string[]>([])
   
   const workspace = useWorkspace()
+  
+  const addLog = (message: string) => {
+    console.log(message)
+    setLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`])
+  }
   
   // Configuración del hook de upload
   const uploadOptions: UseFileUploadOptions = {
@@ -241,17 +247,30 @@ export default function DocumentUpload({
                       // Resetear errores previos
                       setError(null);
                       reset();
+                      setLogs([]); // Limpiar logs anteriores
+                      
+                      addLog(`🚀 Iniciando upload de archivo: ${file.name} (${formatFileSize(file.size)})`);
+                      addLog(`📁 Proyecto ID: ${projectId}`);
+                      addLog(`📂 Sección: ${sectionName}`);
+                      addLog(`🏢 Company ID: ${workspace?.companyId}`);
                       
                       // Subir archivo usando el nuevo hook
+                      addLog('📤 Subiendo archivo a Supabase Storage...');
                       const result = await uploadDocument(file);
                       
-                      // Debug: Verificar qué devuelve el upload
-                      console.log('🔍 Resultado del upload:', result);
-                      console.log('🔍 publicUrl:', result.publicUrl);
-                      console.log('🔍 path:', result.path);
+                      addLog(`✅ Archivo subido exitosamente`);
+                      addLog(`🪣 Bucket: ${result.bucket}`);
+                      addLog(`📍 Path: ${result.path}`);
+                      addLog(`🔗 Public URL: ${result.publicUrl ? 'Generada' : 'NO GENERADA'}`);
+                      
+                      if (result.publicUrl) {
+                        addLog(`📏 URL Length: ${result.publicUrl.length}`);
+                        addLog(`🔍 URL Type: ${typeof result.publicUrl}`);
+                      }
                       
                       // Verificar que tenemos los datos necesarios
                       if (!result.publicUrl) {
+                        addLog('❌ ERROR: No se obtuvo URL pública del archivo subido');
                         throw new Error('No se obtuvo URL pública del archivo subido');
                       }
                       
@@ -266,25 +285,36 @@ export default function DocumentUpload({
                         description: `Documento de ${sectionName}`
                       };
                       
-                      // Debug: Verificar datos que se envían
-                      console.log('🔍 Datos enviados al endpoint:', requestData);
+                      addLog('📋 Datos preparados para API:');
+                      addLog(`  - Project ID: ${requestData.projectId ? '✅' : '❌'}`);
+                      addLog(`  - Section Name: ${requestData.sectionName ? '✅' : '❌'}`);
+                      addLog(`  - File Name: ${requestData.fileName ? '✅' : '❌'}`);
+                      addLog(`  - File URL: ${requestData.fileUrl ? '✅' : '❌'}`);
                       
                       // Guardar metadatos en la base de datos
+                      addLog('🌐 Enviando datos a API...');
                       const response = await fetch('/api/workspace/construction/documents', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(requestData)
                       });
                       
+                      addLog(`📊 Respuesta API: ${response.status} ${response.statusText}`);
+                      
                       if (!response.ok) {
                         const errorData = await response.json();
+                        addLog(`❌ Error de API: ${JSON.stringify(errorData)}`);
                         throw new Error(errorData.error || 'Error al guardar el documento');
                       }
                       
                       const document = await response.json();
+                      addLog(`✅ Documento creado exitosamente: ${document.id}`);
+                      addLog(`📄 Nombre: ${document.fileName}`);
+                      addLog(`🔗 URL: ${document.fileUrl}`);
                       handleUploadSuccess(document);
                       
                     } catch (error: any) {
+                      addLog(`❌ ERROR FINAL: ${error.message}`);
                       console.error('Error creating document:', error);
                       setError('Error al crear el documento: ' + error.message);
                     } finally {
@@ -389,6 +419,45 @@ export default function DocumentUpload({
             <p className="text-sm text-muted-foreground">
               Sube documentos relacionados con {sectionName.toLowerCase()}
             </p>
+          </div>
+        )}
+        
+        {/* Logs de depuración */}
+        {logs.length > 0 && (
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
+            <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+              <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+              Logs de Depuración
+            </h4>
+            <div className="space-y-1 max-h-60 overflow-y-auto">
+              {logs.map((log, index) => (
+                <div key={index} className="text-xs font-mono text-gray-700 bg-white p-2 rounded border">
+                  {log}
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setLogs([])}
+                className="text-xs"
+              >
+                Limpiar Logs
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const logText = logs.join('\n');
+                  navigator.clipboard.writeText(logText);
+                  addLog('📋 Logs copiados al portapapeles');
+                }}
+                className="text-xs"
+              >
+                Copiar Logs
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>

@@ -18,21 +18,32 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     
     // Debug: Log de datos recibidos
-    console.log('🔍 POST /api/workspace/construction/documents - Datos recibidos:', body)
+    console.log('📥 API received data:', JSON.stringify(body, null, 2))
     
     const { fileUrl, fileName, originalFileName, projectId, sectionName, description, fileSize, mimeType } = body
     
-    // Debug: Log de validación
-    console.log('🔍 Validación de datos:')
-    console.log('  - fileUrl:', fileUrl, typeof fileUrl, !!fileUrl)
-    console.log('  - fileName:', fileName, typeof fileName, !!fileName)
-    console.log('  - projectId:', projectId, typeof projectId, !!projectId)
-    console.log('  - sectionName:', sectionName, typeof sectionName, !!sectionName)
+    // Debug: Log de validación detallada
+    console.log('🔍 Detailed parameter validation:')
+    console.log('  fileUrl:', typeof fileUrl, '=', fileUrl, '| empty?', !fileUrl)
+    console.log('  fileName:', typeof fileName, '=', fileName, '| empty?', !fileName)
+    console.log('  projectId:', typeof projectId, '=', projectId, '| empty?', !projectId)
+    console.log('  sectionName:', typeof sectionName, '=', sectionName, '| empty?', !sectionName)
     
-    if (!fileUrl || !fileName || !projectId || !sectionName) {
-      console.log('❌ Faltan datos requeridos')
+    // Identificar exactamente qué parámetros faltan
+    const missingParams = []
+    if (!fileUrl) missingParams.push('fileUrl')
+    if (!fileName) missingParams.push('fileName')
+    if (!projectId) missingParams.push('projectId')
+    if (!sectionName) missingParams.push('sectionName')
+    
+    if (missingParams.length > 0) {
+      console.log('❌ Missing parameters:', missingParams.join(', '))
       return NextResponse.json(
-        { error: 'Faltan datos requeridos para Supabase Storage' },
+        { 
+          error: 'Faltan datos requeridos para Supabase Storage',
+          missing: missingParams,
+          received: { fileUrl: !!fileUrl, fileName: !!fileName, projectId: !!projectId, sectionName: !!sectionName }
+        },
         { status: 400 }
       )
     }
