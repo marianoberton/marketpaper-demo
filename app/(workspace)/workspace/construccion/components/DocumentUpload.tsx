@@ -422,44 +422,58 @@ export default function DocumentUpload({
           </div>
         )}
         
-        {/* Logs de depuración */}
-        {logs.length > 0 && (
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
-            <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
-              <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-              Logs de Depuración
-            </h4>
-            <div className="space-y-1 max-h-60 overflow-y-auto">
-              {logs.map((log, index) => (
-                <div key={index} className="text-xs font-mono text-gray-700 bg-white p-2 rounded border">
+        {/* Logs de depuración - SIEMPRE VISIBLE */}
+        <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
+          <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
+            <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+            Logs de Depuración ({logs.length})
+          </h4>
+          <div className="space-y-1 max-h-60 overflow-y-auto min-h-[100px] bg-white rounded border p-2">
+            {logs.length > 0 ? (
+              logs.map((log, index) => (
+                <div key={index} className="text-xs font-mono text-gray-700 p-1 border-b border-gray-100 last:border-b-0">
                   {log}
                 </div>
-              ))}
-            </div>
-            <div className="mt-3 flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setLogs([])}
-                className="text-xs"
-              >
-                Limpiar Logs
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  const logText = logs.join('\n');
-                  navigator.clipboard.writeText(logText);
-                  addLog('📋 Logs copiados al portapapeles');
-                }}
-                className="text-xs"
-              >
-                Copiar Logs
-              </Button>
-            </div>
+              ))
+            ) : (
+              <div className="text-xs text-gray-500 italic text-center py-4">
+                No hay logs aún. Los logs aparecerán aquí cuando subas un archivo.
+              </div>
+            )}
           </div>
-        )}
+          <div className="mt-3 flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setLogs([])}
+              className="text-xs"
+              disabled={logs.length === 0}
+            >
+              Limpiar Logs
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const logText = logs.join('\n');
+                navigator.clipboard.writeText(logText);
+                addLog('📋 Logs copiados al portapapeles');
+              }}
+              className="text-xs"
+              disabled={logs.length === 0}
+            >
+              Copiar Logs
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => addLog('🧪 Log de prueba generado')}
+              className="text-xs"
+            >
+              Probar Logs
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )
