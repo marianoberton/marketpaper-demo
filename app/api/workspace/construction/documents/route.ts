@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { getCurrentUser } from '@/lib/auth-server'
 
 // Configuración ya no necesaria - archivos van directo a Supabase Storage
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
+    
+    // Obtener el usuario actual y su company_id
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+    }
     
     // Solo manejar JSON (archivo ya subido a Supabase Storage)
     const { fileUrl, fileName, originalFileName, projectId, sectionName, description, fileSize, mimeType } = await request.json()
@@ -16,18 +23,32 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Determinar el company_id a usar
+    let targetCompanyId: string
+    if (currentUser.role === 'super_admin') {
+      // Super admin puede trabajar con cualquier empresa, usar la del proyecto
+      targetCompanyId = currentUser.company_id || '57bffb9f-78ba-4252-a9ea-10adf83c3155'
+    } else {
+      // Usuarios regulares solo pueden trabajar con su propia empresa
+      if (!currentUser.company_id) {
+        return NextResponse.json({ error: 'Usuario sin empresa asignada' }, { status: 400 })
+      }
+      targetCompanyId = currentUser.company_id
+    }
       
-    // Validar que el proyecto existe
+    // Validar que el proyecto existe Y pertenece a la empresa del usuario
     const { data: project, error: projectError } = await supabase
       .from('projects')
-      .select('id')
+      .select('id, company_id, name')
       .eq('id', projectId)
+      .eq('company_id', targetCompanyId)
       .single()
 
     if (projectError || !project) {
       console.error('Project validation error:', projectError)
       return NextResponse.json(
-        { error: `Proyecto no encontrado: ${projectId}` },
+        { error: `Proyecto no encontrado o sin permisos: ${projectId}` },
         { status: 404 }
       )
     }
@@ -166,6 +187,41 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { error: 'Project ID requerido' },
         { status: 400 }
+      )
+    }
+
+    // Obtener el usuario actual y su company_id
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+    }
+
+    // Determinar el company_id a usar
+    let targetCompanyId: string
+    if (currentUser.role === 'super_admin') {
+      // Super admin puede trabajar con cualquier empresa
+      targetCompanyId = currentUser.company_id || '57bffb9f-78ba-4252-a9ea-10adf83c3155'
+    } else {
+      // Usuarios regulares solo pueden trabajar con su propia empresa
+      if (!currentUser.company_id) {
+        return NextResponse.json({ error: 'Usuario sin empresa asignada' }, { status: 400 })
+      }
+      targetCompanyId = currentUser.company_id
+    }
+
+    // Validar que el proyecto existe Y pertenece a la empresa del usuario
+    const { data: project, error: projectError } = await supabase
+      .from('projects')
+      .select('id, company_id')
+      .eq('id', projectId)
+      .eq('company_id', targetCompanyId)
+      .single()
+
+    if (projectError || !project) {
+      console.error('Project validation error:', projectError)
+      return NextResponse.json(
+        { error: `Proyecto no encontrado o sin permisos: ${projectId}` },
+        { status: 404 }
       )
     }
 

@@ -19,7 +19,7 @@ INSERT INTO projects (
     updated_at
 ) VALUES (
     '33333333-3333-3333-3333-333333333333',
-    'test-company',
+    '57bffb9f-78ba-4252-a9ea-10adf83c3155',
     'Proyecto de Prueba - Prefactibilidad',
     'Dirección de Prueba 123',
     'Barrio Test',
