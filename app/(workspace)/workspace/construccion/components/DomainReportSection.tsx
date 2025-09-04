@@ -23,7 +23,7 @@ import {
 import { Project, formatDomainReportStatus, calculateDomainReportDaysRemaining } from '@/lib/construction'
 import { useDirectFileUpload } from '@/lib/hooks/useDirectFileUpload'
 import { useWorkspace } from '@/components/workspace-context'
-import { sanitizeFileName } from '@/lib/utils/file-utils'
+import { sanitizeFileName, generateUniqueFilePath } from '@/lib/utils/file-utils'
 
 interface DomainReportSectionProps {
   project: Project
@@ -128,10 +128,18 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
     }
 
     try {
-      // Generar ruta sanitizada para el archivo
-      const timestamp = Date.now()
-      const sanitizedFileName = sanitizeFileName(file.name)
-      const path = `${companyId || 'default'}/domain-reports/${project.id}/${timestamp}-${sanitizedFileName}`
+      // Validar que companyId esté disponible
+      if (!companyId) {
+        throw new Error('Faltan datos requeridos para Supabase Storage: companyId no disponible')
+      }
+      
+      // Generar ruta única para el archivo usando la función estándar
+      const path = generateUniqueFilePath({
+        companyId: companyId,
+        projectId: project.id,
+        section: 'domain-reports',
+        fileName: file.name
+      })
       
       // Subir archivo usando el nuevo sistema de upload directo a Supabase Storage
       const result = await uploadFile({

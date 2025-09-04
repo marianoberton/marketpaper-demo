@@ -22,6 +22,7 @@ import {
 } from '@/lib/storage'
 import { useWorkspace } from '@/components/workspace-context'
 import { useFileUpload, type UseFileUploadOptions } from '@/hooks/useFileUpload'
+import { generateUniqueFilePath } from '@/lib/utils/file-utils'
 
 interface DocumentUploadProps {
   projectId: string
@@ -80,6 +81,22 @@ export default function DocumentUpload({
   }
   
   const { upload, uploading, error: uploadError, progress, cancel, reset } = useFileUpload(uploadOptions)
+
+  // Función personalizada de upload que genera el path correcto
+  const uploadDocument = async (file: File) => {
+    if (!workspace.companyId) {
+      throw new Error('Company ID no disponible')
+    }
+    
+    const customPath = generateUniqueFilePath({
+      companyId: workspace.companyId,
+      projectId: projectId,
+      section: sectionName,
+      fileName: file.name
+    })
+    
+    return await upload(file, 'construction-documents', customPath)
+  }
 
   // Cargar documentos al montar el componente
   useEffect(() => {
@@ -226,7 +243,7 @@ export default function DocumentUpload({
                       reset();
                       
                       // Subir archivo usando el nuevo hook
-                      const result = await upload(file, 'construction-documents');
+                      const result = await uploadDocument(file);
                       
                       // Guardar metadatos en la base de datos
                       const response = await fetch('/api/workspace/construction/documents', {
