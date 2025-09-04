@@ -245,20 +245,35 @@ export default function DocumentUpload({
                       // Subir archivo usando el nuevo hook
                       const result = await uploadDocument(file);
                       
+                      // Debug: Verificar qué devuelve el upload
+                      console.log('🔍 Resultado del upload:', result);
+                      console.log('🔍 publicUrl:', result.publicUrl);
+                      console.log('🔍 path:', result.path);
+                      
+                      // Verificar que tenemos los datos necesarios
+                      if (!result.publicUrl) {
+                        throw new Error('No se obtuvo URL pública del archivo subido');
+                      }
+                      
+                      const requestData = {
+                        projectId,
+                        sectionName,
+                        fileName: result.path.split('/').pop() || file.name,
+                        originalFileName: file.name,
+                        fileUrl: result.publicUrl,
+                        fileSize: file.size,
+                        mimeType: file.type,
+                        description: `Documento de ${sectionName}`
+                      };
+                      
+                      // Debug: Verificar datos que se envían
+                      console.log('🔍 Datos enviados al endpoint:', requestData);
+                      
                       // Guardar metadatos en la base de datos
                       const response = await fetch('/api/workspace/construction/documents', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          projectId,
-                          sectionName,
-                          fileName: result.path.split('/').pop() || file.name,
-                          originalFileName: file.name,
-                          fileUrl: result.publicUrl,
-                          fileSize: file.size,
-                          mimeType: file.type,
-                          description: `Documento de ${sectionName}`
-                        })
+                        body: JSON.stringify(requestData)
                       });
                       
                       if (!response.ok) {

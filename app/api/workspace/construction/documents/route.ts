@@ -15,14 +15,29 @@ export async function POST(request: NextRequest) {
     }
     
     // Solo manejar JSON (archivo ya subido a Supabase Storage)
-    const { fileUrl, fileName, originalFileName, projectId, sectionName, description, fileSize, mimeType } = await request.json()
+    const body = await request.json()
+    
+    // Debug: Log de datos recibidos
+    console.log('🔍 POST /api/workspace/construction/documents - Datos recibidos:', body)
+    
+    const { fileUrl, fileName, originalFileName, projectId, sectionName, description, fileSize, mimeType } = body
+    
+    // Debug: Log de validación
+    console.log('🔍 Validación de datos:')
+    console.log('  - fileUrl:', fileUrl, typeof fileUrl, !!fileUrl)
+    console.log('  - fileName:', fileName, typeof fileName, !!fileName)
+    console.log('  - projectId:', projectId, typeof projectId, !!projectId)
+    console.log('  - sectionName:', sectionName, typeof sectionName, !!sectionName)
     
     if (!fileUrl || !fileName || !projectId || !sectionName) {
+      console.log('❌ Faltan datos requeridos')
       return NextResponse.json(
         { error: 'Faltan datos requeridos para Supabase Storage' },
         { status: 400 }
       )
     }
+    
+    console.log('✅ Todos los datos requeridos están presentes')
 
     // Determinar el company_id a usar
     let targetCompanyId: string
