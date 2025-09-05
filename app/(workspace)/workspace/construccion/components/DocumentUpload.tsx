@@ -21,7 +21,7 @@ import {
   type ProjectDocument
 } from '@/lib/storage'
 import { useWorkspace } from '@/components/workspace-context'
-import { useFileUpload, type UseFileUploadOptions } from '@/hooks/useFileUpload'
+import { useDirectFileUpload } from '@/lib/hooks/useDirectFileUpload'
 import { generateUniqueFilePath } from '@/lib/utils/file-utils'
 
 interface DocumentUploadProps {
@@ -50,43 +50,11 @@ export default function DocumentUpload({
     setLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`])
   }
   
-  // Configuración del hook de upload
-  const uploadOptions: UseFileUploadOptions = {
-    defaultBucket: 'construction-documents',
-    onProgress: (progress) => {
-      // El progreso se maneja automáticamente por el hook
-    },
-    onSuccess: (result) => {
-      console.log('Upload exitoso:', result)
-    },
-    onError: (error) => {
-      console.error('Error en upload:', error)
-    },
-    validateFile: (file) => {
-      // Validación personalizada si es necesaria
-      const allowedTypes = ALLOWED_FILE_TYPES[sectionName as keyof typeof ALLOWED_FILE_TYPES] || []
-      
-      if (allowedTypes.length > 0) {
-        const isAllowed = allowedTypes.some(allowedType => {
-          if (allowedType.endsWith('/*')) {
-            return file.type.startsWith(allowedType.replace('/*', '/'))
-          }
-          return file.type === allowedType
-        })
-        
-        if (!isAllowed) {
-          return {
-            isValid: false,
-            error: `Tipo de archivo no permitido para ${sectionName}. Tipos permitidos: ${allowedTypes.join(', ')}`
-          }
-        }
-      }
-      
-      return { isValid: true }
-    }
-  }
-  
-  const { upload, uploading, error: uploadError, progress, cancel, reset } = useFileUpload(uploadOptions)
+  const { 
+    uploadFile, 
+    isUploading: uploading, 
+    progress
+  } = useDirectFileUpload()
 
   // Función personalizada de upload que genera el path correcto
   const uploadDocument = async (file: File) => {
@@ -210,18 +178,17 @@ export default function DocumentUpload({
 
       <CardContent className="space-y-4">
         {/* Mostrar errores */}
-        {(error || uploadError) && (
+        {error && (
           <div className="flex items-center justify-between gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-red-500" />
-              <span className="text-sm text-red-700">{error || uploadError}</span>
+              <span className="text-sm text-red-700">{error}</span>
             </div>
             <Button
               size="sm"
               variant="ghost"
               onClick={() => {
                 setError(null)
-                reset()
               }}
               className="text-red-600 hover:text-red-700"
             >
@@ -246,7 +213,6 @@ export default function DocumentUpload({
                     try {
                       // Resetear errores previos
                       setError(null);
-                      reset();
                       setLogs([]); // Limpiar logs anteriores
                       
                       addLog(`🚀 Iniciando upload de archivo: ${file.name} (${formatFileSize(file.size)})`);
@@ -254,22 +220,41 @@ export default function DocumentUpload({
                       addLog(`📂 Sección: ${sectionName}`);
                       addLog(`🏢 Company ID: ${workspace?.companyId}`);
                       
-                      // Subir archivo usando el nuevo hook
+                      // Subir archivo usando useDirectFileUpload
                       addLog('📤 Subiendo archivo a Supabase Storage...');
-                      const result = await uploadDocument(file);
+                      
+                      // Generar ruta única usando la misma lógica que test-prefactibilidad
+                      const filePath = generateUniqueFilePath({
+                        companyId: workspace?.companyId || 'unknown',
+                        projectId,
+                        section: sectionName,
+                        fileName: file.name
+                      });
+                      
+                      addLog(`📁 Ruta generada: ${filePath}`);
+                      
+                      const uploadResult = await uploadFile({
+                        file,
+                        bucket: 'construction-documents',
+                        path: filePath
+                      });
+                      
+                      if (!uploadResult.success) {
+                        throw new Error(uploadResult.error || 'Error en la subida');
+                      }
                       
                       addLog(`✅ Archivo subido exitosamente`);
-                      addLog(`🪣 Bucket: ${result.bucket}`);
-                      addLog(`📍 Path: ${result.path}`);
-                      addLog(`🔗 Public URL: ${result.publicUrl ? 'Generada' : 'NO GENERADA'}`);
+                      addLog(`🪣 Bucket: construction-documents`);
+                      addLog(`📍 Path: ${filePath}`);
+                      addLog(`🔗 Public URL: ${uploadResult ? 'Generada' : 'NO GENERADA'}`);
                       
-                      if (result.publicUrl) {
-                        addLog(`📏 URL Length: ${result.publicUrl.length}`);
-                        addLog(`🔍 URL Type: ${typeof result.publicUrl}`);
+                      if (uploadResult) {
+                        addLog(`📏 URL Length: ${uploadResult.length}`);
+                        addLog(`🔍 URL Type: ${typeof uploadResult}`);
                       }
                       
                       // Verificar que tenemos los datos necesarios
-                      if (!result.publicUrl) {
+                      if (!uploadResult) {
                         addLog('❌ ERROR: No se obtuvo URL pública del archivo subido');
                         throw new Error('No se obtuvo URL pública del archivo subido');
                       }
@@ -277,9 +262,9 @@ export default function DocumentUpload({
                       const requestData = {
                         projectId,
                         sectionName,
-                        fileName: result.path.split('/').pop() || file.name,
+                        fileName: filePath.split('/').pop() || file.name,
                         originalFileName: file.name,
-                        fileUrl: result.publicUrl,
+                        fileUrl: uploadResult.publicUrl,
                         fileSize: file.size,
                         mimeType: file.type,
                         description: `Documento de ${sectionName}`
@@ -324,16 +309,11 @@ export default function DocumentUpload({
                   className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
                 
-                {/* Botón de cancelar si está subiendo */}
+                {/* Información de progreso si está subiendo */}
                 {uploading && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={cancel}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    Cancelar
-                  </Button>
+                  <div className="text-sm text-blue-600">
+                    Subiendo archivo... {Math.round(progress)}%
+                  </div>
                 )}
               </div>
               
