@@ -45,32 +45,18 @@ export default function DocumentUpload({
   
   const workspace = useWorkspace()
   
-  const addLog = (message: string) => {
-    console.log(message)
-    setLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`])
-  }
-  
   const { 
     uploadFile, 
     isUploading: uploading, 
     progress
   } = useDirectFileUpload()
 
-  // Función personalizada de upload que genera el path correcto
-  const uploadDocument = async (file: File) => {
-    if (!workspace.companyId) {
-      throw new Error('Company ID no disponible')
-    }
-    
-    const customPath = generateUniqueFilePath({
-      companyId: workspace.companyId,
-      projectId: projectId,
-      section: sectionName,
-      fileName: file.name
-    })
-    
-    return await upload(file, 'construction-documents', customPath)
-  }
+  // Función para agregar logs de debug
+  const addLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
+    console.log(`[DocumentUpload] ${message}`);
+  };
 
   // Cargar documentos al montar el componente
   useEffect(() => {
@@ -246,15 +232,15 @@ export default function DocumentUpload({
                       addLog(`✅ Archivo subido exitosamente`);
                       addLog(`🪣 Bucket: construction-documents`);
                       addLog(`📍 Path: ${filePath}`);
-                      addLog(`🔗 Public URL: ${uploadResult ? 'Generada' : 'NO GENERADA'}`);
+                      addLog(`🔗 Public URL: ${uploadResult.publicUrl ? 'Generada' : 'NO GENERADA'}`);
                       
-                      if (uploadResult) {
-                        addLog(`📏 URL Length: ${uploadResult.length}`);
-                        addLog(`🔍 URL Type: ${typeof uploadResult}`);
+                      if (uploadResult.publicUrl) {
+                        addLog(`📏 URL Length: ${uploadResult.publicUrl.length}`);
+                        addLog(`🔍 URL: ${uploadResult.publicUrl}`);
                       }
                       
                       // Verificar que tenemos los datos necesarios
-                      if (!uploadResult) {
+                      if (!uploadResult.publicUrl) {
                         addLog('❌ ERROR: No se obtuvo URL pública del archivo subido');
                         throw new Error('No se obtuvo URL pública del archivo subido');
                       }
