@@ -298,6 +298,13 @@ export const ALLOWED_FILE_TYPES = {
     'image/*',
     'application/vnd.ms-excel',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  ],
+  // NUEVA: Verificaciones de Prefactibilidad
+  'Verificaciones - Prefactibilidad del proyecto': [
+    'application/pdf',
+    'image/*',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   ]
 } as const 
 

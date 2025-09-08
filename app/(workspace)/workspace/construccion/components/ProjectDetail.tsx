@@ -44,6 +44,7 @@ import { sanitizeFileName, generateUniqueFilePath } from '@/lib/utils/file-utils
 import DomainReportSection from './DomainReportSection'
 import GovernmentTaxesSection from './GovernmentTaxesSection'
 import ExpedientesManager from '@/components/ExpedientesManager'
+import DocumentUpload from './DocumentUpload'
 
 interface ProjectDetailProps {
   project: Project
@@ -361,7 +362,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
   // Hook adicional para manejar subidas directas de documentos con URLs firmadas
   const { uploadFile: uploadDocument, isUploading: isUploadingDocument } = useDirectFileUpload()
   
-  const handleDocumentUploadSuccess = async (fileUrl: string, fileName: string, originalFileName: string, fileSize: number, mimeType: string) => {
+  const handleDocumentUploadSuccess = async (fileUrl: string, fileName: string, originalFileName: string, fileSize: number, mimeType: string, sectionName: string) => {
     try {
       // Crear documento en la base de datos usando la URL de Supabase Storage
       const response = await fetch('/api/workspace/construction/documents', {
@@ -374,8 +375,8 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
           fileName,
           originalFileName,
           projectId: project.id,
-          sectionName: currentUploadSection,
-          description: `Documento de ${currentUploadSection}`,
+          sectionName: sectionName,
+          description: `Documento de ${sectionName}`,
           fileSize,
           mimeType
         })
@@ -438,7 +439,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
       
       // Manejar éxito de la subida
       if (result.publicUrl) {
-        await handleDocumentUploadSuccess(result.publicUrl, path, file.name, file.size, file.type)
+        await handleDocumentUploadSuccess(result.publicUrl, path, file.name, file.size, file.type, section)
       }
     } catch (error) {
       console.error('Upload error:', error)
@@ -1097,114 +1098,17 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                   <h3 className="text-lg font-semibold text-purple-700">Prefactibilidad del proyecto</h3>
                 </div>
                 <div className="ml-6">
-                  <Card className="p-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-medium text-sm">Documentos de Prefactibilidad</h4>
-                        <Badge variant="secondary" className="text-xs">Opcional</Badge>
-                      </div>
-                      
-                      {hasVerificationCertificate('Prefactibilidad del proyecto') ? (
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                            <span className="text-xs text-green-600">Documentos cargados</span>
-                          </div>
-                          <div className="text-xs text-blue-600">📄 Documentos disponibles</div>
-                          
-                          {/* Botones para ver, descargar y eliminar documentos */}
-                            <div className="flex gap-1">
-                              {getVerificationDocuments('Prefactibilidad del proyecto').map((doc, docIndex) => (
-                                <div key={docIndex} className="flex gap-1">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-6 px-2 text-xs"
-                                    onClick={() => handleViewDocument(doc)}
-                                    title="Ver documento"
-                                  >
-                                    <Eye className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-6 px-2 text-xs"
-                                    onClick={() => handleDownloadDocument(doc)}
-                                    title="Descargar documento"
-                                  >
-                                    <Download className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-6 px-2 text-xs text-red-600 hover:text-red-700"
-                                    onClick={() => handleDeleteDocument(doc.id)}
-                                    title="Eliminar documento"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          
-                          <div className="space-y-2">
-                            <input
-                              type="file"
-                              accept=".pdf,.jpg,.jpeg,.png"
-                              className="hidden"
-                              id="verification-prefactibilidad"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0]
-                                if (file) {
-                                  handleVerificationUpload('Prefactibilidad del proyecto', file)
-                                }
-                              }}
-                            />
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="w-full text-xs"
-                              disabled={!companyId || workspaceLoading}
-                              onClick={() => document.getElementById('verification-prefactibilidad')?.click()}
-                            >
-                              <Upload className="h-3 w-3 mr-1" />
-                              {!companyId && !workspaceLoading ? 'Workspace no disponible' : 'Actualizar Doc.'}
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <div className="text-xs text-muted-foreground">
-                            Documentos iniciales del proyecto
-                          </div>
-                          <div className="space-y-2">
-                            <input
-                              type="file"
-                              accept=".pdf,.jpg,.jpeg,.png"
-                              className="hidden"
-                              id="verification-prefactibilidad"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0]
-                                if (file) {
-                                  handleVerificationUpload('Prefactibilidad del proyecto', file)
-                                }
-                              }}
-                            />
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="w-full text-xs"
-                              disabled={!companyId || workspaceLoading}
-                              onClick={() => document.getElementById('verification-prefactibilidad')?.click()}
-                            >
-                              <Upload className="h-3 w-3 mr-1" />
-                              {!companyId && !workspaceLoading ? 'Workspace no disponible' : 'Cargar Doc.'}
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </Card>
+                  <DocumentUpload
+                    projectId={project.id}
+                    sectionName={'Verificaciones - Prefactibilidad del proyecto'}
+                    onDocumentUploaded={() => {
+                      // Mantener sincronía con el resto del detalle
+                      loadProjectDocuments();
+                    }}
+                    onDocumentDeleted={() => {
+                      loadProjectDocuments();
+                    }}
+                  />
                 </div>
               </div>
 

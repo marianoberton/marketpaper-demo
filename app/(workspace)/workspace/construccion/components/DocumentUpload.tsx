@@ -130,8 +130,16 @@ export default function DocumentUpload({
   }
 
   const allowedTypes = ALLOWED_FILE_TYPES[sectionName as keyof typeof ALLOWED_FILE_TYPES] || []
+  // Mapear tipos MIME específicos a extensiones de archivo para el atributo accept
+  const MIME_TO_EXT: Record<string, string> = {
+    'application/pdf': '.pdf',
+    'application/msword': '.doc',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+    'application/vnd.ms-excel': '.xls',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx'
+  }
   const acceptString = allowedTypes.map(type => 
-    type.endsWith('/*') ? type : `.${type.split('/')[1]}`
+    type.endsWith('/*') ? type : (MIME_TO_EXT[type] || `.${type.split('/')[1]}`)
   ).join(',')
 
   if (loading) {
