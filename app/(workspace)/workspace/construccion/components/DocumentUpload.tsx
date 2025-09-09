@@ -41,7 +41,6 @@ export default function DocumentUpload({
   const [error, setError] = useState<string | null>(null)
   const [showUploadForm, setShowUploadForm] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [logs, setLogs] = useState<string[]>([])
   
   const workspace = useWorkspace()
   
@@ -51,12 +50,7 @@ export default function DocumentUpload({
     progress
   } = useDirectFileUpload()
 
-  // Función para agregar logs de debug
-  const addLog = (message: string) => {
-    const timestamp = new Date().toLocaleTimeString();
-    setLogs(prev => [...prev, `[${timestamp}] ${message}`]);
-    console.log(`[DocumentUpload] ${message}`);
-  };
+
 
   // Cargar documentos al montar el componente
   useEffect(() => {
@@ -195,11 +189,13 @@ export default function DocumentUpload({
         {showUploadForm && (
           <div className="p-4 bg-gray-50 rounded-lg">
             <div className="space-y-4">
-              <div className="flex items-center gap-4">
+              <div className="space-y-2">
                 <input
                   type="file"
                   accept={acceptString}
                   disabled={uploading}
+                  className="hidden"
+                  id={`document-upload-${sectionName.replace(/\s+/g, '-').toLowerCase()}`}
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
@@ -207,15 +203,8 @@ export default function DocumentUpload({
                     try {
                       // Resetear errores previos
                       setError(null);
-                      setLogs([]); // Limpiar logs anteriores
-                      
-                      addLog(`🚀 Iniciando upload de archivo: ${file.name} (${formatFileSize(file.size)})`);
-                      addLog(`📁 Proyecto ID: ${projectId}`);
-                      addLog(`📂 Sección: ${sectionName}`);
-                      addLog(`🏢 Company ID: ${workspace?.companyId}`);
                       
                       // Subir archivo usando useDirectFileUpload
-                      addLog('📤 Subiendo archivo a Supabase Storage...');
                       
                       // Generar ruta única usando la misma lógica que test-prefactibilidad
                       const filePath = generateUniqueFilePath({
@@ -225,7 +214,7 @@ export default function DocumentUpload({
                         fileName: file.name
                       });
                       
-                      addLog(`📁 Ruta generada: ${filePath}`);
+
                       
                       const uploadResult = await uploadFile({
                         file,
@@ -237,19 +226,10 @@ export default function DocumentUpload({
                         throw new Error(uploadResult.error || 'Error en la subida');
                       }
                       
-                      addLog(`✅ Archivo subido exitosamente`);
-                      addLog(`🪣 Bucket: construction-documents`);
-                      addLog(`📍 Path: ${filePath}`);
-                      addLog(`🔗 Public URL: ${uploadResult.publicUrl ? 'Generada' : 'NO GENERADA'}`);
-                      
-                      if (uploadResult.publicUrl) {
-                        addLog(`📏 URL Length: ${uploadResult.publicUrl.length}`);
-                        addLog(`🔍 URL: ${uploadResult.publicUrl}`);
-                      }
+
                       
                       // Verificar que tenemos los datos necesarios
                       if (!uploadResult.publicUrl) {
-                        addLog('❌ ERROR: No se obtuvo URL pública del archivo subido');
                         throw new Error('No se obtuvo URL pública del archivo subido');
                       }
                       
@@ -264,44 +244,39 @@ export default function DocumentUpload({
                         description: `Documento de ${sectionName}`
                       };
                       
-                      addLog('📋 Datos preparados para API:');
-                      addLog(`  - Project ID: ${requestData.projectId ? '✅' : '❌'}`);
-                      addLog(`  - Section Name: ${requestData.sectionName ? '✅' : '❌'}`);
-                      addLog(`  - File Name: ${requestData.fileName ? '✅' : '❌'}`);
-                      addLog(`  - File URL: ${requestData.fileUrl ? '✅' : '❌'}`);
-                      
                       // Guardar metadatos en la base de datos
-                      addLog('🌐 Enviando datos a API...');
                       const response = await fetch('/api/workspace/construction/documents', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(requestData)
                       });
                       
-                      addLog(`📊 Respuesta API: ${response.status} ${response.statusText}`);
-                      
                       if (!response.ok) {
                         const errorData = await response.json();
-                        addLog(`❌ Error de API: ${JSON.stringify(errorData)}`);
                         throw new Error(errorData.error || 'Error al guardar el documento');
                       }
                       
                       const document = await response.json();
-                      addLog(`✅ Documento creado exitosamente: ${document.id}`);
-                      addLog(`📄 Nombre: ${document.fileName}`);
-                      addLog(`🔗 URL: ${document.fileUrl}`);
                       handleUploadSuccess(document);
                       
                     } catch (error: any) {
-                      addLog(`❌ ERROR FINAL: ${error.message}`);
                       console.error('Error creating document:', error);
                       setError('Error al crear el documento: ' + error.message);
                     } finally {
                       e.currentTarget.value = '';
                     }
                   }}
-                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full text-xs"
+                  disabled={uploading}
+                  onClick={() => document.getElementById(`document-upload-${sectionName.replace(/\s+/g, '-').toLowerCase()}`)?.click()}
+                >
+                  <Upload className="h-3 w-3 mr-1" />
+                  {uploading ? 'Subiendo...' : 'Cargar Documento'}
+                </Button>
                 
                 {/* Información de progreso si está subiendo */}
                 {uploading && (
@@ -395,59 +370,7 @@ export default function DocumentUpload({
             </p>
           </div>
         )}
-        
-        {/* Logs de depuración - SIEMPRE VISIBLE */}
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
-          <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
-            <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-            Logs de Depuración ({logs.length})
-          </h4>
-          <div className="space-y-1 max-h-60 overflow-y-auto min-h-[100px] bg-white rounded border p-2">
-            {logs.length > 0 ? (
-              logs.map((log, index) => (
-                <div key={index} className="text-xs font-mono text-gray-700 p-1 border-b border-gray-100 last:border-b-0">
-                  {log}
-                </div>
-              ))
-            ) : (
-              <div className="text-xs text-gray-500 italic text-center py-4">
-                No hay logs aún. Los logs aparecerán aquí cuando subas un archivo.
-              </div>
-            )}
-          </div>
-          <div className="mt-3 flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setLogs([])}
-              className="text-xs"
-              disabled={logs.length === 0}
-            >
-              Limpiar Logs
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                const logText = logs.join('\n');
-                navigator.clipboard.writeText(logText);
-                addLog('📋 Logs copiados al portapapeles');
-              }}
-              className="text-xs"
-              disabled={logs.length === 0}
-            >
-              Copiar Logs
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => addLog('🧪 Log de prueba generado')}
-              className="text-xs"
-            >
-              Probar Logs
-            </Button>
-          </div>
-        </div>
+
       </CardContent>
     </Card>
   )
