@@ -1101,6 +1101,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                   <DocumentUpload
                     projectId={project.id}
                     sectionName={'Verificaciones - Prefactibilidad del proyecto'}
+                    acceptedFileTypes={['application/pdf', 'image/*', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']}
                     onDocumentUploaded={() => {
                       // Mantener sincronía con el resto del detalle
                       loadProjectDocuments();
@@ -1122,154 +1123,43 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                   {verificationRequests
                     .filter(req => ['Consulta DGIUR', 'Permiso de Demolición', 'Registro etapa de proyecto - Informe', 'Registro etapa de proyecto - Plano', 'Permiso de obra'].includes(req.name))
                     .map((request, index) => (
-                    <Card key={index} className="p-4">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium text-sm">{request.name}</h4>
-                          {request.required ? (
-                            <Badge variant="secondary" className="text-xs">Requerido</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">No requiere</Badge>
-                          )}
-                        </div>
-                        
-                        {/* Checkbox especial para Consulta DGIUR */}
-                        {request.name === 'Consulta DGIUR' && (
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id="dgiur-no-docs"
-                              checked={dgiurNoDocsRequired}
-                              onCheckedChange={(checked) => setDgiurNoDocsRequired(checked as boolean)}
-                            />
-                            <Label htmlFor="dgiur-no-docs" className="text-xs text-muted-foreground">
-                              No requiere documentación
-                            </Label>
-                          </div>
-                        )}
-                        
-                        {/* Checkbox especial para Permiso de Demolición */}
-                        {request.name === 'Permiso de Demolición' && (
-                          <div className="flex items-center space-x-2">
-                            <Checkbox
-                              id="demolicion-no-docs"
-                              checked={demolicionNoDocsRequired}
-                              onCheckedChange={(checked) => setDemolicionNoDocsRequired(checked as boolean)}
-                            />
-                            <Label htmlFor="demolicion-no-docs" className="text-xs text-muted-foreground">
-                              No requiere documentación
-                            </Label>
-                          </div>
-                        )}
-                        
-                        {hasVerificationCertificate(request.name) ? (
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                              <span className="text-xs text-green-600">Completado</span>
-                            </div>
-                            <div className="text-xs text-blue-600">📄 Certificado disponible</div>
-                            
-                            {/* Botones para ver, descargar y eliminar documentos de verificación */}
-                            <div className="flex gap-1">
-                              {getVerificationDocuments(request.name).map((doc, docIndex) => (
-                                <div key={docIndex} className="flex gap-1">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-6 px-2 text-xs"
-                                    onClick={() => handleViewDocument(doc)}
-                                    title="Ver documento"
-                                  >
-                                    <Eye className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-6 px-2 text-xs"
-                                    onClick={() => handleDownloadDocument(doc)}
-                                    title="Descargar documento"
-                                  >
-                                    <Download className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-6 px-2 text-xs text-red-600 hover:text-red-700"
-                                    onClick={() => handleDeleteDocument(doc.id)}
-                                    title="Eliminar documento"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <input
-                                type="file"
-                                accept=".pdf,.jpg,.jpeg,.png"
-                                className="hidden"
-                                id={`verification-gestoria-${index}`}
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0]
-                                  if (file) {
-                                    handleVerificationUpload(request.name, file)
-                                  }
-                                }}
-                              />
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="w-full text-xs"
-                                onClick={() => document.getElementById(`verification-gestoria-${index}`)?.click()}
-                              >
-                                <Upload className="h-3 w-3 mr-1" />
-                                Actualizar Doc.
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            <div className="text-xs text-muted-foreground">
-                              {(request.name === 'Consulta DGIUR' && dgiurNoDocsRequired) || 
-                               (request.name === 'Permiso de Demolición' && demolicionNoDocsRequired) ? 
-                                'No requiere documentación' : 
-                                (request.required ? 'Pendiente' : 'No aplicable')
-                              }
-                            </div>
-                            {!((request.name === 'Consulta DGIUR' && dgiurNoDocsRequired) || 
-                               (request.name === 'Permiso de Demolición' && demolicionNoDocsRequired)) && (
-                              <div className="space-y-2">
-                                {/* Campo único para documentos */}
-                                <div>
-                                  <input
-                                    type="file"
-                                    accept={request.name.includes('Plano') ? ".pdf,.dwg,.jpg,.jpeg,.png" : ".pdf,.doc,.docx"}
-                                    className="hidden"
-                                    id={`verification-gestoria-${index}`}
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0]
-                                      if (file) {
-                                        handleVerificationUpload(request.name, file)
-                                      }
-                                    }}
-                                  />
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="w-full text-xs"
-                                    onClick={() => document.getElementById(`verification-gestoria-${index}`)?.click()}
-                                  >
-                                    <Upload className="h-3 w-3 mr-1" />
-                                    Cargar Doc.
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </Card>
+                      <DocumentUpload
+                        key={index}
+                        projectId={project.id}
+                        sectionName={request.name}
+                        showNoDocumentationCheckbox={request.name === 'Consulta DGIUR' || request.name === 'Permiso de Demolición'}
+                        noDocumentationLabel="No requiere documentación"
+                        noDocumentationRequired={
+                          request.name === 'Consulta DGIUR' ? dgiurNoDocsRequired :
+                          request.name === 'Permiso de Demolición' ? demolicionNoDocsRequired :
+                          false
+                        }
+                        onNoDocumentationChange={(checked) => {
+                          if (request.name === 'Consulta DGIUR') {
+                            setDgiurNoDocsRequired(checked)
+                          } else if (request.name === 'Permiso de Demolición') {
+                            setDemolicionNoDocsRequired(checked)
+                          }
+                        }}
+                        acceptedFileTypes={
+                          request.name.includes('Plano') ? 
+                            ['application/pdf', 'application/dwg', 'image/jpeg', 'image/jpg', 'image/png'] :
+                            ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+                        }
+                        isRequired={request.required}
+                        showCompletedState={hasVerificationCertificate(request.name)}
+                        isCompleted={hasVerificationCertificate(request.name)}
+                        completedMessage="Completado"
+                        compactMode={true}
+                        onDocumentUploaded={(document) => {
+                          // Actualizar la lista de documentos de verificación
+                          console.log('Documento subido:', document)
+                        }}
+                        onDocumentDeleted={(documentId) => {
+                          // Manejar eliminación de documento
+                          console.log('Documento eliminado:', documentId)
+                        }}
+                      />
                   ))}
                 </div>
               </div>
@@ -1284,117 +1174,28 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                   {verificationRequests
                     .filter(req => ['Demolición', 'Excavación', 'AVO 1', 'AVO 2', 'AVO 3'].includes(req.name))
                     .map((request, index) => (
-                    <Card key={index} className="p-4">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium text-sm">{request.name}</h4>
-                          {request.required ? (
-                            <Badge variant="secondary" className="text-xs">Requerido</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">No requiere</Badge>
-                          )}
-                        </div>
-                        
-                        {hasVerificationCertificate(request.name) ? (
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                              <span className="text-xs text-green-600">Completado</span>
-                            </div>
-                            <div className="text-xs text-blue-600">📄 Certificado disponible</div>
-                            
-                            {/* Botones para ver, descargar y eliminar documentos de verificación */}
-                            <div className="flex gap-1">
-                              {getVerificationDocuments(request.name).map((doc, docIndex) => (
-                                <div key={docIndex} className="flex gap-1">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-6 px-2 text-xs"
-                                    onClick={() => handleViewDocument(doc)}
-                                    title="Ver documento"
-                                  >
-                                    <Eye className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-6 px-2 text-xs"
-                                    onClick={() => handleDownloadDocument(doc)}
-                                    title="Descargar documento"
-                                  >
-                                    <Download className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-6 px-2 text-xs text-red-600 hover:text-red-700"
-                                    onClick={() => handleDeleteDocument(doc.id)}
-                                    title="Eliminar documento"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <input
-                                type="file"
-                                accept=".pdf,.jpg,.jpeg,.png"
-                                className="hidden"
-                                id={`verification-obra-${index}`}
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0]
-                                  if (file) {
-                                    handleVerificationUpload(request.name, file)
-                                  }
-                                }}
-                              />
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="w-full text-xs"
-                                onClick={() => document.getElementById(`verification-obra-${index}`)?.click()}
-                              >
-                                <Upload className="h-3 w-3 mr-1" />
-                                Actualizar Doc.
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            <div className="text-xs text-muted-foreground">
-                              {request.required ? 'Pendiente' : 'No aplicable'}
-                            </div>
-                            <div className="space-y-2">
-                              <input
-                                type="file"
-                                accept=".pdf,.jpg,.jpeg,.png"
-                                className="hidden"
-                                id={`verification-obra-${index}`}
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0]
-                                  if (file) {
-                                    handleVerificationUpload(request.name, file)
-                                  }
-                                }}
-                              />
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="w-full text-xs"
-                                onClick={() => document.getElementById(`verification-obra-${index}`)?.click()}
-                              >
-                                <Upload className="h-3 w-3 mr-1" />
-                                Cargar Doc.
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                  ))}
+                      <DocumentUpload
+                        key={index}
+                        projectId={project.id}
+                        sectionName={request.name}
+                        showNoDocumentationCheckbox={request.name === 'Demolición' || request.name === 'Excavación'}
+                        noDocumentationLabel="No requiere documentación"
+                        noDocumentationRequired={false}
+                        onNoDocumentationChange={(checked) => {
+                          // Manejar cambio de estado de "no requiere documentación"
+                          console.log(`${request.name} no requiere documentación:`, checked);
+                        }}
+                        acceptedFileTypes={['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']}
+                        isRequired={request.required}
+                        compactMode={true}
+                        onDocumentUploaded={() => {
+                          loadProjectDocuments();
+                        }}
+                        onDocumentDeleted={() => {
+                          loadProjectDocuments();
+                        }}
+                      />
+                    ))}
                 </div>
               </div>
 
@@ -1408,117 +1209,21 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
                   {verificationRequests
                     .filter(req => ['Conforme de obra', 'MH-SUBDIVISION'].includes(req.name))
                     .map((request, index) => (
-                    <Card key={index} className="p-4">
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium text-sm">{request.name}</h4>
-                          {request.required ? (
-                            <Badge variant="secondary" className="text-xs">Requerido</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs">No requiere</Badge>
-                          )}
-                        </div>
-                        
-                        {hasVerificationCertificate(request.name) ? (
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                              <span className="text-xs text-green-600">Completado</span>
-                            </div>
-                            <div className="text-xs text-blue-600">📄 Certificado disponible</div>
-                            
-                            {/* Botones para ver, descargar y eliminar documentos de verificación */}
-                            <div className="flex gap-1">
-                              {getVerificationDocuments(request.name).map((doc, docIndex) => (
-                                <div key={docIndex} className="flex gap-1">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-6 px-2 text-xs"
-                                    onClick={() => handleViewDocument(doc)}
-                                    title="Ver documento"
-                                  >
-                                    <Eye className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-6 px-2 text-xs"
-                                    onClick={() => handleDownloadDocument(doc)}
-                                    title="Descargar documento"
-                                  >
-                                    <Download className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-6 px-2 text-xs text-red-600 hover:text-red-700"
-                                    onClick={() => handleDeleteDocument(doc.id)}
-                                    title="Eliminar documento"
-                                  >
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <input
-                                type="file"
-                                accept=".pdf,.jpg,.jpeg,.png"
-                                className="hidden"
-                                id={`verification-final-${index}`}
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0]
-                                  if (file) {
-                                    handleVerificationUpload(request.name, file)
-                                  }
-                                }}
-                              />
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="w-full text-xs"
-                                onClick={() => document.getElementById(`verification-final-${index}`)?.click()}
-                              >
-                                <Upload className="h-3 w-3 mr-1" />
-                                Actualizar Doc.
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            <div className="text-xs text-muted-foreground">
-                              {request.required ? 'Pendiente' : 'No aplicable'}
-                            </div>
-                            <div className="space-y-2">
-                              <input
-                                type="file"
-                                accept=".pdf,.jpg,.jpeg,.png"
-                                className="hidden"
-                                id={`verification-final-${index}`}
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0]
-                                  if (file) {
-                                    handleVerificationUpload(request.name, file)
-                                  }
-                                }}
-                              />
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="w-full text-xs"
-                                onClick={() => document.getElementById(`verification-final-${index}`)?.click()}
-                              >
-                                <Upload className="h-3 w-3 mr-1" />
-                                Cargar Doc.
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </Card>
-                  ))}
+                      <DocumentUpload
+                        key={index}
+                        projectId={project.id}
+                        sectionName={request.name}
+                        acceptedFileTypes={['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']}
+                        isRequired={request.required}
+                        compactMode={true}
+                        onDocumentUploaded={() => {
+                          loadProjectDocuments();
+                        }}
+                        onDocumentDeleted={() => {
+                          loadProjectDocuments();
+                        }}
+                      />
+                    ))}
                 </div>
               </div>
             </CardContent>

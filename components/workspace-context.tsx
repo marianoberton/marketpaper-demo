@@ -40,6 +40,17 @@ export function WorkspaceProvider({
   const [userEmail, setUserEmail] = useState<string>()
   const [userRole, setUserRole] = useState<string>()
 
+  // Debug: Log received props
+  useEffect(() => {
+    console.log('[WorkspaceProvider] Received props:', {
+      companyId,
+      companyName,
+      companyFeatures,
+      isLoading,
+      availableModules: availableModules?.length
+    });
+  }, [companyId, companyName, companyFeatures, isLoading, availableModules]);
+
   useEffect(() => {
     const loadUserData = async () => {
       try {
@@ -120,4 +131,4 @@ export function useIsSuperAdmin() {
   }, [])
 
   return { isSuperAdmin, loading }
-} 
+}

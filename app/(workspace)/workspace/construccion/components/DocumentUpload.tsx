@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { 
   File, 
   FileText, 
@@ -11,7 +14,8 @@ import {
   Trash2,
   Plus,
   AlertCircle,
-  Upload 
+  Upload,
+  CheckCircle 
 } from 'lucide-react'
 import { 
   getProjectDocuments, 
@@ -29,20 +33,61 @@ interface DocumentUploadProps {
   sectionName: string
   onDocumentUploaded?: (document: ProjectDocument) => void
   onDocumentDeleted?: (documentId: string) => void
+  // Nuevas props para unificación
+  showNoDocumentationCheckbox?: boolean
+  noDocumentationLabel?: string
+  noDocumentationRequired?: boolean
+  onNoDocumentationChange?: (checked: boolean) => void
+  acceptedFileTypes?: string[]
+  maxFileSize?: number
+  isRequired?: boolean
+  showCompletedState?: boolean
+  isCompleted?: boolean
+  completedMessage?: string
+  allowMultipleFiles?: boolean
+  customValidation?: (file: File) => string | null
+  showProgress?: boolean
+  compactMode?: boolean
 }
 
 export default function DocumentUpload({ 
   projectId, 
   sectionName, 
   onDocumentUploaded,
-  onDocumentDeleted 
+  onDocumentDeleted,
+  // Nuevas props con valores por defecto
+  showNoDocumentationCheckbox = false,
+  noDocumentationLabel = "No requiere documentación",
+  noDocumentationRequired = false,
+  onNoDocumentationChange,
+  acceptedFileTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+  maxFileSize = 100 * 1024 * 1024, // 100MB por defecto
+  isRequired = false,
+  showCompletedState = false,
+  isCompleted = false,
+  completedMessage = "Completado",
+  allowMultipleFiles = true,
+  customValidation,
+  showProgress = true,
+  compactMode = false
 }: DocumentUploadProps) {
   const [documents, setDocuments] = useState<ProjectDocument[]>([])
   const [error, setError] = useState<string | null>(null)
   const [showUploadForm, setShowUploadForm] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [noDocsRequired, setNoDocsRequired] = useState(noDocumentationRequired)
   
   const workspace = useWorkspace()
+  
+  // Debug: Log workspace data
+  useEffect(() => {
+    console.log('[DocumentUpload] Workspace context:', {
+      workspace,
+      companyId: workspace?.companyId,
+      companyName: workspace?.companyName,
+      isLoading: workspace?.isLoading
+    });
+  }, [workspace]);
   
   const { 
     uploadFile, 
@@ -123,7 +168,16 @@ export default function DocumentUpload({
     return <File className="h-5 w-5 text-gray-500" />
   }
 
-  const allowedTypes = ALLOWED_FILE_TYPES[sectionName as keyof typeof ALLOWED_FILE_TYPES] || []
+  // Tipos de archivo permitidos (usar los personalizados o los por defecto)
+  const allowedTypes = acceptedFileTypes
+  
+  // Manejar cambio del checkbox "No requiere documentación"
+  const handleNoDocsChange = (checked: boolean) => {
+    setNoDocsRequired(checked)
+    if (onNoDocumentationChange) {
+      onNoDocumentationChange(checked)
+    }
+  }
   // Mapear tipos MIME específicos a extensiones de archivo para el atributo accept
   const MIME_TO_EXT: Record<string, string> = {
     'application/pdf': '.pdf',
@@ -163,6 +217,33 @@ export default function DocumentUpload({
             {showUploadForm ? 'Cancelar' : 'Subir Documento'}
           </Button>
         </div>
+        
+        {/* Checkbox "No requiere documentación" */}
+        {showNoDocumentationCheckbox && (
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id={`no-docs-${sectionName.replace(/\s+/g, '-').toLowerCase()}`}
+              checked={noDocsRequired}
+              onChange={(e) => handleNoDocsChange(e.target.checked)}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor={`no-docs-${sectionName.replace(/\s+/g, '-').toLowerCase()}`} className="text-xs text-muted-foreground">
+              {noDocumentationLabel}
+            </label>
+          </div>
+        )}
+        
+        {/* Estado completado */}
+        {showCompletedState && isCompleted && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-green-500" />
+              <span className="text-xs text-green-600">{completedMessage}</span>
+            </div>
+            <div className="text-xs text-blue-600">📄 Certificado disponible</div>
+          </div>
+        )}
         {/* Mostrar errores */}
         {error && (
           <div className="flex items-center justify-between gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -183,137 +264,187 @@ export default function DocumentUpload({
           </div>
         )}
 
-        {/* Formulario de subida */}
-        {showUploadForm && (
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <input
-                  type="file"
-                  accept={acceptString}
-                  disabled={uploading}
-                  className="hidden"
-                  id={`document-upload-${sectionName.replace(/\s+/g, '-').toLowerCase()}`}
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    
-                    try {
-                      // Resetear errores previos
-                      setError(null);
-                      
-                      // Subir archivo usando useDirectFileUpload
-                      
-                      // Generar ruta única usando la misma lógica que test-prefactibilidad
-                      const filePath = generateUniqueFilePath({
-                        companyId: workspace?.companyId || 'unknown',
-                        projectId,
-                        section: sectionName,
-                        fileName: file.name
-                      });
-                      
-
-                      
-                      const uploadResult = await uploadFile({
-                        file,
-                        bucket: 'construction-documents',
-                        path: filePath
-                      });
-                      
-                      if (!uploadResult.success) {
-                        throw new Error(uploadResult.error || 'Error en la subida');
-                      }
-                      
-
-                      
-                      // Verificar que tenemos los datos necesarios
-                      if (!uploadResult.publicUrl) {
-                        throw new Error('No se obtuvo URL pública del archivo subido');
-                      }
-                      
-                      const requestData = {
-                        projectId,
-                        sectionName,
-                        fileName: filePath.split('/').pop() || file.name,
-                        originalFileName: file.name,
-                        fileUrl: uploadResult.publicUrl,
-                        fileSize: file.size,
-                        mimeType: file.type,
-                        description: `Documento de ${sectionName}`
-                      };
-                      
-                      // Guardar metadatos en la base de datos
-                      const response = await fetch('/api/workspace/construction/documents', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(requestData)
-                      });
-                      
-                      if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.error || 'Error al guardar el documento');
-                      }
-                      
-                      const document = await response.json();
-                      handleUploadSuccess(document);
-                      
-                    } catch (error: any) {
-                      console.error('Error creating document:', error);
-                      setError('Error al crear el documento: ' + error.message);
-                    } finally {
-                      e.currentTarget.value = '';
-                    }
-                  }}
-                />
+        {/* Área de carga de archivos - Solo mostrar si no está marcado "No requiere documentación" */}
+        {!noDocsRequired ? (
+          <>
+            {!showUploadForm ? (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <h3 className="text-sm font-medium text-gray-900 mb-1">
+                  Arrastra archivos aquí o haz clic para seleccionar
+                </h3>
+                <p className="text-xs text-gray-500 mb-4">
+                  Sube documentos relacionados con {sectionName.toLowerCase()}
+                </p>
                 <Button
+                  onClick={() => setShowUploadForm(true)}
                   size="sm"
-                  variant="outline"
-                  className="w-full text-xs"
-                  disabled={uploading}
-                  onClick={() => document.getElementById(`document-upload-${sectionName.replace(/\s+/g, '-').toLowerCase()}`)?.click()}
+                  className="bg-blue-600 hover:bg-blue-700"
                 >
-                  <Upload className="h-3 w-3 mr-1" />
-                  {uploading ? 'Subiendo...' : 'Cargar Documento'}
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar Documento
                 </Button>
-                
-                {/* Información de progreso si está subiendo */}
-                {uploading && (
-                  <div className="text-sm text-blue-600">
-                    Subiendo archivo... {Math.round(progress)}%
-                  </div>
-                )}
               </div>
-              
-              {/* Barra de progreso */}
-              {uploading && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-blue-600">Subiendo archivo...</span>
-                    <span className="text-blue-600">{Math.round(progress)}%</span>
+            ) : (
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <input
+                      type="file"
+                      accept={acceptString}
+                      disabled={uploading}
+                      className="hidden"
+                      id={`document-upload-${sectionName.replace(/\s+/g, '-').toLowerCase()}`}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        
+                        try {
+                          // Resetear errores previos
+                          setError(null);
+                          
+                          // Validación personalizada si está definida
+                          if (customValidation) {
+                            const validationError = customValidation(file);
+                            if (validationError) {
+                              throw new Error(validationError);
+                            }
+                          }
+                          
+                          // Subir archivo usando useDirectFileUpload
+                          
+                          // Generar ruta única usando la misma lógica que test-prefactibilidad
+                          // Verificar que tenemos el companyId del workspace
+                          if (!workspace.companyId) {
+                            console.error('[DocumentUpload] Missing companyId:', {
+                              workspace,
+                              companyId: workspace.companyId,
+                              isLoading: workspace.isLoading
+                            });
+                            throw new Error('No se pudo obtener el ID de la empresa. Por favor, recarga la página.');
+                          }
+                          
+                          const filePath = generateUniqueFilePath({
+                            companyId: workspace?.companyId,
+                            projectId,
+                            section: sectionName,
+                            fileName: file.name
+                          });
+                          
+
+                          
+                          const uploadResult = await uploadFile({
+                            file,
+                            bucket: 'construction-documents',
+                            path: filePath
+                          });
+                          
+                          if (!uploadResult.success) {
+                            throw new Error(uploadResult.error || 'Error en la subida');
+                          }
+                          
+
+                          
+                          // Verificar que tenemos los datos necesarios
+                          if (!uploadResult.publicUrl) {
+                            throw new Error('No se obtuvo URL pública del archivo subido');
+                          }
+                          
+                          const requestData = {
+                            projectId,
+                            sectionName,
+                            fileName: filePath.split('/').pop() || file.name,
+                            originalFileName: file.name,
+                            fileUrl: uploadResult.publicUrl,
+                            fileSize: file.size,
+                            mimeType: file.type,
+                            description: `Documento de ${sectionName}`
+                          };
+                          
+                          // Guardar metadatos en la base de datos
+                          const response = await fetch('/api/workspace/construction/documents', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(requestData)
+                          });
+                          
+                          if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error || 'Error al guardar el documento');
+                          }
+                          
+                          const document = await response.json();
+                          handleUploadSuccess(document);
+                          
+                        } catch (error: any) {
+                          console.error('Error creating document:', error);
+                          setError('Error al crear el documento: ' + error.message);
+                        } finally {
+                          // Verificar que el elemento aún existe antes de limpiar el valor
+                          if (e.currentTarget) {
+                            e.currentTarget.value = '';
+                          }
+                        }
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full text-xs"
+                      disabled={uploading}
+                      onClick={() => document.getElementById(`document-upload-${sectionName.replace(/\s+/g, '-').toLowerCase()}`)?.click()}
+                    >
+                      <Upload className="h-3 w-3 mr-1" />
+                      {uploading ? 'Subiendo...' : 'Cargar Documento'}
+                    </Button>
+                    
+                    {/* Información de progreso si está subiendo */}
+                    {uploading && (
+                      <div className="text-sm text-blue-600">
+                        Subiendo archivo... {Math.round(progress)}%
+                      </div>
+                    )}
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
-                      style={{ width: `${progress}%` }}
-                    ></div>
-                  </div>
+                  
+                  {/* Barra de progreso */}
+                  {uploading && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-blue-600">Subiendo archivo...</span>
+                        <span className="text-blue-600">{Math.round(progress)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                          style={{ width: `${progress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Información sobre tipos de archivo permitidos */}
+                  {!uploading && (
+                    <div className="text-xs text-gray-500">
+                      <p>Tipos de archivo permitidos: {allowedTypes.join(', ')}</p>
+                      <p>Tamaño máximo: 100MB</p>
+                    </div>
+                  )}
                 </div>
-              )}
-              
-              {/* Información sobre tipos de archivo permitidos */}
-              {!uploading && (
-                <div className="text-xs text-gray-500">
-                  <p>Tipos de archivo permitidos: {allowedTypes.join(', ')}</p>
-                  <p>Tamaño máximo: 100MB</p>
-                </div>
-              )}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center py-4">
+            <div className="text-sm text-muted-foreground">
+              {noDocumentationLabel}
             </div>
           </div>
         )}
 
-        {/* Lista de documentos */}
-        {documents.length > 0 ? (
+        {/* Lista de documentos existentes */}
+        {!noDocsRequired && documents.length > 0 && (
           <div className="space-y-3">
+            <h5 className="text-sm font-medium text-gray-700">Documentos cargados:</h5>
             {documents.map((doc) => (
               <div
                 key={doc.id}
@@ -356,16 +487,6 @@ export default function DocumentUpload({
                 </div>
               </div>
             ))}
-          </div>
-        ) : (
-          <div className="text-center py-4">
-            <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-            <h3 className="text-sm font-medium text-muted-foreground mb-1">
-              No hay documentos cargados
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Sube documentos relacionados con {sectionName.toLowerCase()}
-            </p>
           </div>
         )}
       </div>

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { createClient } from '@/utils/supabase/client'
+import { redirectToWorkspace } from '@/lib/auth-client'
 
 export default function SetupPage() {
   const [userProfile, setUserProfile] = useState<any>(null)
@@ -495,7 +496,7 @@ export default function SetupPage() {
             
             <Button 
               variant="outline" 
-              onClick={() => router.push('/workspace')}
+              onClick={() => redirectToWorkspace(router)}
               className="text-xs"
             >
               🚀 Ir al Workspace (Modo Simple)
@@ -506,4 +507,4 @@ export default function SetupPage() {
       </div>
     </div>
   )
-} 
+}
