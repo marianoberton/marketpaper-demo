@@ -149,10 +149,10 @@ export default function DocumentUpload({
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-4">
+    <Card className="p-4">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold">{sectionName}</CardTitle>
+          <h4 className="font-medium text-sm">{sectionName}</h4>
           <Button
             onClick={() => setShowUploadForm(!showUploadForm)}
             size="sm"
@@ -163,9 +163,6 @@ export default function DocumentUpload({
             {showUploadForm ? 'Cancelar' : 'Subir Documento'}
           </Button>
         </div>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
         {/* Mostrar errores */}
         {error && (
           <div className="flex items-center justify-between gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -361,18 +358,17 @@ export default function DocumentUpload({
             ))}
           </div>
         ) : (
-          <div className="text-center py-8">
-            <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-            <h3 className="font-medium text-muted-foreground mb-1">
+          <div className="text-center py-4">
+            <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+            <h3 className="text-sm font-medium text-muted-foreground mb-1">
               No hay documentos cargados
             </h3>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Sube documentos relacionados con {sectionName.toLowerCase()}
             </p>
           </div>
         )}
-
-      </CardContent>
+      </div>
     </Card>
   )
 }
