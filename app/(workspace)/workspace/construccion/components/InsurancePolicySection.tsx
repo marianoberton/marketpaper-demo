@@ -354,7 +354,7 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
               </Button>
               
               <Button 
-                onClick={() => window.open(project.insurance_policy_file_url, '_blank')}
+                onClick={() => project.insurance_policy_file_url && window.open(project.insurance_policy_file_url, '_blank')}
                 variant="outline" 
                 size="sm"
                 className="flex items-center gap-2"

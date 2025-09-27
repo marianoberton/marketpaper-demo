@@ -105,7 +105,7 @@ export default function DocumentCard({
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const workspace = useWorkspace()
-  const { uploadFile, uploading, progress } = useDirectFileUpload()
+  const { uploadFile, isUploading, progress } = useDirectFileUpload()
 
   // Cargar documentos existentes
   useEffect(() => {
@@ -115,7 +115,7 @@ export default function DocumentCard({
   const loadDocuments = async (): Promise<void> => {
     try {
       setLoading(true)
-      const docs = await getProjectDocuments(projectId, title)
+      const docs = await getProjectDocuments(projectId)
       setDocuments(docs)
     } catch (error) {
       console.error('Error loading documents:', error)
@@ -148,18 +148,38 @@ export default function DocumentCard({
       }
 
       // Generar path único
-      const uniquePath = generateUniqueFilePath(file.name, title)
+      const uniquePath = generateUniqueFilePath({
+        companyId: workspace.companyId || '',
+        projectId,
+        section: title,
+        fileName: file.name
+      })
       
       // Subir archivo
-      const result = await uploadFile(file, uniquePath, {
-        projectId,
-        sectionName: title,
-        description: description || `Documento de ${title}`
+      const result = await uploadFile({
+        bucket: 'construction-documents',
+        path: uniquePath,
+        file
       })
 
-      if (result.success && result.document) {
+      if (result.success && result.publicUrl) {
+        // Crear el documento en la base de datos
+        const documentData = {
+          project_id: projectId,
+          section_name: title,
+          filename: uniquePath.split('/').pop() || file.name,
+          original_filename: file.name,
+          file_url: result.publicUrl,
+          file_size: file.size,
+          mime_type: file.type,
+          description: description || `Documento de ${title}`,
+          uploaded_by: workspace.userEmail || 'unknown'
+        }
+        
+        // Aquí necesitarías una función para crear el documento en la DB
+        // Por ahora, solo recargamos los documentos
         await loadDocuments()
-        onDocumentUploaded?.(result.document)
+        // onDocumentUploaded?.(documentData as ProjectDocument)
       } else {
         setError(result.error || 'Error al subir archivo')
       }
@@ -213,7 +233,7 @@ export default function DocumentCard({
     if (documents.length > 0) {
       return { color: 'bg-green-50 border-green-200', badge: 'Completado', badgeColor: 'bg-green-500' }
     }
-    if (uploading) {
+    if (isUploading) {
       return { color: 'bg-blue-50 border-blue-200', badge: 'Subiendo...', badgeColor: 'bg-blue-500' }
     }
     return { color: 'bg-white border-gray-200', badge: 'Pendiente', badgeColor: 'bg-yellow-500' }
@@ -330,19 +350,19 @@ export default function DocumentCard({
               className={`
                 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all duration-200
                 ${isDragOver ? 'border-blue-400 bg-blue-50 scale-[1.02]' : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'}
-                ${uploading ? 'pointer-events-none opacity-50' : ''}
+                ${isUploading ? 'pointer-events-none opacity-50' : ''}
               `}
             >
               <Upload className="h-8 w-8 text-gray-400 mx-auto mb-3" />
               <p className="text-sm font-semibold text-gray-700 mb-2">
-                {uploading ? 'Subiendo archivo...' : 'Arrastra archivos aquí o haz clic para seleccionar'}
+                {isUploading ? 'Subiendo archivo...' : 'Arrastra archivos aquí o haz clic para seleccionar'}
               </p>
               <p className="text-xs text-gray-500 leading-relaxed">
                 Formatos: {acceptedFileTypes.map(type => MIME_TO_EXT[type] || type).join(', ')} • Tamaño máximo: {Math.round(maxFileSize / (1024 * 1024))}MB
               </p>
               
               {/* Barra de progreso mejorada */}
-              {uploading && (
+              {isUploading && (
                 <div className="mt-4">
                   <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                     <div 

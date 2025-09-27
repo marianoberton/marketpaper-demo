@@ -127,11 +127,6 @@ export function ProjectVerificationRequests({
                       ['application/pdf', 'application/dwg', 'image/jpeg', 'image/jpg', 'image/png'] :
                       ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
                   }
-                  isRequired={request.required}
-                  showCompletedState={hasVerificationCertificate(request.name)}
-                  isCompleted={hasVerificationCertificate(request.name)}
-                  completedMessage="Completado"
-                  compactMode={true}
                   isInitiallyExpanded={false}
                   externalDocuments={getSectionExternalDocs(request.name)}
                   onDocumentUploaded={(document: any): void => {
@@ -175,17 +170,6 @@ export function ProjectVerificationRequests({
                   onExpirationDateChange={(date) => handleUploadDateChange(request.name, date)}
                   onSaveExpirationDate={handleSaveUploadDate}
                   onSetOneYearExpiration={setTodayUploadDate}
-                  isRequired={request.required}
-                  compactMode={true}
-                  requiresDates={true}
-                  startDateLabel="Fecha de inicio"
-                  endDateLabel="Fecha de fin"
-                  onStartDateChange={(date: string): void => {
-                    console.log(`${request.name} fecha de inicio:`, date);
-                  }}
-                  onEndDateChange={(date: string): void => {
-                    console.log(`${request.name} fecha de fin:`, date);
-                  }}
                   isInitiallyExpanded={false}
                   externalDocuments={getSectionExternalDocs(request.name)}
                   onDocumentUploaded={(document: any): void => {
@@ -225,8 +209,6 @@ export function ProjectVerificationRequests({
                   isSavingDate={savingDates[request.name] || false}
                   savedExpirationDate={savedUploadDates[request.name]}
                   acceptedFileTypes={['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']}
-                  isRequired={request.required}
-                  compactMode={true}
                   isInitiallyExpanded={false}
                   externalDocuments={getSectionExternalDocs(request.name)}
                   onDocumentUploaded={(): void => {

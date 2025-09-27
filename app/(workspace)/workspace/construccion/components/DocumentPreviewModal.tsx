@@ -21,24 +21,24 @@ interface DocumentPreviewModalProps {
 export default function DocumentPreviewModal({
   isOpen,
   onClose,
-  document
+  document: doc
 }: DocumentPreviewModalProps) {
   const [isLoading, setIsLoading] = useState(true)
 
-  if (!document) return null
+  if (!doc) return null
 
-  const isPDF = document.type === 'application/pdf' || document.name.toLowerCase().endsWith('.pdf')
-  const isImage = document.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(document.name)
+  const isPDF = doc.type === 'application/pdf' || doc.name.toLowerCase().endsWith('.pdf')
+  const isImage = doc.type.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(doc.name)
 
   const handleDownload = (): void => {
     const link = document.createElement('a')
-    link.href = document.url
-    link.download = document.name
+    link.href = doc.url
+    link.download = doc.name
     link.click()
   }
 
   const handleOpenExternal = (): void => {
-    window.open(document.url, '_blank')
+    window.open(doc.url, '_blank')
   }
 
   return (
@@ -48,10 +48,10 @@ export default function DocumentPreviewModal({
           <div className="flex items-center justify-between">
             <div>
               <DialogTitle className="text-lg font-semibold">
-                {document.name}
+                {doc.name}
               </DialogTitle>
               <p className="text-sm text-gray-500 mt-1">
-                Subido el {new Date(document.uploadDate).toLocaleDateString('es-ES', {
+                Subido el {new Date(doc.uploadDate).toLocaleDateString('es-ES', {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric',
@@ -101,19 +101,19 @@ export default function DocumentPreviewModal({
 
           {isPDF && (
             <iframe
-              src={`${document.url}#toolbar=1&navpanes=1&scrollbar=1`}
+              src={`${doc.url}#toolbar=1&navpanes=1&scrollbar=1`}
               className="w-full h-[600px] border rounded-lg"
               onLoad={() => setIsLoading(false)}
               style={{ display: isLoading ? 'none' : 'block' }}
-              title={`Vista previa de ${document.name}`}
+              title={`Vista previa de ${doc.name}`}
             />
           )}
 
           {isImage && (
             <div className="flex justify-center">
               <img
-                src={document.url}
-                alt={document.name}
+                src={doc.url}
+                alt={doc.name}
                 className="max-w-full max-h-[600px] object-contain rounded-lg shadow-lg"
                 onLoad={() => setIsLoading(false)}
                 style={{ display: isLoading ? 'none' : 'block' }}

@@ -4,8 +4,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { formatTimeRemaining, getUrgentProjects } from '@/lib/construction-deadlines'
+import { formatTimeRemaining } from '@/lib/construction-deadlines'
 import { Project } from '@/lib/construction'
+import { ProjectWithDeadline } from '@/types/construction-deadlines'
+
+// Función auxiliar para filtrar proyectos urgentes
+const getUrgentProjectsFromArray = (projects: ProjectWithDeadline[]): ProjectWithDeadline[] => {
+  return projects.filter(project => 
+    project.daysRemaining !== undefined && 
+    (project.deadlineStatus === 'expired' || project.deadlineStatus === 'warning')
+  ).sort((a, b) => (a.daysRemaining || 0) - (b.daysRemaining || 0));
+}
 
 interface DeadlineNotification {
   id: string
@@ -19,7 +28,7 @@ interface DeadlineNotification {
 }
 
 interface DeadlineNotificationsProps {
-  projects?: Project[]
+  projects?: ProjectWithDeadline[]
   onNotificationClick?: (projectId: string) => void
   className?: string
 }
@@ -38,23 +47,23 @@ export function DeadlineNotifications({
   }, [projects])
 
   const generateNotifications = (): void => {
-    const urgentProjects = getUrgentProjects(projects)
+    const urgentProjects = getUrgentProjectsFromArray(projects)
     const newNotifications: DeadlineNotification[] = []
 
-    urgentProjects.forEach((project: Project) => {
-      if (project.days_remaining !== undefined) {
+    urgentProjects.forEach((project: ProjectWithDeadline) => {
+      if (project.daysRemaining !== undefined) {
         let type: 'urgent' | 'warning' | 'info' = 'info'
         let message = ''
 
-        if (project.days_remaining <= 0) {
+        if (project.daysRemaining <= 0) {
           type = 'urgent'
           message = `¡Plazo vencido! El proyecto "${project.name}" ha superado su fecha límite.`
-        } else if (project.days_remaining <= 7) {
+        } else if (project.daysRemaining <= 7) {
           type = 'urgent'
-          message = `¡Urgente! El proyecto "${project.name}" vence en ${formatTimeRemaining(project.days_remaining)}.`
-        } else if (project.days_remaining <= 30) {
+          message = `¡Urgente! El proyecto "${project.name}" vence en ${formatTimeRemaining(project.daysRemaining)}.`
+        } else if (project.daysRemaining <= 30) {
           type = 'warning'
-          message = `Atención: El proyecto "${project.name}" vence en ${formatTimeRemaining(project.days_remaining)}.`
+          message = `Atención: El proyecto "${project.name}" vence en ${formatTimeRemaining(project.daysRemaining)}.`
         }
 
         if (message) {
@@ -64,7 +73,7 @@ export function DeadlineNotifications({
             projectName: project.name,
             message,
             type,
-            daysRemaining: project.days_remaining,
+            daysRemaining: project.daysRemaining,
             isRead: false,
             createdAt: new Date()
           })
@@ -103,7 +112,7 @@ export function DeadlineNotifications({
     onNotificationClick?.(notification.projectId)
   }
 
-  const getNotificationIcon = (type: string): JSX.Element => {
+  const getNotificationIcon = (type: string): React.ReactElement => {
     switch (type) {
       case 'urgent':
         return <AlertTriangle className="h-4 w-4 text-red-500" />
@@ -248,9 +257,9 @@ export function DeadlineNotifications({
 }
 
 // Componente para mostrar alertas globales en el dashboard
-export function DeadlineAlerts({ projects = [] }: { projects?: Project[] }) {
-  const urgentProjects = getUrgentProjects(projects).filter(p => 
-    p.days_remaining !== undefined && p.days_remaining <= 7
+export function DeadlineAlerts({ projects = [] }: { projects?: ProjectWithDeadline[] }) {
+  const urgentProjects = getUrgentProjectsFromArray(projects).filter(p => 
+    p.daysRemaining !== undefined && p.daysRemaining <= 7
   )
 
   if (urgentProjects.length === 0) return null
@@ -258,12 +267,12 @@ export function DeadlineAlerts({ projects = [] }: { projects?: Project[] }) {
   return (
     <div className="space-y-2 mb-6">
       {urgentProjects.map((project) => (
-        <Alert key={project.id} variant={project.days_remaining! <= 0 ? "destructive" : "default"}>
+        <Alert key={project.id} variant={project.daysRemaining! <= 0 ? "destructive" : "default"}>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            {project.days_remaining! <= 0 
+            {project.daysRemaining! <= 0 
               ? `¡Plazo vencido! El proyecto "${project.name}" ha superado su fecha límite.`
-              : `¡Urgente! El proyecto "${project.name}" vence en ${formatTimeRemaining(project.days_remaining!)}.`
+              : `¡Urgente! El proyecto "${project.name}" vence en ${formatTimeRemaining(project.daysRemaining!)}.`
             }
           </AlertDescription>
         </Alert>

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { ProjectList } from './ProjectList'
 import { DeadlineAlerts, DeadlineNotifications } from './DeadlineNotifications'
 import { Project } from '@/lib/construction'
+import { ProjectWithDeadline } from '@/types/construction-deadlines'
 import { getProjectsWithDeadlines } from '@/lib/construction-deadlines'
 import { useWorkspace } from '@/components/workspace-context'
 // import { ProjectDetail } from './project-detail'
@@ -11,7 +12,7 @@ import { useWorkspace } from '@/components/workspace-context'
 export function ConstruccionDashboard() {
   const { companyId } = useWorkspace()
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
-  const [projects, setProjects] = useState<Project[]>([])
+  const [projects, setProjects] = useState<ProjectWithDeadline[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

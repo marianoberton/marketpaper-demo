@@ -74,12 +74,11 @@ export default function ProjectGeneralInfo({
           {(project.construction_start_date || project.construction_end_date || project.days_remaining !== undefined) && (
             <div className="mb-6">
               <DeadlineStatus
-                daysRemaining={project.days_remaining}
-                constructionEndDate={project.construction_end_date}
-                constructionStartDate={project.construction_start_date}
+                daysRemaining={project.days_remaining ?? undefined}
+                constructionEndDate={project.construction_end_date ?? undefined}
+                constructionStartDate={project.construction_start_date ?? undefined}
                 deadlineStatus={project.deadline_status as any}
                 showProgress={true}
-                className="mb-4"
               />
             </div>
           )}

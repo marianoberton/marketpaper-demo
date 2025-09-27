@@ -9,7 +9,7 @@ const supabaseAdmin = createClient(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Verificar autenticación
@@ -21,7 +21,8 @@ export async function PATCH(
       );
     }
 
-    const projectId = params.id;
+    const resolvedParams = await params;
+    const projectId = resolvedParams.id;
     const body = await request.json();
     const { construction_start_date, construction_end_date } = body;
 

@@ -451,8 +451,8 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
           id: 'insurance-policy',
           name: 'Póliza de Seguro.pdf',
           section: 'Póliza de Seguro',
-          uploadDate: project.insurance_policy_upload_date ? 
-            new Date(project.insurance_policy_upload_date).toISOString().split('T')[0] : 
+          uploadDate: project.insurance_policy_issue_date ? 
+            new Date(project.insurance_policy_issue_date).toISOString().split('T')[0] : 
             'Fecha no disponible',
           size: 'N/A',
           type: 'pdf',
@@ -867,8 +867,8 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
           />
 
           {/* Etapas del proyecto - Componente separado */}
-          <ProjectStages 
-            currentStage={project.current_stage}
+          <ProjectStages
+            currentStage={project.current_stage || ''}
             projectId={project.id}
             onStageChange={onStageChange}
           />
@@ -883,7 +883,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
             setDemolicionNoDocsRequired={setDemolicionNoDocsRequired}
             uploadDates={uploadDates}
             handleUploadDateChange={handleUploadDateChange}
-            handleSaveUploadDate={handleSaveUploadDate}
+            handleSaveUploadDate={(requestName: string) => handleSaveUploadDate(requestName, uploadDates[requestName] || '')}
             setTodayUploadDate={setTodayUploadDate}
             savingDates={savingDates}
             savedUploadDates={savedUploadDates}
@@ -913,8 +913,8 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
 
           {/* Otros Documentos */}
           <div className="space-y-6">
-            <OtherDocuments 
-              project={project} 
+            <OtherDocuments
+              project={project}
               onProjectUpdate={onProjectUpdate}
             />
           </div>

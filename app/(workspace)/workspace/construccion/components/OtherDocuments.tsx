@@ -7,7 +7,7 @@ import InsurancePolicySection from './InsurancePolicySection'
 
 interface OtherDocumentsProps {
   project: any
-  onProjectUpdate: () => void
+  onProjectUpdate?: (updatedProject: any) => void
 }
 
 export default function OtherDocuments({ project, onProjectUpdate }: OtherDocumentsProps) {
