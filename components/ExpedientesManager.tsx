@@ -70,6 +70,7 @@ export default function ExpedientesManager({
         }
         
         const updatedExpedientes = [...expedientes, newExpedienteLocal]
+        console.log('🔍 DEBUG: Actualizando expedientes localmente:', updatedExpedientes)
         onExpedientesChange(updatedExpedientes)
         
         setNewExpediente({
@@ -88,24 +89,26 @@ export default function ExpedientesManager({
         status: 'Pendiente'
       }
 
-      await createExpediente(expedienteData)
+      console.log('🔍 DEBUG: Creando expediente en BD:', expedienteData)
+      const newExpedienteCreated = await createExpediente(expedienteData)
+      console.log('🔍 DEBUG: Expediente creado:', newExpedienteCreated)
       
-      // Recargar el proyecto completo para obtener los expedientes actualizados
-      if (onProjectReload) {
-        onProjectReload()
-      } else {
-        // Fallback: recargar expedientes desde la base de datos
-        const updatedProject = await getProjectById(projectId)
-        if (updatedProject && updatedProject.expedientes) {
-          onExpedientesChange(updatedProject.expedientes)
-        }
-      }
+      // Actualizar inmediatamente el estado local con el nuevo expediente
+      const updatedExpedientes = [...expedientes, newExpedienteCreated]
+      console.log('🔍 DEBUG: Estado actual de expedientes:', expedientes)
+      console.log('🔍 DEBUG: Nuevos expedientes a enviar:', updatedExpedientes)
+      
+      onExpedientesChange(updatedExpedientes)
       
       setNewExpediente({
         expediente_number: ''
       })
       setIsAdding(false)
       toast.success('Expediente agregado correctamente')
+      
+      // NO llamar a onProjectReload para evitar conflictos
+      console.log('🔍 DEBUG: Expediente agregado sin recargar proyecto')
+      
     } catch (error) {
       console.error('Error adding expediente:', error)
       toast.error('Error al agregar el expediente')

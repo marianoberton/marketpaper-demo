@@ -282,21 +282,6 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <FileText className="h-6 w-6 text-blue-600" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold">Informe de Dominio</h2>
-            <p className="text-sm text-muted-foreground">
-              Documento requerido para el Registro de Etapa de Proyecto (vigencia 90 días)
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Estado actual del informe */}
       {project.domain_report_file_url && !showUploadForm ? (
         <Card>
@@ -395,13 +380,13 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
             )}
 
             {/* Acciones */}
-            <div className="flex gap-3">
-              <Button onClick={handleDownload} variant="outline">
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={handleDownload} variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
                 Descargar Informe
               </Button>
               
-              <Button onClick={handleNewUpload} variant="outline">
+              <Button onClick={handleNewUpload} variant="outline" size="sm">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Subir Nuevo Informe
               </Button>
@@ -409,6 +394,7 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
               <Button 
                 onClick={handleDeleteReport} 
                 variant="outline"
+                size="sm"
                 className="border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300"
                 disabled={uploading}
               >
@@ -546,10 +532,11 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
                       ✅ Archivo seleccionado correctamente. Revisa los datos antes de subir.
                     </p>
                     
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap gap-2">
                       <Button 
                         onClick={handleConfirmUpload}
                         disabled={uploading}
+                        size="sm"
                         className="bg-green-600 hover:bg-green-700"
                       >
                         {uploading ? (
@@ -569,6 +556,7 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
                         variant="outline"
                         onClick={handleCancelFile}
                         disabled={uploading}
+                        size="sm"
                         className="border-red-200 text-red-700 hover:bg-red-50"
                       >
                         <RefreshCw className="h-4 w-4 mr-2" />
@@ -670,19 +658,7 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
         </Card>
       )}
 
-      {/* Tips adicionales */}
-      <Card className="border-green-200 bg-green-50">
-        <CardContent className="p-4">
-          <h4 className="font-medium text-green-800 mb-2">💡 Consejos útiles</h4>
-          <ul className="text-sm text-green-700 space-y-1">
-            <li>• <strong>Fecha del documento:</strong> Revisar la fecha que aparece impresa en el informe</li>
-            <li>• <strong>Vigencia:</strong> 90 días se cuentan desde la fecha de emisión, no de subida</li>
-            <li>• <strong>Reutilización:</strong> El mismo informe puede usarse para varios trámites del proyecto</li>
-            <li>• <strong>Alertas automáticas:</strong> Te avisaremos cuando falten 10 días para el vencimiento</li>
-            <li>• <strong>Renovación:</strong> Puedes subir un informe nuevo antes del vencimiento</li>
-          </ul>
-        </CardContent>
-      </Card>
+
     </div>
   )
 }

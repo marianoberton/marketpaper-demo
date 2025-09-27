@@ -1,0 +1,158 @@
+// Configuración de plazos de vencimiento por tipo de documento
+// Este archivo permite configurar fácilmente los períodos de vencimiento para diferentes tipos de documentos
+
+export interface DocumentExpirationConfig {
+  sectionName: string;
+  expirationDays: number;
+  description: string;
+  category: 'permiso' | 'obra' | 'informe' | 'tasa' | 'otro';
+}
+
+// Configuración de plazos de vencimiento
+export const DOCUMENT_EXPIRATION_CONFIG: DocumentExpirationConfig[] = [
+  // Permisos y documentación inicial
+  {
+    sectionName: 'Permiso de obra',
+    expirationDays: 365, // 1 año
+    description: 'Permiso municipal de construcción',
+    category: 'permiso'
+  },
+  {
+    sectionName: 'Planos aprobados',
+    expirationDays: 365, // 1 año
+    description: 'Planos arquitectónicos aprobados por el municipio',
+    category: 'permiso'
+  },
+  {
+    sectionName: 'Certificado de aptitud ambiental',
+    expirationDays: 730, // 2 años
+    description: 'Certificado ambiental para la construcción',
+    category: 'permiso'
+  },
+  {
+    sectionName: 'Estudio de suelos',
+    expirationDays: 1095, // 3 años
+    description: 'Estudio geotécnico del terreno',
+    category: 'informe'
+  },
+
+  // Documentos de obra
+  {
+    sectionName: 'Alta Inicio de obra',
+    expirationDays: 30, // 30 días
+    description: 'Declaración de inicio de obra',
+    category: 'obra'
+  },
+  {
+    sectionName: 'Cartel de Obra',
+    expirationDays: 365, // 1 año
+    description: 'Cartel identificatorio de la obra',
+    category: 'obra'
+  },
+  {
+    sectionName: 'Demolición',
+    expirationDays: 90, // 3 meses
+    description: 'Documentación de trabajos de demolición',
+    category: 'obra'
+  },
+  {
+    sectionName: 'Excavación',
+    expirationDays: 60, // 2 meses
+    description: 'Documentación de trabajos de excavación',
+    category: 'obra'
+  },
+  {
+    sectionName: 'AVO 1',
+    expirationDays: 180, // 6 meses
+    description: 'Aviso de Obra 1 - Estructura',
+    category: 'obra'
+  },
+  {
+    sectionName: 'AVO 2',
+    expirationDays: 180, // 6 meses
+    description: 'Aviso de Obra 2 - Mampostería',
+    category: 'obra'
+  },
+  {
+    sectionName: 'AVO 3',
+    expirationDays: 180, // 6 meses
+    description: 'Aviso de Obra 3 - Instalaciones',
+    category: 'obra'
+  },
+
+  // Informes especiales
+  {
+    sectionName: 'Informe de dominio',
+    expirationDays: 90, // 3 meses
+    description: 'Informe de dominio del inmueble',
+    category: 'informe'
+  },
+
+  // Tasas y pagos
+  {
+    sectionName: 'Tasas municipales',
+    expirationDays: 365, // 1 año
+    description: 'Comprobantes de pago de tasas municipales',
+    category: 'tasa'
+  }
+];
+
+// Función para obtener la configuración de vencimiento de una sección
+export function getExpirationConfig(sectionName: string): DocumentExpirationConfig | null {
+  return DOCUMENT_EXPIRATION_CONFIG.find(config => config.sectionName === sectionName) || null;
+}
+
+// Función para obtener los días de vencimiento de una sección
+export function getExpirationDays(sectionName: string): number {
+  const config = getExpirationConfig(sectionName);
+  return config ? config.expirationDays : 365; // Por defecto 1 año
+}
+
+// Función para calcular la fecha de vencimiento basada en la fecha de carga
+export function calculateExpirationDate(uploadDate: string, sectionName: string): string {
+  const upload = new Date(uploadDate);
+  const expirationDays = getExpirationDays(sectionName);
+  
+  const expiration = new Date(upload);
+  expiration.setDate(expiration.getDate() + expirationDays);
+  
+  return expiration.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+}
+
+// Función para obtener la fecha actual en formato YYYY-MM-DD
+export function getTodayDate(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+// Función para calcular días restantes hasta el vencimiento
+export function calculateDaysUntilExpiration(expirationDate: string): {
+  days: number;
+  isExpired: boolean;
+  isExpiringSoon: boolean;
+} {
+  const today = new Date();
+  const expiration = new Date(expirationDate);
+  
+  // Normalizar fechas para comparar solo días (sin horas)
+  today.setHours(0, 0, 0, 0);
+  expiration.setHours(0, 0, 0, 0);
+  
+  const diffTime = expiration.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  return {
+    days: diffDays,
+    isExpired: diffDays < 0,
+    isExpiringSoon: diffDays >= 0 && diffDays <= 30 // Próximo a vencer en 30 días
+  };
+}
+
+// Función para obtener todas las configuraciones por categoría
+export function getConfigsByCategory(category: DocumentExpirationConfig['category']): DocumentExpirationConfig[] {
+  return DOCUMENT_EXPIRATION_CONFIG.filter(config => config.category === category);
+}
+
+// Función para obtener un resumen de todas las configuraciones
+export function getAllConfigurations(): DocumentExpirationConfig[] {
+  return [...DOCUMENT_EXPIRATION_CONFIG];
+}

@@ -108,7 +108,12 @@ export async function updateSession(request: NextRequest) {
 
   // Define protected routes
   const protectedRoutes = ['/workspace', '/admin']
-  const setupRoutes = ['/setup', '/debug-supabase']
+  const setupRoutes = ['/setup', '/debug-supabase', '/workspace/construccion/debug-upload']
+
+  // Allow access to setup and debug pages even if there are profile issues
+  if (setupRoutes.some(route => pathname.startsWith(route))) {
+    return response
+  }
 
   // If user is not logged in and tries to access a protected route, redirect to login
   if (!user && protectedRoutes.some(route => pathname.startsWith(route))) {
@@ -117,10 +122,5 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
-  // Allow access to setup and debug pages even if there are profile issues
-  if (setupRoutes.some(route => pathname.startsWith(route))) {
-    return response
-  }
-
   return response
-} 
+}

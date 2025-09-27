@@ -160,16 +160,33 @@ export async function getProjectDocuments(projectId: string): Promise<ProjectDoc
 export async function deleteProjectDocument(documentId: string): Promise<void> {
   const supabase = createClient()
   
+  console.log('Intentando eliminar documento con ID:', documentId)
+  
   // Obtener información del documento antes de eliminarlo
   const { data: document, error: fetchError } = await supabase
     .from('project_documents')
-    .select('filename')
+    .select('filename, original_filename')
     .eq('id', documentId)
     .single()
 
   if (fetchError) {
+    console.error('Error al buscar documento:', {
+      code: fetchError.code,
+      message: fetchError.message,
+      details: fetchError.details,
+      hint: fetchError.hint
+    })
+    if (fetchError.code === 'PGRST116') {
+      throw new Error('El documento no existe o ya fue eliminado')
+    }
+    throw new Error(`Error al buscar documento: ${fetchError.message || 'Error desconocido'}`)
+  }
+
+  if (!document) {
     throw new Error('Documento no encontrado')
   }
+
+  console.log('Documento encontrado:', document.original_filename)
 
   // Eliminar archivo del storage
   const { error: storageError } = await supabase.storage
@@ -189,8 +206,10 @@ export async function deleteProjectDocument(documentId: string): Promise<void> {
 
   if (dbError) {
     console.error('Database delete error:', dbError)
-    throw new Error('Error al eliminar el documento')
+    throw new Error('Error al eliminar el documento de la base de datos')
   }
+
+  console.log('Documento eliminado exitosamente:', document.original_filename)
 }
 
 // Función para subir imagen de proyecto

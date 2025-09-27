@@ -94,12 +94,21 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    // Validar caracteres especiales en el path que pueden causar problemas
+    const invalidChars = /[<>:"|?*\s]/;
+    if (invalidChars.test(path)) {
+      return NextResponse.json(
+        { error: 'Path contiene caracteres inválidos. Use solo letras, números, guiones, guiones bajos y puntos.' },
+        { status: 400 }
+      );
+    }
     
-    // Crear URL firmada
+    // Crear URL firmada con configuración mejorada
     const { data, error } = await supabaseAdmin.storage
       .from(bucket)
       .createSignedUploadUrl(path, {
-        upsert: false // Evitar sobrescribir archivos existentes
+        upsert: true // Permitir sobrescribir archivos existentes para evitar conflictos
       });
       
     if (error) {

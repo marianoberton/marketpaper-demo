@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { getCurrentUser } from '@/lib/auth-server'
+import { getTodayDate, calculateExpirationDate } from '@/lib/document-expiration-config'
 
 // Configuración ya no necesaria - archivos van directo a Supabase Storage
 
@@ -79,6 +80,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Obtener la fecha de carga (hoy)
+    const uploadDate = getTodayDate();
+    
     // Guardar registro en la base de datos con URL de Supabase Storage
     const documentData = {
       project_id: projectId,
@@ -89,7 +93,8 @@ export async function POST(request: NextRequest) {
       file_size: fileSize || 0,
       mime_type: mimeType || 'application/octet-stream',
       description: description,
-      uploaded_by: 'super-admin'
+      uploaded_by: 'super-admin',
+      upload_date: uploadDate
     }
 
     console.log('Insertando documento:', documentData)
@@ -116,6 +121,43 @@ export async function POST(request: NextRequest) {
         },
         { status: 500 }
       )
+    }
+
+    // Crear o actualizar fecha de vencimiento automáticamente
+    try {
+      console.log(`🔍 Iniciando creación de fecha de vencimiento para "${sectionName}"`)
+      console.log(`📊 Datos: projectId=${projectId}, sectionName=${sectionName}, uploadDate=${uploadDate}`)
+      
+      const expirationDate = calculateExpirationDate(uploadDate, sectionName); // Usar la fecha de carga del documento
+      
+      console.log(`📅 Creando fecha de vencimiento para "${sectionName}": carga=${uploadDate}, vencimiento=${expirationDate}`)
+      
+      // Insertar o actualizar la fecha de vencimiento en project_expiration_dates
+      const { data: expirationResult, error: expirationError } = await supabase
+        .from('project_expiration_dates')
+        .upsert({
+          project_id: projectId,
+          section_name: sectionName,
+          expiration_date: expirationDate,
+          created_by: currentUser.id,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'project_id,section_name'
+        })
+        .select()
+
+      if (expirationError) {
+        console.error('❌ Error al guardar fecha de vencimiento:', expirationError)
+        console.error('❌ Detalles del error:', JSON.stringify(expirationError, null, 2))
+        // No fallar la operación principal, solo loggear el error
+      } else {
+        console.log('✅ Fecha de vencimiento guardada exitosamente')
+        console.log('✅ Resultado:', JSON.stringify(expirationResult, null, 2))
+      }
+    } catch (expirationError) {
+      console.error('💥 Error procesando fecha de vencimiento:', expirationError)
+      console.error('💥 Stack trace:', expirationError instanceof Error ? expirationError.stack : 'No stack trace')
+      // No fallar la operación principal
     }
 
     return NextResponse.json({
@@ -155,7 +197,7 @@ export async function DELETE(request: NextRequest) {
     // Obtener información del documento antes de eliminarlo
     const { data: document, error: fetchError } = await supabase
       .from('project_documents')
-      .select('filename, original_filename')
+      .select('filename, original_filename, project_id, section_name')
       .eq('id', documentId)
       .single()
 
@@ -165,6 +207,20 @@ export async function DELETE(request: NextRequest) {
         { status: 404 }
       )
     }
+
+    // Verificar si quedan más documentos en la misma sección después de eliminar este
+    const { data: remainingDocs, error: countError } = await supabase
+      .from('project_documents')
+      .select('id')
+      .eq('project_id', document.project_id)
+      .eq('section_name', document.section_name)
+      .neq('id', documentId)
+
+    if (countError) {
+      console.error('Error checking remaining documents:', countError)
+    }
+
+    const hasRemainingDocs = remainingDocs && remainingDocs.length > 0
 
     // Eliminar archivo del storage
     const { error: storageError } = await supabase.storage
@@ -188,6 +244,22 @@ export async function DELETE(request: NextRequest) {
         { error: 'Error al eliminar el documento' },
         { status: 500 }
       )
+    }
+
+    // Si no quedan más documentos en esta sección, eliminar también la fecha de vencimiento
+    if (!hasRemainingDocs) {
+      const { error: expirationError } = await supabase
+        .from('project_expiration_dates')
+        .delete()
+        .eq('project_id', document.project_id)
+        .eq('section_name', document.section_name)
+
+      if (expirationError) {
+        console.error('Error deleting expiration date:', expirationError)
+        // No fallar la operación completa por esto, solo logear el error
+      } else {
+        console.log(`Fecha de vencimiento eliminada para sección "${document.section_name}" del proyecto ${document.project_id}`)
+      }
     }
 
     return NextResponse.json({

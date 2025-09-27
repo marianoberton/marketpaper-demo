@@ -84,6 +84,15 @@ export type Project = {
   domain_report_is_valid?: boolean | null
   domain_report_notes?: string | null
   
+  // Póliza de Seguro
+  insurance_policy_file_url?: string | null
+  insurance_policy_issue_date?: string | null
+  insurance_policy_expiry_date?: string | null
+  insurance_policy_is_valid?: boolean | null
+  insurance_policy_notes?: string | null
+  insurance_policy_number?: string | null
+  insurance_company?: string | null
+  
   // Tasas y Gravámenes Gubernamentales
   projected_total_cost?: number | null
   paid_total_cost?: number | null
@@ -92,6 +101,12 @@ export type Project = {
   paid_cost_rubro_c?: number | null
   last_cost_update?: string | null
   enable_tax_management?: boolean | null
+  
+  // Plazos de construcción
+  construction_start_date?: string | null
+  construction_end_date?: string | null
+  days_remaining?: number | null
+  deadline_status?: string | null
   
   // Relaciones con tasas específicas
   professional_commissions?: ProfessionalCommission[]
@@ -310,10 +325,7 @@ export async function getProjectById(projectId: string): Promise<Project | null>
       *,
       client:clients(*),
       sections:project_sections(*),
-      status_history:project_status_history(
-        *,
-        changed_by_user:user_profiles(full_name)
-      ),
+      status_history:project_status_history(*),
       expedientes:project_expedientes(*)
     `)
     .eq('id', projectId)
@@ -552,8 +564,13 @@ export async function getProjectDocuments(projectId: string): Promise<Record<str
     .order('created_at', { ascending: false })
 
   if (error) {
-    console.error('Error fetching project documents:', error)
-    throw new Error('Error al cargar los documentos del proyecto')
+    console.error('Error fetching project documents:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    })
+    throw new Error(`Error al cargar los documentos del proyecto: ${error.message}`)
   }
 
   // Agrupar documentos por sección
@@ -804,6 +821,43 @@ export function formatDomainReportStatus(uploadDate: string | null): {
   if (daysRemaining <= 0) {
     return { status: 'expired', message: 'Vencido', daysRemaining: 0 }
   } else if (daysRemaining <= 10) {
+    return { status: 'expiring', message: `Vence en ${daysRemaining} días`, daysRemaining }
+  } else {
+    return { status: 'valid', message: `Vigente (${daysRemaining} días)`, daysRemaining }
+  }
+}
+
+// =============================================
+// FUNCIONES PARA PÓLIZA DE SEGURO
+// =============================================
+
+export function calculateInsurancePolicyDaysRemaining(expiryDate: string): number {
+  const expiry = new Date(expiryDate)
+  const now = new Date()
+  const diffTime = expiry.getTime() - now.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  return Math.max(0, diffDays)
+}
+
+export function isInsurancePolicyValid(expiryDate: string | null): boolean {
+  if (!expiryDate) return false
+  return calculateInsurancePolicyDaysRemaining(expiryDate) > 0
+}
+
+export function formatInsurancePolicyStatus(expiryDate: string | null): {
+  status: 'valid' | 'expiring' | 'expired' | 'none'
+  message: string
+  daysRemaining?: number
+} {
+  if (!expiryDate) {
+    return { status: 'none', message: 'No cargada' }
+  }
+  
+  const daysRemaining = calculateInsurancePolicyDaysRemaining(expiryDate)
+  
+  if (daysRemaining <= 0) {
+    return { status: 'expired', message: 'Vencida', daysRemaining: 0 }
+  } else if (daysRemaining <= 30) {
     return { status: 'expiring', message: `Vence en ${daysRemaining} días`, daysRemaining }
   } else {
     return { status: 'valid', message: `Vigente (${daysRemaining} días)`, daysRemaining }

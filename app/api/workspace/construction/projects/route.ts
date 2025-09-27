@@ -216,6 +216,9 @@ export async function PUT(request: NextRequest) {
       'paid_cost_rubro_c', 'last_cost_update', 'enable_tax_management',
       'domain_report_file_url', 'domain_report_upload_date', 
       'domain_report_expiry_date', 'domain_report_is_valid', 'domain_report_notes',
+      'insurance_policy_file_url', 'insurance_policy_issue_date', 
+      'insurance_policy_expiry_date', 'insurance_policy_is_valid', 'insurance_policy_notes',
+      'insurance_policy_number', 'insurance_company',
       // Campos de compatibilidad temporal
       'architect', 'project_use', 'inspector_name'
     ]
