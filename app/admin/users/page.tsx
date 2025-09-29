@@ -54,6 +54,7 @@ interface User {
   avatar_url?: string
   company_id?: string
   company_name?: string
+  client_id?: string
   role: string
   status: string
   created_at: string
@@ -92,6 +93,14 @@ interface Company {
   status: string
 }
 
+interface Client {
+  id: string
+  name: string
+  email?: string
+  contact_person?: string
+  company_id: string
+}
+
 interface ProcessRequestData {
   action: 'create_super_admin' | 'assign_to_company' | 'create_new_company' | 'reject'
   company_id?: string
@@ -105,6 +114,7 @@ export default function UsersPage() {
   const [superAdmins, setSuperAdmins] = useState<SuperAdmin[]>([])
   const [registrationRequests, setRegistrationRequests] = useState<RegistrationRequest[]>([])
   const [companies, setCompanies] = useState<Company[]>([])
+  const [clients, setClients] = useState<Client[]>([])
   const [filteredUsers, setFilteredUsers] = useState<User[]>([])
   const [filteredSuperAdmins, setFilteredSuperAdmins] = useState<SuperAdmin[]>([])
   const [filteredRequests, setFilteredRequests] = useState<RegistrationRequest[]>([])
@@ -141,6 +151,7 @@ export default function UsersPage() {
     full_name: '',
     role: '',
     company_id: '',
+    client_id: '',
     status: 'active',
     password: ''
   })
@@ -156,6 +167,16 @@ export default function UsersPage() {
   useEffect(() => {
     filterData()
   }, [users, superAdmins, registrationRequests, searchTerm, statusFilter, roleFilter, companyFilter, activeTab])
+
+  // Cargar clientes cuando cambia la empresa en el formulario
+  useEffect(() => {
+    if (formData.company_id && formData.company_id !== 'none') {
+      loadClients(formData.company_id)
+    } else {
+      setClients([])
+      setFormData(prev => ({ ...prev, client_id: '' }))
+    }
+  }, [formData.company_id])
 
   const loadData = async () => {
     try {
@@ -174,6 +195,23 @@ export default function UsersPage() {
       setError('Error cargando datos')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadClients = async (companyId: string) => {
+    try {
+      const response = await fetch(`/api/admin/clients?company_id=${companyId}`)
+      const data = await response.json()
+      
+      if (response.ok) {
+        setClients(Array.isArray(data) ? data : [])
+      } else {
+        console.error('Error cargando clientes:', data)
+        setClients([])
+      }
+    } catch (err) {
+      console.error('Error de conexión cargando clientes:', err)
+      setClients([])
     }
   }
 
@@ -247,10 +285,11 @@ export default function UsersPage() {
   const handleCreateUser = async () => {
     setIsCreating(true)
     try {
-      // Prepare data for API, converting "none" to null for company_id
+      // Prepare data for API, converting "none" to null for company_id and client_id
       const apiData = {
         ...formData,
-        company_id: formData.company_id === 'none' ? null : formData.company_id
+        company_id: formData.company_id === 'none' ? null : formData.company_id,
+        client_id: formData.client_id === 'none' || formData.client_id === '' ? null : formData.client_id
       }
       
       const response = await fetch('/api/admin/users', {
@@ -290,10 +329,11 @@ export default function UsersPage() {
     
     setIsUpdating(true)
     try {
-      // Prepare data for API, converting "none" to null for company_id
+      // Prepare data for API, converting "none" to null for company_id and client_id
       const apiData = {
         ...formData,
-        company_id: formData.company_id === 'none' ? null : formData.company_id
+        company_id: formData.company_id === 'none' ? null : formData.company_id,
+        client_id: formData.client_id === 'none' || formData.client_id === '' ? null : formData.client_id
       }
       
       const response = await fetch('/api/admin/users', {
@@ -358,9 +398,16 @@ export default function UsersPage() {
       full_name: user.full_name || '',
       role: user.role,
       company_id: user.company_id || 'none',
+      client_id: user.client_id || 'none',
       status: user.status,
       password: '' // No mostramos la contraseña existente por seguridad
     })
+    
+    // Cargar clientes si el usuario tiene una empresa asignada
+    if (user.company_id) {
+      loadClients(user.company_id)
+    }
+    
     setEditModalOpen(true)
   }
 
@@ -380,6 +427,7 @@ export default function UsersPage() {
       full_name: '',
       role: '',
       company_id: 'none',
+      client_id: 'none',
       status: 'active',
       password: ''
     })
@@ -1242,6 +1290,32 @@ export default function UsersPage() {
               </Select>
             </div>
 
+            {/* Campo de Cliente - Solo para usuarios viewer */}
+            {formData.role === 'viewer' && formData.company_id && formData.company_id !== 'none' && (
+              <div>
+                <Label htmlFor="edit_client">Cliente Asignado</Label>
+                <Select 
+                  value={formData.client_id} 
+                  onValueChange={(value) => setFormData({...formData, client_id: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar cliente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin cliente asignado</SelectItem>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-gray-500 mt-1">
+                  Los usuarios visualizadores pueden ser asignados a un cliente específico
+                </p>
+              </div>
+            )}
+
             <div className="flex justify-end gap-2 pt-4">
               <Button 
                 variant="outline" 
@@ -1528,4 +1602,4 @@ export default function UsersPage() {
       </Dialog>
     </div>
   )
-} 
+}

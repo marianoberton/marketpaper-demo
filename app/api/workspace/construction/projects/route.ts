@@ -44,6 +44,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Obtener proyectos de la compañía con información del cliente y expedientes
+    console.log('🔍 DEBUG API: Consultando proyectos para company_id:', targetCompanyId)
+    
     const { data: projects, error } = await supabase
       .from('projects')
       .select(`
@@ -53,6 +55,14 @@ export async function GET(request: NextRequest) {
       `)
       .eq('company_id', targetCompanyId)
       .order('created_at', { ascending: false })
+
+    console.log('🔍 DEBUG API: Error de consulta:', error)
+    console.log('🔍 DEBUG API: Número de proyectos encontrados:', projects?.length || 0)
+    
+    if (projects && projects.length > 0) {
+      console.log('🔍 DEBUG API: Primer proyecto completo:', JSON.stringify(projects[0], null, 2))
+      console.log('🔍 DEBUG API: Expedientes del primer proyecto:', projects[0].expedientes)
+    }
 
     if (error) {
       console.error('Error fetching projects:', error)
@@ -273,8 +283,11 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 })
     }
 
-    // Manejar expedientes si se proporcionan
-    if (expedientes && Array.isArray(expedientes)) {
+    // Manejar expedientes SOLO si se proporcionan explícitamente
+    // IMPORTANTE: No eliminar expedientes si no se envían en la actualización
+    if (expedientes !== undefined && Array.isArray(expedientes)) {
+      console.log('🔍 DEBUG: Actualizando expedientes explícitamente:', expedientes)
+      
       // Primero eliminar expedientes existentes
       const { error: deleteError } = await supabase
         .from('project_expedientes')
@@ -302,6 +315,8 @@ export async function PUT(request: NextRequest) {
           console.error('Error creating expedientes:', expedientesError)
         }
       }
+    } else {
+      console.log('🔍 DEBUG: No se enviaron expedientes en la actualización, manteniendo los existentes')
     }
 
     console.log('Project updated successfully:', project.id)

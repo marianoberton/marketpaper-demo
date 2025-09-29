@@ -64,6 +64,7 @@ export async function GET(request: NextRequest) {
       avatar_url: user.avatar_url,
       company_id: user.company_id,
       company_name: user.companies?.name || null,
+      client_id: user.client_id,
       role: user.role,
       status: user.status,
       created_at: user.created_at,
@@ -122,7 +123,9 @@ export async function PUT(request: NextRequest) {
       .update({
         full_name: updateData.full_name,
         role: updateData.role,
-        status: updateData.status
+        status: updateData.status,
+        company_id: updateData.company_id,
+        client_id: updateData.client_id
       })
       .eq('id', updateData.id)
       .select()
@@ -298,6 +301,7 @@ export async function POST(request: NextRequest) {
         full_name: userData.full_name,
         role: userData.role,
         company_id: userData.company_id || null,
+        client_id: userData.client_id || null,
         status: 'active'
       })
       .select()

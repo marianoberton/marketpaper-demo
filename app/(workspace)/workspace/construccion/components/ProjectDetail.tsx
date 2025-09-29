@@ -49,7 +49,6 @@ import DocumentUpload from './DocumentUpload'
 import { DeadlineStatus } from './DeadlineStatus'
 import { DeadlineClientPanel } from './DeadlineClientPanel'
 import ProjectHeader from './ProjectHeader'
-import ProjectCoverImage from './ProjectCoverImage'
 import ProjectProfessionalsCard from './ProjectProfessionalsCard'
 import ClientInfoCard from './ClientInfoCard'
 import ProjectDetailsCard from './ProjectDetailsCard'
@@ -57,6 +56,11 @@ import ProjectStages from './ProjectStages'
 import ProjectGeneralInfo from './ProjectGeneralInfo'
 import { ProjectVerificationRequests } from './ProjectVerificationRequests'
 import ProjectAllDocuments from './ProjectAllDocuments'
+import ProjectTabs, { TabId } from './ProjectTabs'
+import ProjectSummaryTab from './ProjectSummaryTab'
+import ProjectStagesTab from './ProjectStagesTab'
+import ProjectTeamTab from './ProjectTeamTab'
+import ProjectDocumentsTab from './ProjectDocumentsTab'
 
 
 interface ProjectDetailProps {
@@ -146,6 +150,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
   const [uploading, setUploading] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   const [currentUploadSection, setCurrentUploadSection] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<TabId>('summary')
   
   // Hook para obtener el workspace actual
   const { companyId, isLoading: workspaceLoading } = useWorkspace()
@@ -292,6 +297,11 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
   const [dgiurNoDocsRequired, setDgiurNoDocsRequired] = useState(false)
   const [demolicionNoDocsRequired, setDemolicionNoDocsRequired] = useState(false)
   const [expedientes, setExpedientes] = useState(project.expedientes || [])
+
+  // Debug: Log del proyecto y expedientes
+  console.log('🔍 DEBUG ProjectDetail: project recibido:', project)
+  console.log('🔍 DEBUG ProjectDetail: project.expedientes:', project?.expedientes)
+  console.log('🔍 DEBUG ProjectDetail: estado expedientes:', expedientes)
   
   // Estados para fechas de carga
   const [uploadDates, setUploadDates] = useState<Record<string, string>>({
@@ -311,8 +321,11 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
   const [sectionsWithDocuments, setSectionsWithDocuments] = useState<Set<string>>(new Set())
 
   useEffect(() => {
+    console.log('🔍 DEBUG ProjectDetail: useEffect project change')
+    console.log('🔍 DEBUG ProjectDetail: project.expedientes en useEffect:', project?.expedientes)
     setEditedProject(project)
     setExpedientes(project.expedientes || [])
+    console.log('🔍 DEBUG ProjectDetail: expedientes establecidos:', project.expedientes || [])
     loadProjectDocuments()
     loadUploadDates()
   }, [project])
@@ -351,9 +364,13 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
     
     setExpedientes(newExpedientes)
     
-    // NO enviar expedientes a onProjectUpdate para evitar conflictos
-    // Los expedientes se manejan directamente en ExpedientesManager
-    console.log('🔍 DEBUG ProjectDetail: Expedientes actualizados localmente, sin enviar a onProjectUpdate')
+    // IMPORTANTE: También actualizar editedProject para que handleSave incluya los expedientes
+    setEditedProject(prev => ({
+      ...prev,
+      expedientes: newExpedientes
+    }))
+    
+    console.log('🔍 DEBUG ProjectDetail: Expedientes actualizados en estado local y editedProject')
   }
 
   const handleProjectReload = async (): Promise<void> => {
@@ -841,113 +858,92 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
           onDelete={onDeleteProject}
         />
 
-        {/* Imagen de portada del proyecto - Componente separado */}
-        <ProjectCoverImage
-          project={project}
-          editedProject={editedProject}
-          setEditedProject={setEditedProject}
-          onProjectUpdate={onProjectUpdate}
-        />
+        {/* Sistema de pestañas */}
+        <ProjectTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-        {/* Layout principal mejorado - layout responsivo con mejor distribución */}
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-        {/* Columna principal - Información del proyecto */}
-        <div className="xl:col-span-3 space-y-6">
-          
-          {/* Información general - Componente separado */}
-          <ProjectGeneralInfo
+        {/* Contenido de las pestañas */}
+        {activeTab === 'summary' && (
+          <ProjectSummaryTab 
             project={project}
             isEditing={isEditing}
             editedProject={editedProject}
             setEditedProject={setEditedProject}
+            onProjectUpdate={onProjectUpdate}
             expedientes={expedientes}
             handleExpedientesChange={handleExpedientesChange}
             handleProjectReload={handleProjectReload}
-            getStatusColor={getStatusColor}
           />
+        )}
 
-          {/* Etapas del proyecto - Componente separado */}
-          <ProjectStages
-            currentStage={project.current_stage || ''}
-            projectId={project.id}
-            onStageChange={onStageChange}
-          />
-
-          {/* Pedidos de verificaciones organizadas por categorías */}
-          <ProjectVerificationRequests
+        {activeTab === 'stages-documents' && (
+          <ProjectStagesTab 
             project={project}
+            currentStage={project.current_stage || ''}
+            onStageChange={onStageChange}
             verificationRequests={verificationRequests}
+            documents={documents}
+            uploadingTo={uploadingTo}
+            loading={loading}
+            tableExists={tableExists}
+            uploading={uploading}
+            uploadingImage={uploadingImage}
+            currentUploadSection={currentUploadSection}
             dgiurNoDocsRequired={dgiurNoDocsRequired}
-            setDgiurNoDocsRequired={setDgiurNoDocsRequired}
-            demolicionNoDocsRequired={demolicionNoDocsRequired}
-            setDemolicionNoDocsRequired={setDemolicionNoDocsRequired}
+            demolicionNoDoDocsRequired={demolicionNoDocsRequired}
             uploadDates={uploadDates}
-            handleUploadDateChange={handleUploadDateChange}
-            handleSaveUploadDate={(requestName: string) => handleSaveUploadDate(requestName, uploadDates[requestName] || '')}
+            onDocumentUploaded={handleDocumentUploaded}
+            onImageUploadSuccess={handleImageUploadSuccess}
+            onImageUploadError={handleImageUploadError}
+            shouldShowUploadDate={shouldShowUploadDate}
+            onUploadDateChange={handleUploadDateChange}
+            onSaveUploadDate={(requestName: string) => handleSaveUploadDate(requestName, uploadDates[requestName] || '')}
             setTodayUploadDate={setTodayUploadDate}
+            expedientes={expedientes}
+            handleExpedientesChange={handleExpedientesChange}
+            handleProjectReload={handleProjectReload}
             savingDates={savingDates}
             savedUploadDates={savedUploadDates}
-            shouldShowUploadDate={shouldShowUploadDate}
             hasVerificationCertificate={hasVerificationCertificate}
             getSectionExternalDocs={getSectionExternalDocs}
-            handleDocumentUploaded={handleDocumentUploaded}
             loadProjectDocuments={loadProjectDocuments}
+            setDgiurNoDocsRequired={setDgiurNoDocsRequired}
+            setDemolicionNoDocsRequired={setDemolicionNoDocsRequired}
           />
+        )}
 
-          {/* Todos los Documentos */}
-          <div className="space-y-6">
-            <ProjectAllDocuments
-              documents={documents}
-              loading={loading}
-              tableExists={tableExists}
-              uploading={uploading}
-              uploadingTo={uploadingTo}
-              setUploadingTo={setUploadingTo}
-              handleFileUpload={handleFileUpload}
-              handleViewDocument={handleViewDocument}
-              handleDownloadDocument={handleDownloadDocument}
-              handleDeleteDocument={handleDeleteDocument}
-              getFileIcon={getFileIcon}
-            />
-          </div>
-
-          {/* Otros Documentos */}
-          <div className="space-y-6">
-            <OtherDocuments
-              project={project}
-              onProjectUpdate={onProjectUpdate}
-            />
-          </div>
-        </div>
-
-        {/* Sidebar derecho - Cliente y Detalles */}
-        <div className="xl:col-span-1 space-y-6 xl:sticky xl:top-6 xl:self-start">
-          {/* Cliente */}
-          <ClientInfoCard project={project} />
-
-          {/* Plazos de Obra */}
-          <DeadlineClientPanel project={project} />
-
-          {/* Profesionales del Proyecto */}
-          <ProjectProfessionalsCard
+        {activeTab === 'team' && (
+          <ProjectTeamTab 
             project={project}
             isEditing={isEditing}
             editedProject={editedProject}
             setEditedProject={setEditedProject}
           />
+        )}
 
-          {/* Detalles del Proyecto */}
-          <ProjectDetailsCard
+        {activeTab === 'documents' && (
+          <ProjectDocumentsTab 
             project={project}
-            isEditing={isEditing}
-            editedProject={editedProject}
-            setEditedProject={setEditedProject}
+            documents={documents}
+            uploadingTo={uploadingTo}
+            loading={loading}
+            tableExists={tableExists}
+            uploading={uploading}
+            uploadingImage={uploadingImage}
+            currentUploadSection={currentUploadSection}
+            dgiurNoDocsRequired={dgiurNoDocsRequired}
+            demolicionNoDoDocsRequired={demolicionNoDocsRequired}
+            expedientes={expedientes}
+            uploadDates={uploadDates}
+            onDocumentUploaded={handleDocumentUploaded}
+            onImageUploadSuccess={handleImageUploadSuccess}
+            onImageUploadError={handleImageUploadError}
+            shouldShowUploadDate={shouldShowUploadDate}
+            onUploadDateChange={handleUploadDateChange}
+            onSaveUploadDate={(requestName: string) => handleSaveUploadDate(requestName, uploadDates[requestName] || '')}
+            setTodayUploadDate={setTodayUploadDate}
           />
-
-
-        </div>
+        )}
       </div>
-    </div>
     </div>
   )
 }

@@ -319,6 +319,8 @@ export async function getCompanyProjects(companyId: string): Promise<Project[]> 
 export async function getProjectById(projectId: string): Promise<Project | null> {
   const supabase = createClient()
   
+  console.log('🔍 getProjectById - Fetching project:', projectId)
+  
   const { data, error } = await supabase
     .from('projects')
     .select(`
@@ -330,6 +332,10 @@ export async function getProjectById(projectId: string): Promise<Project | null>
     `)
     .eq('id', projectId)
     .single()
+
+  console.log('🔍 getProjectById - Raw data:', data)
+  console.log('🔍 getProjectById - Error:', error)
+  console.log('🔍 getProjectById - Expedientes in data:', data?.expedientes)
 
   if (error) {
     console.error('Error fetching project:', error.message || error)

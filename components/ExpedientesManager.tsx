@@ -48,6 +48,11 @@ export default function ExpedientesManager({
   const [editingExpediente, setEditingExpediente] = useState<Partial<UpdateExpedienteData>>({})
   const [loading, setLoading] = useState(false)
 
+  // Debug: Log de los expedientes recibidos
+  console.log('🔍 DEBUG ExpedientesManager: projectId:', projectId)
+  console.log('🔍 DEBUG ExpedientesManager: expedientes recibidos:', expedientes)
+  console.log('🔍 DEBUG ExpedientesManager: expedientes.length:', expedientes?.length || 0)
+
   const handleAddExpediente = async () => {
     if (!newExpediente.expediente_number) {
       toast.error('Por favor ingrese el número de expediente')

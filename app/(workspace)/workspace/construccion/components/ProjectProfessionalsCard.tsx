@@ -140,11 +140,15 @@ export default function ProjectProfessionalsCard({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Estructuralista">Estructuralista</SelectItem>
-                          <SelectItem value="Instalador Sanitario">Instalador Sanitario</SelectItem>
-                          <SelectItem value="Instalador Eléctrico">Instalador Eléctrico</SelectItem>
-                          <SelectItem value="Instalador de Gas">Instalador de Gas</SelectItem>
-                          <SelectItem value="Especialista en Seguridad">Especialista en Seguridad</SelectItem>
-                          <SelectItem value="Otro">Otro</SelectItem>
+                          <SelectItem value="Proyectista">Proyectista</SelectItem>
+                          <SelectItem value="Instalación Electrica">Instalación Eléctrica</SelectItem>
+                          <SelectItem value="Instalación Sanitaria">Instalación Sanitaria</SelectItem>
+                          <SelectItem value="Instalación e incendios">Instalación e Incendios</SelectItem>
+                          <SelectItem value="Instalación e elevadores">Instalación e Elevadores</SelectItem>
+                          <SelectItem value="Instalación Sala de maquinas">Instalación Sala de Máquinas</SelectItem>
+                          <SelectItem value="Instalación Ventilación Mecanica">Instalación Ventilación Mecánica</SelectItem>
+                          <SelectItem value="Instalación ventilación electromecánica">Instalación Ventilación Electromecánica</SelectItem>
+                          <SelectItem value="Agrimensor">Agrimensor</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

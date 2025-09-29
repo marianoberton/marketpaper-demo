@@ -1,13 +1,12 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Building, User, Plus, X } from 'lucide-react'
-import { Project, ProjectProfessional } from '@/lib/construction'
+import { Building } from 'lucide-react'
+import { Project } from '@/lib/construction'
 import { DeadlineStatus } from './DeadlineStatus'
 import ExpedientesManager from '@/components/ExpedientesManager'
 
@@ -32,32 +31,6 @@ export default function ProjectGeneralInfo({
   handleProjectReload,
   getStatusColor
 }: ProjectGeneralInfoProps) {
-  
-  const handleProfesionalChange = (index: number, field: keyof ProjectProfessional, value: string): void => {
-    setEditedProject(prev => ({
-      ...prev,
-      profesionales: prev.profesionales?.map((prof, i) => 
-        i === index ? { ...prof, [field]: value } : prof
-      ) || []
-    }))
-  }
-
-  const addProfesional = (): void => {
-    setEditedProject(prev => ({
-      ...prev,
-      profesionales: [
-        ...(prev.profesionales || []),
-        { name: '', role: 'Estructuralista' as ProjectProfessional['role'] }
-      ]
-    }))
-  }
-
-  const removeProfesional = (index: number): void => {
-    setEditedProject(prev => ({
-      ...prev,
-      profesionales: prev.profesionales?.filter((_, i) => i !== index) || []
-    }))
-  }
 
   return (
     <>
@@ -264,103 +237,6 @@ export default function ProjectGeneralInfo({
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Otros Profesionales */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Otros Profesionales
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isEditing ? (
-            <div className="space-y-4">
-              <div className="space-y-3">
-                {editedProject.profesionales?.map((profesional, index) => (
-                  <div key={index} className="flex gap-3 items-end">
-                    <div className="flex-1">
-                      <Label htmlFor={`profesional-name-${index}`}>
-                        Nombre del Profesional
-                      </Label>
-                      <Input
-                        id={`profesional-name-${index}`}
-                        value={profesional.name}
-                        onChange={(e) => handleProfesionalChange(index, 'name', e.target.value)}
-                        placeholder="Nombre completo"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <Label htmlFor={`profesional-role-${index}`}>
-                        Especialidad/Rol
-                      </Label>
-                      <Select
-                        value={profesional.role}
-                        onValueChange={(value) => handleProfesionalChange(index, 'role', value as ProjectProfessional['role'])}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Estructuralista">Estructuralista</SelectItem>
-                          <SelectItem value="Proyectista">Proyectista</SelectItem>
-                          <SelectItem value="Instalación Electrica">Instalación Eléctrica</SelectItem>
-                          <SelectItem value="Instalación Sanitaria">Instalación Sanitaria</SelectItem>
-                          <SelectItem value="Instalación e incendios">Instalación e Incendios</SelectItem>
-                          <SelectItem value="Instalación e elevadores">Instalación e Elevadores</SelectItem>
-                          <SelectItem value="Instalación Sala de maquinas">Instalación Sala de Máquinas</SelectItem>
-                          <SelectItem value="Instalación Ventilación Mecanica">Instalación Ventilación Mecánica</SelectItem>
-                          <SelectItem value="Instalación ventilación electromecánica">Instalación Ventilación Electromecánica</SelectItem>
-                          <SelectItem value="Agrimensor">Agrimensor</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    {editedProject.profesionales && editedProject.profesionales.length > 0 && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeProfesional(index)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addProfesional}
-                  className="w-full"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Agregar Profesional
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {project.profesionales && project.profesionales.length > 0 ? (
-                project.profesionales.map((profesional, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium">{profesional.name}</p>
-                      <p className="text-sm text-muted-foreground">{profesional.role}</p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-muted-foreground text-center py-4">
-                  No hay profesionales adicionales registrados
-                </p>
-              )}
-            </div>
-          )}
         </CardContent>
       </Card>
     </>
