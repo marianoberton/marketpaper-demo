@@ -6,6 +6,9 @@ export interface DocumentExpirationConfig {
   expirationDays: number;
   description: string;
   category: 'permiso' | 'obra' | 'informe' | 'tasa' | 'otro';
+  conditionalDays?: {
+    [key: string]: number;
+  };
 }
 
 // Configuración de plazos de vencimiento
@@ -13,9 +16,15 @@ export const DOCUMENT_EXPIRATION_CONFIG: DocumentExpirationConfig[] = [
   // Permisos y documentación inicial
   {
     sectionName: 'Permiso de obra',
-    expirationDays: 365, // 1 año
+    expirationDays: 365, // 1 año por defecto
     description: 'Permiso municipal de construcción',
-    category: 'permiso'
+    category: 'permiso',
+    conditionalDays: {
+      'Microobra': 730,  // 2 años
+      'Obra Menor': 1095, // 3 años
+      'Obra Media': 1460, // 4 años
+      'Obra Mayor': 2190  // 6 años
+    }
   },
   {
     sectionName: 'Planos aprobados',
@@ -35,6 +44,24 @@ export const DOCUMENT_EXPIRATION_CONFIG: DocumentExpirationConfig[] = [
     description: 'Estudio geotécnico del terreno',
     category: 'informe'
   },
+  {
+    sectionName: 'Consulta DGIUR',
+    expirationDays: 180, // 180 días hábiles (aproximadamente 6 meses)
+    description: 'Consulta a la Dirección General de Interpretación Urbanística',
+    category: 'informe'
+  },
+  {
+    sectionName: 'Permiso de Demolición',
+    expirationDays: 365, // 365 días
+    description: 'Permiso para trabajos de demolición',
+    category: 'permiso'
+  },
+  {
+    sectionName: 'Registro etapa de proyecto',
+    expirationDays: 730, // 2 años para iniciar el permiso de obra
+    description: 'Registro de etapa de proyecto - 2 años para iniciar permiso de obra',
+    category: 'permiso'
+  },
 
   // Documentos de obra
   {
@@ -51,7 +78,7 @@ export const DOCUMENT_EXPIRATION_CONFIG: DocumentExpirationConfig[] = [
   },
   {
     sectionName: 'Demolición',
-    expirationDays: 90, // 3 meses
+    expirationDays: 365, // Actualizado a 365 días según nuevos criterios
     description: 'Documentación de trabajos de demolición',
     category: 'obra'
   },
@@ -103,16 +130,31 @@ export function getExpirationConfig(sectionName: string): DocumentExpirationConf
 }
 
 // Función para obtener los días de vencimiento de una sección
-export function getExpirationDays(sectionName: string): number {
+export function getExpirationDays(sectionName: string, projectType?: string): number {
   const config = getExpirationConfig(sectionName);
-  return config ? config.expirationDays : 365; // Por defecto 1 año
+  if (!config) return 365; // Default fallback
+  
+  // Si hay plazos condicionales y se proporciona el tipo de proyecto
+  if (config.conditionalDays && projectType && config.conditionalDays[projectType]) {
+    return config.conditionalDays[projectType];
+  }
+  
+  return config.expirationDays;
 }
 
 // Función para calcular la fecha de vencimiento basada en la fecha de carga
-export function calculateExpirationDate(uploadDate: string, sectionName: string): string {
+export function calculateExpirationDate(uploadDate: string, sectionName: string, projectType?: string): string {
   const upload = new Date(uploadDate);
-  const expirationDays = getExpirationDays(sectionName);
   
+  // Para Consulta DGIUR, usar días hábiles
+  if (sectionName === 'Consulta DGIUR') {
+    const { calculateDGIURExpirationDate } = require('./utils/date-utils');
+    const expiration = calculateDGIURExpirationDate(upload);
+    return expiration.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+  }
+  
+  // Para otros documentos, usar días calendario
+  const expirationDays = getExpirationDays(sectionName, projectType);
   const expiration = new Date(upload);
   expiration.setDate(expiration.getDate() + expirationDays);
   

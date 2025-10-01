@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     // Validar que el proyecto existe Y pertenece a la empresa del usuario
     const { data: project, error: projectError } = await supabase
       .from('projects')
-      .select('id, company_id, name')
+      .select('id, company_id, name, project_type')
       .eq('id', projectId)
       .eq('company_id', targetCompanyId)
       .single()
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
       console.log(`🔍 Iniciando creación de fecha de vencimiento para "${sectionName}"`)
       console.log(`📊 Datos: projectId=${projectId}, sectionName=${sectionName}, uploadDate=${uploadDate}`)
       
-      const expirationDate = calculateExpirationDate(uploadDate, sectionName); // Usar la fecha de carga del documento
+      const expirationDate = calculateExpirationDate(uploadDate, sectionName, project.project_type); // Usar la fecha de carga del documento y el tipo de proyecto
       
       console.log(`📅 Creando fecha de vencimiento para "${sectionName}": carga=${uploadDate}, vencimiento=${expirationDate}`)
       

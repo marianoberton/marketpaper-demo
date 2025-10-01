@@ -102,3 +102,79 @@ export const getTodayInputValue = (): string => {
   const today = getArgentinaDate();
   return today.toISOString().split('T')[0];
 };
+
+/**
+ * Verifica si una fecha es día hábil (lunes a viernes, excluyendo feriados argentinos básicos)
+ */
+export const isBusinessDay = (date: Date): boolean => {
+  const dayOfWeek = date.getDay();
+  
+  // Sábado (6) y domingo (0) no son días hábiles
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    return false;
+  }
+  
+  // Feriados fijos argentinos básicos (se puede expandir según necesidad)
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1; // getMonth() devuelve 0-11
+  const day = date.getDate();
+  
+  const fixedHolidays = [
+    { month: 1, day: 1 },   // Año Nuevo
+    { month: 5, day: 1 },   // Día del Trabajador
+    { month: 5, day: 25 },  // Revolución de Mayo
+    { month: 7, day: 9 },   // Día de la Independencia
+    { month: 12, day: 25 }, // Navidad
+  ];
+  
+  const isFixedHoliday = fixedHolidays.some(holiday => 
+    holiday.month === month && holiday.day === day
+  );
+  
+  return !isFixedHoliday;
+};
+
+/**
+ * Calcula una fecha agregando días hábiles
+ */
+export const addBusinessDays = (startDate: Date | string, businessDays: number): Date => {
+  const date = typeof startDate === 'string' ? new Date(startDate) : new Date(startDate);
+  let daysAdded = 0;
+  
+  while (daysAdded < businessDays) {
+    date.setDate(date.getDate() + 1);
+    
+    if (isBusinessDay(date)) {
+      daysAdded++;
+    }
+  }
+  
+  return date;
+};
+
+/**
+ * Calcula los días hábiles entre dos fechas
+ */
+export const calculateBusinessDaysBetween = (startDate: Date | string, endDate: Date | string): number => {
+  const start = typeof startDate === 'string' ? new Date(startDate) : new Date(startDate);
+  const end = typeof endDate === 'string' ? new Date(endDate) : new Date(endDate);
+  
+  let businessDays = 0;
+  const currentDate = new Date(start);
+  
+  while (currentDate <= end) {
+    if (isBusinessDay(currentDate)) {
+      businessDays++;
+    }
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  return businessDays;
+};
+
+/**
+ * Calcula la fecha de vencimiento para Consulta DGIUR (180 días hábiles)
+ */
+export const calculateDGIURExpirationDate = (uploadDate: Date | string): Date => {
+  return addBusinessDays(uploadDate, 180);
+};

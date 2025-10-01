@@ -57,7 +57,8 @@ export async function GET(request: NextRequest) {
         projects!inner(
           id,
           name,
-          company_id
+          company_id,
+          project_type
         )
       `)
       .eq('projects.company_id', targetCompanyId)
@@ -86,8 +87,8 @@ export async function GET(request: NextRequest) {
 
     // Transformar los datos y calcular fechas de vencimiento
     const transformedData = filteredData.map((item: any) => {
-      // Calcular fecha de vencimiento usando la configuración por tipo de documento
-      const expirationDateString = calculateExpirationDate(item.upload_date, item.section_name)
+      // Calcular fecha de vencimiento usando la configuración por tipo de documento y tipo de proyecto
+      const expirationDateString = calculateExpirationDate(item.upload_date, item.section_name, item.projects?.project_type)
       
       const daysCalculation = calculateDaysUntilExpiration(expirationDateString)
       
@@ -146,7 +147,7 @@ export async function POST(request: NextRequest) {
     // Validar que el proyecto existe Y pertenece a la empresa del usuario
     const { data: project, error: projectError } = await supabase
       .from('projects')
-      .select('id, company_id, name')
+      .select('id, company_id, name, project_type')
       .eq('id', project_id)
       .eq('company_id', targetCompanyId)
       .single()
@@ -176,7 +177,7 @@ export async function POST(request: NextRequest) {
 
     // Calcular y guardar la fecha de vencimiento
     const { calculateExpirationDate } = await import('@/lib/document-expiration-config')
-    const expirationDate = calculateExpirationDate(upload_date, section_name)
+    const expirationDate = calculateExpirationDate(upload_date, section_name, project.project_type)
     
     const { data: expirationData, error: expirationError } = await supabase
       .from('project_expiration_dates')
