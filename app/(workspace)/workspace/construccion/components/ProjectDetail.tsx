@@ -61,6 +61,7 @@ import ProjectSummaryTab from './ProjectSummaryTab'
 import ProjectStagesTab from './ProjectStagesTab'
 import ProjectTeamTab from './ProjectTeamTab'
 import ProjectDocumentsTab from './ProjectDocumentsTab'
+import ProjectEconomicTab from './ProjectEconomicTab'
 
 
 interface ProjectDetailProps {
@@ -889,7 +890,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
             uploadingImage={uploadingImage}
             currentUploadSection={currentUploadSection}
             dgiurNoDocsRequired={dgiurNoDocsRequired}
-            demolicionNoDoDocsRequired={demolicionNoDocsRequired}
+            demolicionNoDocsRequired={demolicionNoDocsRequired}
             uploadDates={uploadDates}
             onDocumentUploaded={handleDocumentUploaded}
             onImageUploadSuccess={handleImageUploadSuccess}
@@ -931,7 +932,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
             uploadingImage={uploadingImage}
             currentUploadSection={currentUploadSection}
             dgiurNoDocsRequired={dgiurNoDocsRequired}
-            demolicionNoDoDocsRequired={demolicionNoDocsRequired}
+            demolicionNoDocsRequired={demolicionNoDocsRequired}
             expedientes={expedientes}
             uploadDates={uploadDates}
             onDocumentUploaded={handleDocumentUploaded}
@@ -941,6 +942,15 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
             onUploadDateChange={handleUploadDateChange}
             onSaveUploadDate={(requestName: string) => handleSaveUploadDate(requestName, uploadDates[requestName] || '')}
             setTodayUploadDate={setTodayUploadDate}
+          />
+        )}
+
+        {activeTab === 'economic' && (
+          <ProjectEconomicTab 
+            project={project}
+            isEditing={isEditing}
+            editedProject={editedProject}
+            setEditedProject={setEditedProject}
           />
         )}
       </div>

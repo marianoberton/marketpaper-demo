@@ -29,7 +29,7 @@ interface ProjectStagesTabProps {
   uploadingImage?: boolean
   currentUploadSection?: string | null
   dgiurNoDocsRequired?: boolean
-  demolicionNoDoDocsRequired?: boolean
+  demolicionNoDocsRequired?: boolean
   uploadDates?: Record<string, string>
   onDocumentUploaded?: (section: string) => void
   onImageUploadSuccess?: (section: string, url: string) => void
@@ -155,7 +155,7 @@ export default function ProjectStagesTab({
   uploadingImage = false,
   currentUploadSection,
   dgiurNoDocsRequired,
-  demolicionNoDoDocsRequired,
+  demolicionNoDocsRequired,
   uploadDates = {},
   onDocumentUploaded,
   onImageUploadSuccess,
@@ -240,7 +240,7 @@ export default function ProjectStagesTab({
              verificationRequests={verificationRequests}
              dgiurNoDocsRequired={dgiurNoDocsRequired || false}
              setDgiurNoDocsRequired={setDgiurNoDocsRequired || (() => {})}
-             demolicionNoDocsRequired={demolicionNoDoDocsRequired || false}
+             demolicionNoDocsRequired={demolicionNoDocsRequired || false}
              setDemolicionNoDocsRequired={setDemolicionNoDocsRequired || (() => {})}
              uploadDates={uploadDates}
              handleUploadDateChange={onUploadDateChange || (() => {})}

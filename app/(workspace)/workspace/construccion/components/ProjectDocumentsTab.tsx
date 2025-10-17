@@ -14,7 +14,7 @@ interface ProjectDocumentsTabProps {
   uploadingImage: boolean
   currentUploadSection: string | null
   dgiurNoDocsRequired: boolean
-  demolicionNoDoDocsRequired: boolean
+  demolicionNoDocsRequired: boolean
   expedientes: any[]
   uploadDates: Record<string, string>
   onDocumentUploaded: (section: string, file: File) => void
@@ -36,7 +36,7 @@ export default function ProjectDocumentsTab({
   uploadingImage,
   currentUploadSection,
   dgiurNoDocsRequired,
-  demolicionNoDoDocsRequired,
+  demolicionNoDocsRequired,
   expedientes,
   uploadDates,
   onDocumentUploaded,

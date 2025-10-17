@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
-export type TabId = 'summary' | 'stages-documents' | 'team' | 'documents'
+export type TabId = 'summary' | 'stages-documents' | 'team' | 'documents' | 'economic'
 
 interface Tab {
   id: TabId
@@ -15,7 +15,8 @@ const tabs: Tab[] = [
   { id: 'summary', label: 'Resumen', description: 'Estado general y acciones urgentes' },
   { id: 'stages-documents', label: 'Etapas y Documentos', description: 'Gestión de fases del proyecto' },
   { id: 'team', label: 'Equipo del Proyecto', description: 'Directorio de profesionales' },
-  { id: 'documents', label: 'Biblioteca de Documentos', description: 'Archivo central de documentos' }
+  { id: 'documents', label: 'Biblioteca de Documentos', description: 'Archivo central de documentos' },
+  { id: 'economic', label: 'Información Económica', description: 'Gestión financiera y control de costos' }
 ]
 
 interface ProjectTabsProps {

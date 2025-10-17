@@ -1,4 +1,5 @@
 import { WorkspacePageWrapper } from '../workspace-page-wrapper'
+import KnowledgeClientPage from './client-page'
 
 export default async function KnowledgePage({
   searchParams,
@@ -7,10 +8,7 @@ export default async function KnowledgePage({
 }) {
   return (
     <WorkspacePageWrapper searchParams={searchParams}>
-      <div className="p-6">
-        <h1 className="text-2xl font-bold mb-4">Base de Conocimiento</h1>
-        <p className="text-gray-600">Gestión de documentos y conocimiento</p>
-      </div>
+      <KnowledgeClientPage />
     </WorkspacePageWrapper>
   )
-} 
+}

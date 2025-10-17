@@ -36,9 +36,23 @@ export async function GET(request: NextRequest) {
 
     const { data: payments, error } = await supabase
       .from('tax_payments')
-      .select('*')
+      .select(`
+        *,
+        payment_receipts (
+          id,
+          file_url,
+          file_name,
+          receipt_type
+        )
+      `)
       .eq('project_id', projectId)
       .order('payment_date', { ascending: false })
+
+    console.log('Tax payments query result:', { 
+      paymentsCount: payments?.length || 0,
+      firstPayment: payments?.[0],
+      receiptsInFirstPayment: payments?.[0]?.payment_receipts?.length || 0
+    })
 
     if (error) {
       console.error('Database error:', error)
@@ -218,4 +232,4 @@ export async function DELETE(request: NextRequest) {
     console.error('API Error:', error)
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
   }
-} 
+}
