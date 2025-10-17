@@ -1,11 +1,12 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { FileText, Upload, Eye, Download, Trash2, AlertCircle } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { FileText, Upload, Eye, Download, Trash2, AlertCircle, Search } from 'lucide-react'
 
 // Tipo para documentos del proyecto
 interface ProjectDocument {
@@ -48,14 +49,41 @@ export default function ProjectAllDocuments({
   handleDeleteDocument,
   getFileIcon
 }: ProjectAllDocumentsProps) {
+  const [searchTerm, setSearchTerm] = useState('')
+
+  // Filtrar documentos basado en el término de búsqueda
+  const filteredDocuments = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return documents
+    }
+    
+    return documents.filter(doc => 
+      doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doc.section.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  }, [documents, searchTerm])
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <FileText className="h-4 w-4" />
           Todos los Documentos
-          <Badge variant="outline" className="ml-2">{documents.length} documentos</Badge>
+          <Badge variant="outline" className="ml-2">{filteredDocuments.length} de {documents.length} documentos</Badge>
         </CardTitle>
+        
+        {/* Buscador */}
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Input
+            type="text"
+            placeholder="Buscar por nombre de documento o etapa..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        
         <div className="flex gap-2">
           <input
             type="file"
@@ -144,17 +172,27 @@ export default function ProjectAllDocuments({
             <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
             <p>Cargando documentos...</p>
           </div>
-        ) : documents.length === 0 ? (
+        ) : filteredDocuments.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No hay documentos regulares cargados</p>
-            <p className="text-sm mt-2">Use las secciones superiores para gestionar informe de dominio y tasas</p>
+            {searchTerm.trim() ? (
+              <>
+                <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No se encontraron documentos que coincidan con &quot;{searchTerm}&quot;</p>
+                <p className="text-sm mt-2">Intenta con otros términos de búsqueda</p>
+              </>
+            ) : (
+              <>
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No hay documentos regulares cargados</p>
+                <p className="text-sm mt-2">Use las secciones superiores para gestionar informe de dominio y tasas</p>
+              </>
+            )}
           </div>
         ) : (
           <div className="space-y-6">
             {/* Agrupar documentos por sección */}
             {Object.entries(
-              documents.reduce((acc, doc) => {
+              filteredDocuments.reduce((acc, doc) => {
                 if (!acc[doc.section]) {
                   acc[doc.section] = []
                 }

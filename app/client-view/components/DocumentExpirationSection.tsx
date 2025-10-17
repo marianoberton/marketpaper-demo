@@ -6,10 +6,9 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
   Calendar, 
-  AlertTriangle, 
   CheckCircle, 
-  Clock,
-  FileText
+  FileText,
+  AlertTriangle
 } from 'lucide-react'
 
 interface ExpirationData {
@@ -24,44 +23,6 @@ interface DocumentExpirationSectionProps {
   projectId: string
 }
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'expired':
-      return 'bg-red-100 text-red-800 border-red-200'
-    case 'critical':
-      return 'bg-orange-100 text-orange-800 border-orange-200'
-    case 'warning':
-      return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-    default:
-      return 'bg-green-100 text-green-800 border-green-200'
-  }
-}
-
-const getStatusIcon = (status: string) => {
-  switch (status) {
-    case 'expired':
-      return <AlertTriangle className="h-4 w-4" />
-    case 'critical':
-      return <AlertTriangle className="h-4 w-4" />
-    case 'warning':
-      return <Clock className="h-4 w-4" />
-    default:
-      return <CheckCircle className="h-4 w-4" />
-  }
-}
-
-const getStatusText = (status: string, daysRemaining: number) => {
-  if (status === 'expired') {
-    return `Vencido hace ${Math.abs(daysRemaining)} días`
-  } else if (daysRemaining === 0) {
-    return 'Vence hoy'
-  } else if (daysRemaining === 1) {
-    return 'Vence mañana'
-  } else {
-    return `${daysRemaining} días restantes`
-  }
-}
-
 export default function DocumentExpirationSection({ projectId }: DocumentExpirationSectionProps) {
   const [expirations, setExpirations] = useState<ExpirationData[]>([])
   const [loading, setLoading] = useState(true)
@@ -72,11 +33,12 @@ export default function DocumentExpirationSection({ projectId }: DocumentExpirat
       try {
         const supabase = createClient()
         
-        // Obtener fechas de vencimiento del proyecto
+        // Obtener fechas de vencimiento del proyecto - solo documentos vigentes (días > 0)
         const { data, error } = await supabase
           .from('project_expiration_summary')
           .select('*')
           .eq('project_id', projectId)
+          .gt('days_remaining', 0) // Solo documentos con días restantes > 0 (vigentes)
           .order('days_remaining', { ascending: true })
 
         if (error) {
@@ -85,7 +47,13 @@ export default function DocumentExpirationSection({ projectId }: DocumentExpirat
           return
         }
 
-        setExpirations(data || [])
+        // Filtro adicional en el cliente para asegurar que solo se muestren días positivos
+        const validExpirations = (data || []).filter(exp => exp.days_remaining > 0)
+        
+        console.log('Datos recibidos:', data)
+        console.log('Datos filtrados:', validExpirations)
+        
+        setExpirations(validExpirations)
       } catch (err) {
         console.error('Error:', err)
         setError('Error al cargar las fechas de vencimiento')
@@ -101,9 +69,9 @@ export default function DocumentExpirationSection({ projectId }: DocumentExpirat
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-600"></div>
-        <span className="ml-2 text-slate-600">Cargando vigencias...</span>
+      <div className="flex items-center justify-center py-4">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1B293F]"></div>
+        <span className="ml-2 text-gray-600 text-sm">Cargando vigencias...</span>
       </div>
     )
   }
@@ -121,56 +89,39 @@ export default function DocumentExpirationSection({ projectId }: DocumentExpirat
 
   if (expirations.length === 0) {
     return (
-      <div className="text-center py-8">
-        <FileText className="h-12 w-12 text-slate-400 mx-auto mb-3" />
-        <h3 className="text-lg font-medium text-slate-900 mb-2">No hay fechas de vencimiento registradas</h3>
-        <p className="text-slate-600">Las fechas de vencimiento de los documentos aparecerán aquí cuando estén disponibles.</p>
+      <div className="text-center py-6">
+        <FileText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+        <p className="text-gray-600 text-sm">No hay documentos vigentes registrados.</p>
       </div>
     )
   }
 
-  // Separar por estado para mejor organización
-  const expiredDocs = expirations.filter(exp => exp.status === 'expired')
-  const criticalDocs = expirations.filter(exp => exp.status === 'critical')
-  const warningDocs = expirations.filter(exp => exp.status === 'warning')
-  const normalDocs = expirations.filter(exp => exp.status === 'normal')
-
   return (
-    <div className="space-y-6">
-      {/* Resumen de estado */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-red-600">{expiredDocs.length}</div>
-          <div className="text-sm text-red-600">Vencidos</div>
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
+        <div className="p-1.5 rounded-full bg-green-100">
+          <CheckCircle className="h-5 w-5 text-green-600" />
         </div>
-        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-orange-600">{criticalDocs.length}</div>
-          <div className="text-sm text-orange-600">Críticos</div>
-        </div>
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-yellow-600">{warningDocs.length}</div>
-          <div className="text-sm text-yellow-600">Advertencia</div>
-        </div>
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-green-600">{normalDocs.length}</div>
-          <div className="text-sm text-green-600">Vigentes</div>
+        <div>
+          <h3 className="font-medium text-green-800 text-sm">Documentos en Regla</h3>
+          <p className="text-xs text-green-600">Todos los documentos mostrados están vigentes</p>
         </div>
       </div>
 
-      {/* Lista de documentos */}
-      <div className="space-y-3">
+      {/* Lista de documentos vigentes */}
+      <div className="space-y-2">
         {expirations.map((expiration) => (
           <div
             key={expiration.id}
-            className="flex items-center justify-between p-4 bg-white border rounded-lg hover:shadow-md transition-shadow"
+            className="flex items-center justify-between p-3 bg-white rounded-lg border border-green-200 shadow-sm"
           >
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-full ${getStatusColor(expiration.status)}`}>
-                {getStatusIcon(expiration.status)}
+              <div className="p-1.5 rounded-full bg-green-100">
+                <CheckCircle className="h-4 w-4 text-green-600" />
               </div>
               <div>
-                <h4 className="font-medium text-slate-900">{expiration.section_name}</h4>
-                <p className="text-sm text-slate-600">
+                <h4 className="font-medium text-gray-900 text-sm">{expiration.section_name}</h4>
+                <p className="text-xs text-gray-600">
                   Vence: {new Date(expiration.expiration_date).toLocaleDateString('es-AR')}
                 </p>
               </div>
@@ -178,24 +129,20 @@ export default function DocumentExpirationSection({ projectId }: DocumentExpirat
             <div className="text-right">
               <Badge 
                 variant="outline" 
-                className={`${getStatusColor(expiration.status)} border`}
+                className={`text-xs font-semibold px-3 py-1 ${
+                  expiration.days_remaining <= 30 
+                    ? 'bg-red-50 text-red-700 border-red-300' 
+                    : expiration.days_remaining <= 90 
+                    ? 'bg-yellow-50 text-yellow-700 border-yellow-300' 
+                    : 'bg-green-50 text-green-700 border-green-300'
+                }`}
               >
-                {getStatusText(expiration.status, expiration.days_remaining)}
+                {expiration.days_remaining} días restantes
               </Badge>
             </div>
           </div>
         ))}
       </div>
-
-      {/* Alertas importantes */}
-      {(expiredDocs.length > 0 || criticalDocs.length > 0) && (
-        <Alert className="border-red-200 bg-red-50">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription className="text-red-800">
-            <strong>Atención:</strong> Hay documentos vencidos o próximos a vencer que requieren renovación inmediata.
-          </AlertDescription>
-        </Alert>
-      )}
     </div>
   )
 }
