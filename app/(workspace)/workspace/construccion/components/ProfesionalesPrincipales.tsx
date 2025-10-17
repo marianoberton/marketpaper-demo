@@ -26,8 +26,8 @@ export default function ProfesionalesPrincipales({
   
   const handleProfesionalChange = (index: number, field: keyof ProjectProfessional, value: string): void => {
     const allProfessionals = editedProject.profesionales || []
-    const principalProfessionals = allProfessionals.filter(p => principalRoles.includes(p.role))
-    const otherProfessionals = allProfessionals.filter(p => !principalRoles.includes(p.role))
+    const principalProfessionals = allProfessionals.filter(p => p.role && principalRoles.includes(p.role))
+    const otherProfessionals = allProfessionals.filter(p => !p.role || !principalRoles.includes(p.role))
     
     const updatedPrincipalProfessionals = principalProfessionals.map((prof, i) => 
       i === index ? { ...prof, [field]: value } : prof
@@ -41,12 +41,13 @@ export default function ProfesionalesPrincipales({
 
   const addProfesional = (): void => {
     const allProfessionals = editedProject.profesionales || []
-    const otherProfessionals = allProfessionals.filter(p => !principalRoles.includes(p.role))
-    const principalProfessionals = allProfessionals.filter(p => principalRoles.includes(p.role))
+    const otherProfessionals = allProfessionals.filter(p => !p.role || !principalRoles.includes(p.role))
+    const principalProfessionals = allProfessionals.filter(p => p.role && principalRoles.includes(p.role))
     
     const newProfessional: ProjectProfessional = { 
       name: '', 
-      role: 'Estructuralista' as ProjectProfessional['role'] 
+      role: 'Estructuralista' as ProjectProfessional['role'],
+      roles: ['Estructuralista']
     }
     
     setEditedProject(prev => ({
@@ -57,8 +58,8 @@ export default function ProfesionalesPrincipales({
 
   const removeProfesional = (index: number): void => {
     const allProfessionals = editedProject.profesionales || []
-    const principalProfessionals = allProfessionals.filter(p => principalRoles.includes(p.role))
-    const otherProfessionals = allProfessionals.filter(p => !principalRoles.includes(p.role))
+    const principalProfessionals = allProfessionals.filter(p => p.role && principalRoles.includes(p.role))
+    const otherProfessionals = allProfessionals.filter(p => !p.role || !principalRoles.includes(p.role))
     
     const updatedPrincipalProfessionals = principalProfessionals.filter((_, i) => i !== index)
     
@@ -68,8 +69,8 @@ export default function ProfesionalesPrincipales({
     }))
   }
 
-  const principalProfessionals = (project.profesionales || []).filter(p => principalRoles.includes(p.role))
-  const editedPrincipalProfessionals = (editedProject.profesionales || []).filter(p => principalRoles.includes(p.role))
+  const principalProfessionals = (project.profesionales || []).filter(p => p.role && principalRoles.includes(p.role))
+  const editedPrincipalProfessionals = (editedProject.profesionales || []).filter(p => p.role && principalRoles.includes(p.role))
 
   return (
     <Card>
@@ -101,8 +102,8 @@ export default function ProfesionalesPrincipales({
                       Especialidad/Rol
                     </Label>
                     <Select
-                      value={profesional.role}
-                      onValueChange={(value) => handleProfesionalChange(index, 'role', value as ProjectProfessional['role'])}
+                      value={profesional.role || ''}
+                      onValueChange={(value) => handleProfesionalChange(index, 'role', value)}
                     >
                       <SelectTrigger>
                         <SelectValue />

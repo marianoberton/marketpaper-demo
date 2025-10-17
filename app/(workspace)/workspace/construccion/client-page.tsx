@@ -43,8 +43,8 @@ const mockProjects: Project[] = [
     end_date: '2024-12-15',
     budget: 8500000,
     profesionales: [
-      { name: 'Ing. Carlos López', role: 'Estructuralista' },
-      { name: 'Ing. Ana García', role: 'Instalación Electrica' }
+      { name: 'Ing. Carlos López', role: 'Estructuralista', roles: ['Estructuralista'] },
+      { name: 'Ing. Ana García', role: 'Instalación Electrica', roles: ['Instalación Electrica'] }
     ],
     // Compatibilidad temporal
     architect: 'Arq. María González',
@@ -76,9 +76,9 @@ const mockProjects: Project[] = [
     end_date: '2025-12-31',
     budget: 25000000,
     profesionales: [
-      { name: 'Ing. Ana Martínez', role: 'Estructuralista' },
-      { name: 'Ing. Pedro Ruiz', role: 'Instalación Sanitaria' },
-      { name: 'Téc. Luis Castro', role: 'Instalación Electrica' }
+      { name: 'Ing. Ana Martínez', role: 'Estructuralista', roles: ['Estructuralista'] },
+      { name: 'Ing. Pedro Ruiz', role: 'Instalación Sanitaria', roles: ['Instalación Sanitaria'] },
+      { name: 'Téc. Luis Castro', role: 'Instalación Electrica', roles: ['Instalación Electrica'] }
     ],
     // Compatibilidad temporal
     architect: 'Arq. Roberto Silva',
@@ -110,9 +110,9 @@ const mockProjects: Project[] = [
     end_date: '2024-02-29',
     budget: 18000000,
     profesionales: [
-      { name: 'Ing. Miguel Torres', role: 'Estructuralista' },
-      { name: 'Arq. Sofia Morales', role: 'Proyectista' },
-      { name: 'Ing. Roberto Díaz', role: 'Instalación e incendios' }
+      { name: 'Ing. Miguel Torres', role: 'Estructuralista', roles: ['Estructuralista'] },
+      { name: 'Arq. Sofia Morales', role: 'Proyectista', roles: ['Proyectista'] },
+      { name: 'Ing. Roberto Díaz', role: 'Instalación e incendios', roles: ['Instalación e incendios'] }
     ],
     // Compatibilidad temporal
     architect: 'Arq. Laura Fernández',
@@ -511,6 +511,17 @@ export default function ConstruccionClientPage() {
       }
       if (updatedProject.expedientes !== undefined) {
         updateData.expedientes = updatedProject.expedientes
+      }
+      
+      // Campos del informe de inhibición
+      if (updatedProject.inhibition_report_file_url !== undefined) {
+        updateData.inhibition_report_file_url = updatedProject.inhibition_report_file_url
+      }
+      if (updatedProject.inhibition_report_upload_date !== undefined) {
+        updateData.inhibition_report_upload_date = updatedProject.inhibition_report_upload_date
+      }
+      if (updatedProject.inhibition_report_notes !== undefined) {
+        updateData.inhibition_report_notes = updatedProject.inhibition_report_notes
       }
 
       console.log('Sending update data:', updateData)

@@ -4,7 +4,7 @@ import { Project } from '@/lib/construction'
 import ProjectCoverImage from './ProjectCoverImage'
 import ProjectGeneralInfo from './ProjectGeneralInfo'
 import ClientInfoCard from './ClientInfoCard'
-import ProjectDetailsCard from './ProjectDetailsCard'
+import CurrentExpensesCard from './CurrentExpensesCard'
 import { DeadlineClientPanel } from './DeadlineClientPanel'
 
 interface ProjectSummaryTabProps {
@@ -80,13 +80,8 @@ export default function ProjectSummaryTab({
           {/* Fechas de Carga de Documentos */}
           <DeadlineClientPanel project={project} />
 
-          {/* Detalles del Proyecto */}
-          <ProjectDetailsCard
-            project={project}
-            isEditing={isEditing}
-            editedProject={editedProject}
-            setEditedProject={setEditedProject || (() => {})}
-          />
+          {/* Información Económica */}
+          <CurrentExpensesCard project={project} />
         </div>
       </div>
     </div>

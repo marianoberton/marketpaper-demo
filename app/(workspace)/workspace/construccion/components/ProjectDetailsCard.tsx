@@ -45,40 +45,6 @@ export default function ProjectDetailsCard({
               <p className="font-semibold text-lg">${project.budget?.toLocaleString()}</p>
             )}
           </div>
-          
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Fecha de inicio</Label>
-            {isEditing ? (
-              <Input
-                type="date"
-                value={editedProject.start_date || ''}
-                onChange={(e) => setEditedProject(prev => ({
-                  ...prev,
-                  start_date: e.target.value
-                }))}
-                className="mt-1"
-              />
-            ) : (
-              <p className="font-semibold">{project.start_date ? new Date(project.start_date).toLocaleDateString() : '-'}</p>
-            )}
-          </div>
-          
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Fecha estimada de fin</Label>
-            {isEditing ? (
-              <Input
-                type="date"
-                value={editedProject.end_date || ''}
-                onChange={(e) => setEditedProject(prev => ({
-                  ...prev,
-                  end_date: e.target.value
-                }))}
-                className="mt-1"
-              />
-            ) : (
-              <p className="font-semibold">{project.end_date ? new Date(project.end_date).toLocaleDateString() : '-'}</p>
-            )}
-          </div>
         </div>
       </CardContent>
     </Card>

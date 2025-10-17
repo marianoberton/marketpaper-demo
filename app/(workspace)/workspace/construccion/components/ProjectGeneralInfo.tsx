@@ -219,22 +219,6 @@ export default function ProjectGeneralInfo({
                   <p className="font-semibold">{project.project_usage || project.project_use}</p>
                 )}
               </div>
-              
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Estado del trámite</Label>
-                <div className="mt-1">
-                  <Badge className={`${getStatusColor(project.permit_status || '')} text-white`}>
-                    {project.permit_status || 'Pendiente'}
-                  </Badge>
-                </div>
-              </div>
-              
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Estado de la Boleta</Label>
-                <div className="mt-1">
-                  <Badge className="bg-green-500 text-white">Pagado</Badge>
-                </div>
-              </div>
             </div>
           </div>
         </CardContent>

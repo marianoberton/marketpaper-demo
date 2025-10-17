@@ -296,7 +296,7 @@ export default function CreateProjectModal({
   }
 
   // Funciones para manejar profesionales
-  const handleProfesionalChange = (index: number, field: keyof ProjectProfessional, value: string) => {
+  const handleProfesionalChange = (index: number, field: keyof ProjectProfessional, value: string | string[]) => {
     setFormData(prev => {
       const newProfesionales = [...(prev.profesionales || [])]
       newProfesionales[index] = {
@@ -685,8 +685,8 @@ export default function CreateProjectModal({
                           Especialidad/Rol
                         </Label>
                         <Select
-                          value={profesional.role}
-                          onValueChange={(value) => handleProfesionalChange(index, 'role', value as ProjectProfessional['role'])}
+                          value={profesional.role || ''}
+                          onValueChange={(value) => handleProfesionalChange(index, 'role', value)}
                         >
                           <SelectTrigger>
                             <SelectValue />
@@ -743,26 +743,6 @@ export default function CreateProjectModal({
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="start_date">Fecha de Inicio</Label>
-                  <Input
-                    id="start_date"
-                    type="date"
-                    value={formData.start_date}
-                    onChange={(e) => handleInputChange('start_date', e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="end_date">Fecha Estimada de Finalización</Label>
-                  <Input
-                    id="end_date"
-                    type="date"
-                    value={formData.end_date}
-                    onChange={(e) => handleInputChange('end_date', e.target.value)}
-                  />
-                </div>
-
                 <div className="md:col-span-2">
                   <Label>Expedientes</Label>
                   <ExpedientesManager

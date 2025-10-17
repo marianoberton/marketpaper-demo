@@ -1,9 +1,10 @@
 import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { FileText, Shield } from 'lucide-react'
+import { FileText, Shield, AlertCircle } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import DomainReportSection from './DomainReportSection'
 import InsurancePolicySection from './InsurancePolicySection'
+import InhibitionReportSection from './InhibitionReportSection'
 
 interface OtherDocumentsProps {
   project: any
@@ -26,8 +27,8 @@ export default function OtherDocuments({ project, onProjectUpdate }: OtherDocume
         </div>
       </div>
 
-      {/* Layout de 2 columnas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Layout de 3 columnas */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {/* Columna 1: Informe de Dominio */}
         <Card className="h-fit">
           <CardHeader className="pb-4">
@@ -60,6 +61,25 @@ export default function OtherDocuments({ project, onProjectUpdate }: OtherDocume
           </CardHeader>
           <CardContent>
             <InsurancePolicySection 
+              project={project} 
+              onProjectUpdate={onProjectUpdate}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Columna 3: Informe de Inhibición */}
+        <Card className="h-fit">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <AlertCircle className="h-5 w-5 text-blue-600" />
+              Informe de Inhibición
+            </CardTitle>
+            <p className="text-sm text-gray-600">
+              Certificación de ausencia de inhibiciones legales
+            </p>
+          </CardHeader>
+          <CardContent>
+            <InhibitionReportSection 
               project={project} 
               onProjectUpdate={onProjectUpdate}
             />

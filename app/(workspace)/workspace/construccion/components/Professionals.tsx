@@ -130,8 +130,8 @@ export default function Professionals({
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-full ${getRoleColor(professional.role)}`}>
-              {getRoleIcon(professional.role)}
+            <div className={`p-2 rounded-full ${getRoleColor(professional.role || 'Estructuralista')}`}>
+              {getRoleIcon(professional.role || 'Estructuralista')}
             </div>
             <div>
               {editingProfessional === index ? (
@@ -143,8 +143,8 @@ export default function Professionals({
               ) : (
                 <h3 className="font-semibold text-gray-900">{professional.name}</h3>
               )}
-              <Badge className={`text-xs ${getRoleColor(professional.role)}`}>
-                {professional.role}
+              <Badge className={`text-xs ${getRoleColor(professional.role || 'Estructuralista')}`}>
+                {professional.role || 'Estructuralista'}
               </Badge>
             </div>
           </div>

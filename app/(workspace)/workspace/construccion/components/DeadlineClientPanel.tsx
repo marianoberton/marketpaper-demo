@@ -72,7 +72,7 @@ export function DeadlineClientPanel({ project, className = '' }: DeadlineClientP
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Fechas de Carga de Documentos
+            Vigencia de documentos
           </CardTitle>
         </div>
       </CardHeader>

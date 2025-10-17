@@ -1,6 +1,19 @@
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import ClientViewContent from './client-view-content'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Plataforma Inted - Vista del Cliente',
+  description: 'Información detallada de tus proyectos',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' }
+    ]
+  }
+}
 
 export default async function ClientViewPage() {
   const supabase = await createClient()

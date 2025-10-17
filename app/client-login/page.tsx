@@ -5,6 +5,19 @@ import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import Link from 'next/link'
 import Image from 'next/image'
+import { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Plataforma Inted - Portal del Cliente',
+  description: 'Accede a la información de tu proyecto',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' }
+    ]
+  }
+}
 
 export default async function ClientLoginPage({
   searchParams,
@@ -61,7 +74,7 @@ export default async function ClientLoginPage({
 
           <Button 
             formAction={login} 
-            className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors duration-200"
+            className="w-full h-11 text-white font-medium transition-colors duration-200 bg-[#1B293F] hover:bg-[#0F1A28]"
           >
             Acceder al Portal
           </Button>

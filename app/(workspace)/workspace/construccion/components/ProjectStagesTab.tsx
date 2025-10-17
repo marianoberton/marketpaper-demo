@@ -258,23 +258,10 @@ export default function ProjectStagesTab({
       </Card>
 
       {/* Sección 3: Otros Documentos */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Otros Documentos
-          </CardTitle>
-          <p className="text-gray-600 text-sm">
-            Documentos adicionales y expedientes del proyecto
-          </p>
-        </CardHeader>
-        <CardContent>
-          <OtherDocuments
-            project={project}
-            onProjectUpdate={handleProjectReload}
-          />
-        </CardContent>
-      </Card>
+      <OtherDocuments
+        project={project}
+        onProjectUpdate={handleProjectReload}
+      />
     </div>
   )
 }

@@ -80,6 +80,7 @@ export default function ProjectAllDocuments({
               {/* Documentos especiales */}
               <SelectItem value="Informe de Dominio">Informe de Dominio</SelectItem>
               <SelectItem value="Póliza de Seguro">Póliza de Seguro</SelectItem>
+              <SelectItem value="Informe de Inhibición">Informe de Inhibición</SelectItem>
               
               {/* Etapas del proyecto */}
               <SelectItem value="Prefactibilidad del proyecto">Prefactibilidad del proyecto</SelectItem>

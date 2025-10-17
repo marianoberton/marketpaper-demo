@@ -229,6 +229,7 @@ export async function PUT(request: NextRequest) {
       'insurance_policy_file_url', 'insurance_policy_issue_date', 
       'insurance_policy_expiry_date', 'insurance_policy_is_valid', 'insurance_policy_notes',
       'insurance_policy_number', 'insurance_company',
+      'inhibition_report_file_url', 'inhibition_report_upload_date', 'inhibition_report_notes',
       // Campos de compatibilidad temporal
       'architect', 'project_use', 'inspector_name'
     ]

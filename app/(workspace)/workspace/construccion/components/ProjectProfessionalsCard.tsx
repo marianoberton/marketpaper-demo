@@ -5,8 +5,87 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { User, Building, Plus, X } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { User, Building, Plus, X, ChevronDown } from 'lucide-react'
 import { Project, ProjectProfessional } from '@/lib/construction'
+import { useState } from 'react'
+
+const AVAILABLE_ROLES = [
+  'Estructuralista',
+  'Proyectista',
+  'Instalación Eléctrica',
+  'Instalación Sanitaria',
+  'Instalación e Incendios',
+  'Instalación e Elevadores',
+  'Instalación Sala de Máquinas',
+  'Instalación Ventilación Mecánica',
+  'Instalación Ventilación Electromecánica',
+  'Agrimensor'
+]
+
+interface MultiRoleSelectorProps {
+  selectedRoles: string[]
+  onRolesChange: (roles: string[]) => void
+}
+
+function MultiRoleSelector({ selectedRoles, onRolesChange }: MultiRoleSelectorProps) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  const toggleRole = (role: string) => {
+    if (selectedRoles.includes(role)) {
+      onRolesChange(selectedRoles.filter(r => r !== role))
+    } else {
+      onRolesChange([...selectedRoles, role])
+    }
+  }
+
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={isOpen}
+          className="h-8 justify-between text-left font-normal"
+        >
+          <div className="flex flex-wrap gap-1 flex-1">
+            {selectedRoles.length === 0 ? (
+              <span className="text-muted-foreground">Seleccionar roles...</span>
+            ) : selectedRoles.length === 1 ? (
+              <span>{selectedRoles[0]}</span>
+            ) : (
+              <span>{selectedRoles.length} roles seleccionados</span>
+            )}
+          </div>
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-0" align="start">
+        <div className="p-2">
+          <div className="text-sm font-medium mb-2">Seleccionar roles:</div>
+          <div className="space-y-2 max-h-60 overflow-y-auto">
+            {AVAILABLE_ROLES.map((role) => (
+              <div key={role} className="flex items-center space-x-2">
+                <Checkbox
+                  id={role}
+                  checked={selectedRoles.includes(role)}
+                  onCheckedChange={() => toggleRole(role)}
+                />
+                <label
+                  htmlFor={role}
+                  className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  {role}
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
 
 interface ProjectProfessionalsCardProps {
   project: Project
@@ -23,12 +102,24 @@ export default function ProjectProfessionalsCard({
 }: ProjectProfessionalsCardProps) {
   
   // Funciones para manejar profesionales
-  const handleProfesionalChange = (index: number, field: 'name' | 'role', value: string) => {
+  const handleProfesionalChange = (index: number, field: 'name' | 'roles', value: string | string[]) => {
     setEditedProject(prev => {
       const newProfesionales = [...(prev.profesionales || [])]
-      newProfesionales[index] = {
-        ...newProfesionales[index],
-        [field]: value
+      if (field === 'roles') {
+        const validRoles = (value as string[]).filter(role => 
+          ['Estructuralista', 'Proyectista', 'Instalación Electrica', 'Instalación Sanitaria', 'Instalación e incendios', 'Instalación e elevadores', 'Instalación Sala de maquinas', 'Instalación Ventilación Mecanica', 'Instalación ventilación electromecánica', 'Agrimensor'].includes(role)
+        ) as ProjectProfessional['roles']
+        
+        newProfesionales[index] = {
+          ...newProfesionales[index],
+          roles: validRoles,
+          role: validRoles[0] || 'Estructuralista' // Mantener compatibilidad
+        }
+      } else if (field === 'name') {
+        newProfesionales[index] = {
+          ...newProfesionales[index],
+          name: value as string
+        }
       }
       return {
         ...prev,
@@ -40,7 +131,11 @@ export default function ProjectProfessionalsCard({
   const addProfesional = () => {
     setEditedProject(prev => ({
       ...prev,
-      profesionales: [...(prev.profesionales || []), { name: '', role: 'Estructuralista' as const }]
+      profesionales: [...(prev.profesionales || []), { 
+        name: '', 
+        roles: ['Estructuralista'], 
+        role: 'Estructuralista' // Mantener compatibilidad
+      }]
     }))
   }
 
@@ -73,9 +168,6 @@ export default function ProjectProfessionalsCard({
                   {project.director_obra || project.architect || 'No asignado'}
                 </p>
               </div>
-              <Badge variant="default" className="text-xs">
-                Principal
-              </Badge>
             </div>
           </div>
 
@@ -92,9 +184,6 @@ export default function ProjectProfessionalsCard({
                     {project.builder}
                   </p>
                 </div>
-                <Badge variant="secondary" className="text-xs">
-                  Empresa
-                </Badge>
               </div>
             </div>
           )}
@@ -125,33 +214,17 @@ export default function ProjectProfessionalsCard({
                       <User className="h-4 w-4 text-green-600" />
                     </div>
                     <div className="flex-1 space-y-2">
-                      <Input
-                        placeholder="Nombre del profesional"
-                        value={profesional.name}
-                        onChange={(e) => handleProfesionalChange(index, 'name', e.target.value)}
-                        className="h-8"
-                      />
-                      <Select
-                        value={profesional.role}
-                        onValueChange={(value) => handleProfesionalChange(index, 'role', value)}
-                      >
-                        <SelectTrigger className="h-8">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Estructuralista">Estructuralista</SelectItem>
-                          <SelectItem value="Proyectista">Proyectista</SelectItem>
-                          <SelectItem value="Instalación Electrica">Instalación Eléctrica</SelectItem>
-                          <SelectItem value="Instalación Sanitaria">Instalación Sanitaria</SelectItem>
-                          <SelectItem value="Instalación e incendios">Instalación e Incendios</SelectItem>
-                          <SelectItem value="Instalación e elevadores">Instalación e Elevadores</SelectItem>
-                          <SelectItem value="Instalación Sala de maquinas">Instalación Sala de Máquinas</SelectItem>
-                          <SelectItem value="Instalación Ventilación Mecanica">Instalación Ventilación Mecánica</SelectItem>
-                          <SelectItem value="Instalación ventilación electromecánica">Instalación Ventilación Electromecánica</SelectItem>
-                          <SelectItem value="Agrimensor">Agrimensor</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                        <Input
+                          placeholder="Nombre del profesional"
+                          value={profesional.name}
+                          onChange={(e) => handleProfesionalChange(index, 'name', e.target.value)}
+                          className="h-8"
+                        />
+                        <MultiRoleSelector
+                          selectedRoles={profesional.roles || [profesional.role]}
+                          onRolesChange={(roles) => handleProfesionalChange(index, 'roles', roles)}
+                        />
+                      </div>
                     <Button
                       size="sm"
                       variant="ghost"
@@ -186,13 +259,14 @@ export default function ProjectProfessionalsCard({
                         </div>
                         <div className="flex-1">
                           <p className="text-sm font-medium">{profesional.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {profesional.role}
-                          </p>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {(profesional.roles || [profesional.role]).map((role, roleIndex) => (
+                              <Badge key={roleIndex} variant="secondary" className="text-xs">
+                                {role}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
-                        <Badge variant="outline" className="text-xs">
-                          Especialista
-                        </Badge>
                       </div>
                     ))}
                   </div>

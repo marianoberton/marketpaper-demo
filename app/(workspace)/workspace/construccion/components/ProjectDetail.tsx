@@ -831,7 +831,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
   const addProfesional = () => {
     setEditedProject(prev => ({
       ...prev,
-      profesionales: [...(prev.profesionales || []), { name: '', role: 'Estructuralista' as const }]
+      profesionales: [...(prev.profesionales || []), { name: '', role: 'Estructuralista' as const, roles: ['Estructuralista'] }]
     }))
   }
 

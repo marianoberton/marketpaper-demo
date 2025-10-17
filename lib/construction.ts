@@ -10,7 +10,8 @@ export type ClientReferente = {
 export type ProjectProfessional = {
   id?: string
   name: string
-  role: 'Estructuralista' | 'Proyectista' | 'Instalación Electrica' | 'Instalación Sanitaria' | 'Instalación e incendios' | 'Instalación e elevadores' | 'Instalación Sala de maquinas' | 'Instalación Ventilación Mecanica' | 'Instalación ventilación electromecánica' | 'Agrimensor'
+  roles: ('Estructuralista' | 'Proyectista' | 'Instalación Electrica' | 'Instalación Sanitaria' | 'Instalación e incendios' | 'Instalación e elevadores' | 'Instalación Sala de maquinas' | 'Instalación Ventilación Mecanica' | 'Instalación ventilación electromecánica' | 'Agrimensor')[] // Array de roles/especialidades
+  role?: 'Estructuralista' | 'Proyectista' | 'Instalación Electrica' | 'Instalación Sanitaria' | 'Instalación e incendios' | 'Instalación e elevadores' | 'Instalación Sala de maquinas' | 'Instalación Ventilación Mecanica' | 'Instalación ventilación electromecánica' | 'Agrimensor' // Mantenemos por compatibilidad
 }
 
 export type Client = {
@@ -92,6 +93,11 @@ export type Project = {
   insurance_policy_notes?: string | null
   insurance_policy_number?: string | null
   insurance_company?: string | null
+  
+  // Informe de Inhibición
+  inhibition_report_file_url?: string | null
+  inhibition_report_upload_date?: string | null
+  inhibition_report_notes?: string | null
   
   // Tasas y Gravámenes Gubernamentales
   projected_total_cost?: number | null
@@ -1065,6 +1071,46 @@ export async function getSurplusValueZones(): Promise<SurplusValueZone[]> {
   }
 
   return data as SurplusValueZone[]
+}
+
+// =============================================
+// FUNCIONES PARA INFORME DE INHIBICIÓN
+// =============================================
+
+export function calculateInhibitionReportDaysRemaining(uploadDate: string | null): number | null {
+  if (!uploadDate) return null
+  const upload = new Date(uploadDate)
+  const expiry = new Date(upload.getTime() + (90 * 24 * 60 * 60 * 1000)) // 90 días
+  const now = new Date()
+  const diffTime = expiry.getTime() - now.getTime()
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  return diffDays
+}
+
+export function isInhibitionReportValid(uploadDate: string | null): boolean {
+  if (!uploadDate) return false
+  const daysRemaining = calculateInhibitionReportDaysRemaining(uploadDate)
+  return daysRemaining !== null && daysRemaining > 0
+}
+
+export function formatInhibitionReportStatus(uploadDate: string | null): {
+  status: string
+  message: string
+  daysRemaining?: number | null
+} {
+  if (!uploadDate) {
+    return { status: 'Pendiente', message: 'No cargado' }
+  }
+  
+  const daysRemaining = calculateInhibitionReportDaysRemaining(uploadDate)
+  
+  if (daysRemaining === null || daysRemaining <= 0) {
+    return { status: 'Vencido', message: 'Vencido', daysRemaining: 0 }
+  } else if (daysRemaining <= 15) {
+    return { status: 'Por vencer', message: `Vence en ${daysRemaining} días`, daysRemaining }
+  } else {
+    return { status: 'Vigente', message: `Vigente (${daysRemaining} días)`, daysRemaining }
+  }
 }
 
  
