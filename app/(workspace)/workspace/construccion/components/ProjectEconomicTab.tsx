@@ -37,19 +37,99 @@ import TemporalAnalysis from './TemporalAnalysis'
 
 // Componente simple para mostrar recibos
 const ReceiptViewModal = ({ isOpen, onClose, receiptUrl }: { isOpen: boolean, onClose: () => void, receiptUrl: string }) => {
+  const [isLoading, setIsLoading] = useState(true)
+  
   if (!isOpen) return null
+  
+  const isPDF = receiptUrl.toLowerCase().includes('.pdf') || receiptUrl.includes('application/pdf')
+  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(receiptUrl)
+  
+  const handleDownload = () => {
+    const link = document.createElement('a')
+    link.href = receiptUrl
+    link.download = 'comprobante.pdf'
+    link.click()
+  }
+
+  const handleOpenExternal = () => {
+    window.open(receiptUrl, '_blank')
+  }
   
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-4xl max-h-[90vh] overflow-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Comprobante de Pago</h3>
-          <Button variant="outline" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
-          </Button>
+      <div className="bg-white rounded-lg p-0 max-w-[95vw] w-[95vw] max-h-[90vh] overflow-hidden">
+        <div className="p-6 pb-4 border-b">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Comprobante de Pago</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleDownload}>
+                <FileText className="h-4 w-4 mr-2" />
+                Descargar
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleOpenExternal}>
+                <FileText className="h-4 w-4 mr-2" />
+                Abrir
+              </Button>
+              <Button variant="outline" size="sm" onClick={onClose}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
-        <div className="flex justify-center">
-          <img src={receiptUrl} alt="Comprobante" className="max-w-full max-h-[70vh] object-contain" />
+
+        <div className="flex-1 p-6 overflow-auto">
+          {isLoading && (
+            <div className="flex items-center justify-center h-64">
+              <Clock className="h-8 w-8 animate-spin text-blue-600 mr-2" />
+              <span className="text-gray-600">Cargando vista previa...</span>
+            </div>
+          )}
+
+          {isPDF && (
+            <iframe
+              src={`${receiptUrl}#toolbar=1&navpanes=1&scrollbar=1`}
+              className="w-full h-[600px] border rounded-lg"
+              onLoad={() => setIsLoading(false)}
+              style={{ display: isLoading ? 'none' : 'block' }}
+              title="Comprobante de pago"
+            />
+          )}
+
+          {isImage && (
+            <div className="flex justify-center">
+              <img
+                src={receiptUrl}
+                alt="Comprobante de pago"
+                className="max-w-full max-h-[600px] object-contain rounded-lg shadow-lg"
+                onLoad={() => setIsLoading(false)}
+                style={{ display: isLoading ? 'none' : 'block' }}
+              />
+            </div>
+          )}
+
+          {!isPDF && !isImage && (
+            <div className="flex flex-col items-center justify-center h-64 text-center">
+              <FileText className="h-16 w-16 text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Vista previa no disponible
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Este tipo de archivo no se puede previsualizar en el navegador.
+              </p>
+              <div className="flex gap-2">
+                <Button onClick={handleDownload} className="bg-blue-500 hover:bg-blue-600">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Descargar archivo
+                </Button>
+                <Button variant="outline" onClick={handleOpenExternal}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Abrir en nueva ventana
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

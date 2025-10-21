@@ -14,13 +14,13 @@ import { useState } from 'react'
 const AVAILABLE_ROLES = [
   'Estructuralista',
   'Proyectista',
-  'Instalación Eléctrica',
+  'Instalación Electrica',
   'Instalación Sanitaria',
-  'Instalación e Incendios',
-  'Instalación e Elevadores',
-  'Instalación Sala de Máquinas',
-  'Instalación Ventilación Mecánica',
-  'Instalación Ventilación Electromecánica',
+  'Instalación e incendios',
+  'Instalación e elevadores',
+  'Instalación Sala de maquinas',
+  'Instalación Ventilación Mecanica',
+  'Instalación ventilación electromecánica',
   'Agrimensor'
 ]
 
