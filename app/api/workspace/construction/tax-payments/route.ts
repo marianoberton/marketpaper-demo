@@ -196,17 +196,34 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Pago no encontrado' }, { status: 404 })
     }
 
-    // Verificar acceso al proyecto (excepto super admin)
-    if (currentUser.role !== 'super_admin') {
-      const { data: project } = await supabase
-        .from('projects')
-        .select('company_id')
-        .eq('id', payment.project_id)
-        .single()
-      
-      if (!project || project.company_id !== currentUser.company_id) {
-        return NextResponse.json({ error: 'Sin permisos para eliminar este pago' }, { status: 403 })
-      }
+    // Obtener información del proyecto
+    const { data: project } = await supabase
+      .from('projects')
+      .select('company_id')
+      .eq('id', payment.project_id)
+      .single()
+
+    if (!project) {
+      return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 })
+    }
+
+    // Verificar permisos de eliminación
+      const canDelete = 
+        // Super admin puede eliminar cualquier pago
+        currentUser.role === 'super_admin' ||
+        // Usuarios de la misma empresa pueden eliminar (excepto viewers)
+        (project.company_id === currentUser.company_id && 
+         ['company_owner', 'company_admin', 'manager', 'employee'].includes(currentUser.role))
+
+    if (!canDelete) {
+      console.log('Permission denied:', {
+        projectCompanyId: project?.company_id,
+        userCompanyId: currentUser.company_id,
+        userRole: currentUser.role,
+        reason: currentUser.role === 'super_admin' ? 'none' : 
+                !project || project.company_id !== currentUser.company_id ? 'different_company' : 'insufficient_role'
+      })
+      return NextResponse.json({ error: 'Sin permisos para eliminar este pago' }, { status: 403 })
     }
 
     // Eliminar el pago

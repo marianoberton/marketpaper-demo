@@ -125,7 +125,9 @@ export default function ProjectEconomicTab({
       try {
         setLoading(true)
         setError(null)
-        const response = await fetch(`/api/workspace/construction/tax-payments?projectId=${project.id}`)
+        const response = await fetch(`/api/workspace/construction/tax-payments?projectId=${project.id}`, {
+          credentials: 'include', // Incluir cookies de sesión
+        })
         
         if (!response.ok) {
           throw new Error('Error al cargar los pagos')
@@ -172,6 +174,7 @@ export default function ProjectEconomicTab({
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Incluir cookies de sesión
         body: JSON.stringify(apiPayload)
       })
 
@@ -196,6 +199,7 @@ export default function ProjectEconomicTab({
           headers: {
             'Content-Type': 'application/json',
           },
+          credentials: 'include', // Incluir cookies de sesión
           body: JSON.stringify({
             bucket: 'construction-documents',
             path: filePath,
@@ -244,6 +248,7 @@ export default function ProjectEconomicTab({
           headers: {
             'Content-Type': 'application/json',
           },
+          credentials: 'include', // Incluir cookies de sesión
           body: JSON.stringify({
             tax_payment_id: newPayment.payment.id,  // Corregido: acceder a newPayment.payment.id
             project_id: project.id,
@@ -289,6 +294,7 @@ export default function ProjectEconomicTab({
     try {
       const response = await fetch(`/api/workspace/construction/tax-payments/${paymentId}`, {
         method: 'DELETE',
+        credentials: 'include', // Incluir cookies de sesión
       })
 
       if (!response.ok) {
@@ -297,7 +303,9 @@ export default function ProjectEconomicTab({
       }
 
       // Recargar la lista de pagos
-      const paymentsResponse = await fetch(`/api/workspace/construction/tax-payments?projectId=${project.id}`)
+      const paymentsResponse = await fetch(`/api/workspace/construction/tax-payments?projectId=${project.id}`, {
+        credentials: 'include', // Incluir cookies de sesión
+      })
       const data = await paymentsResponse.json()
       setTaxPayments(data.payments || [])
     } catch (error) {
