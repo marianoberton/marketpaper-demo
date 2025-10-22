@@ -488,10 +488,10 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
         {/* Imagen de portada del proyecto */}
         <ProjectCoverImage project={selectedProject} />
 
-        {/* Grid principal con layout fraccional 60/40 */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-16">
-          {/* Información del Proyecto - 60% del ancho */}
-          <Card className="lg:col-span-3 shadow-md border-0 bg-white overflow-hidden h-full flex flex-col">
+        {/* Grid principal con layout fraccional 50/50 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+          {/* Información del Proyecto - 50% del ancho */}
+          <Card className="shadow-md border-0 bg-white overflow-hidden h-full flex flex-col">
             <div className="bg-[#1B293F] text-white py-6 px-8">
               <div className="flex items-center gap-3">
                 <Building className="h-6 w-6" />
@@ -550,16 +550,16 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
             </div>
           </Card>
 
-          {/* Información Económica - 40% del ancho */}
-          <div className="lg:col-span-2 h-full">
+          {/* Información Económica - 50% del ancho */}
+          <div className="h-full">
             <ProjectEconomicInfo projectId={selectedProject.id} />
           </div>
         </div>
 
-        {/* Profesionales y Vigencia de Documentos - Layout 60/40 */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-16">
-          {/* Profesionales - 60% del ancho */}
-          <div className="lg:col-span-3">
+        {/* Profesionales y Vigencia de Documentos - Layout 50/50 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+          {/* Profesionales - 50% del ancho */}
+          <div>
             <Card className="shadow-md border-0 bg-white overflow-hidden h-full flex flex-col">
               <div className="bg-[#1B293F] text-white py-6 px-8">
                 <div className="flex items-center gap-3">
@@ -568,71 +568,89 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
                 </div>
               </div>
               <div className="p-8 flex-1">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
-                  {/* Director de Obra */}
-                  {selectedProject.director_obra && (
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-[#1B293F] to-[#2A3F5F] rounded-full flex items-center justify-center shadow-lg">
-                          <User className="h-6 w-6 text-white" />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-gray-900 text-base">{selectedProject.director_obra}</h4>
-                          <p className="text-sm text-blue-700 font-medium">Director de Obra</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                {(() => {
+                  // Recopilar todos los profesionales
+                  const allProfessionals = [];
 
-                  {/* Arquitecto */}
-                  {selectedProject.architect && (
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-[#1B293F] to-[#2A3F5F] rounded-full flex items-center justify-center shadow-lg">
-                          <User className="h-6 w-6 text-white" />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-gray-900 text-base">{selectedProject.architect}</h4>
-                          <p className="text-sm text-green-700 font-medium">Arquitecto</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  // Director de Obra
+                  if (selectedProject.director_obra) {
+                    allProfessionals.push({
+                      name: selectedProject.director_obra,
+                      role: 'Director de Obra'
+                    });
+                  }
 
-                  {/* Otros profesionales */}
-                  {selectedProject.profesionales && Array.isArray(selectedProject.profesionales) &&
-                   selectedProject.profesionales.map((prof: any, index: number) => (
-                    <div key={index} className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200 hover:shadow-lg transition-all duration-300 hover:scale-105">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-[#1B293F] to-[#2A3F5F] rounded-full flex items-center justify-center shadow-lg">
-                          <User className="h-6 w-6 text-white" />
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-gray-900 text-base">{prof.name || prof}</h4>
-                          <p className="text-sm text-purple-700 font-medium">{prof.role || 'Profesional'}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                  // Arquitecto
+                  if (selectedProject.architect) {
+                    allProfessionals.push({
+                      name: selectedProject.architect,
+                      role: 'Arquitecto'
+                    });
+                  }
 
-                  {/* Mensaje cuando no hay profesionales */}
-                  {!selectedProject.director_obra && !selectedProject.architect && 
-                   (!selectedProject.profesionales || selectedProject.profesionales.length === 0) && (
-                    <div className="col-span-full flex items-center justify-center py-12">
-                      <div className="text-center">
-                        <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                        <p className="text-gray-500 text-lg font-medium">No hay profesionales registrados</p>
-                        <p className="text-gray-400 text-sm mt-2">Los profesionales aparecerán aquí cuando sean asignados</p>
-                      </div>
+                  // Otros profesionales
+                  if (selectedProject.profesionales && Array.isArray(selectedProject.profesionales)) {
+                    selectedProject.profesionales.forEach((prof: any) => {
+                      allProfessionals.push({
+                        name: prof.name || prof,
+                        role: prof.role || 'Profesional'
+                      });
+                    });
+                  }
+
+                  const totalProfessionals = allProfessionals.length;
+                  
+                  // Layout adaptativo - máximo 2 columnas
+                  let gridCols = 'grid-cols-1';
+                  if (totalProfessionals >= 2) {
+                    gridCols = 'grid-cols-1 md:grid-cols-2';
+                  }
+
+                  // Contenedor adaptativo según cantidad
+                  const containerClass = totalProfessionals <= 2 ? 'min-h-0' : 'h-full';
+
+                  return (
+                    <div className={`grid ${gridCols} gap-4 ${containerClass}`}>
+                      {allProfessionals.map((professional, index) => (
+                        <div 
+                          key={index} 
+                          className="bg-white rounded-xl p-4 border border-gray-200 hover:shadow-lg transition-all duration-300 hover:scale-105"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-gradient-to-br from-[#1B293F] to-[#2A3F5F] rounded-full flex items-center justify-center shadow-lg">
+                              <User className="h-6 w-6 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-bold text-gray-900 text-base">
+                                {professional.name}
+                              </h4>
+                              <p className="text-sm text-gray-600 font-medium">
+                                {professional.role}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Mensaje cuando no hay profesionales */}
+                      {totalProfessionals === 0 && (
+                        <div className="col-span-full flex items-center justify-center py-12">
+                          <div className="text-center">
+                            <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                            <p className="text-gray-500 text-lg font-medium">No hay profesionales registrados</p>
+                            <p className="text-gray-400 text-sm mt-2">Los profesionales aparecerán aquí cuando sean asignados</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  );
+                })()}
               </div>
             </Card>
           </div>
 
-          {/* Vigencia de Documentos - 40% del ancho */}
-          <div className="lg:col-span-2">
+          {/* Vigencia de Documentos - 50% del ancho */}
+          <div>
             <Card className="shadow-md border-0 bg-white overflow-hidden h-full flex flex-col">
               <div className="bg-[#1B293F] text-white py-6 px-8">
                 <div className="flex items-center gap-3">

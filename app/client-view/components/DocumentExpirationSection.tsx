@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/utils/supabase/client'
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { 
@@ -10,6 +9,24 @@ import {
   FileText,
   AlertTriangle
 } from 'lucide-react'
+import { 
+  getProjectById, 
+  calculateInhibitionReportDaysRemaining,
+  calculateDomainReportDaysRemaining,
+  calculateInsurancePolicyDaysRemaining,
+  formatInhibitionReportStatus,
+  formatDomainReportStatus,
+  formatInsurancePolicyStatus,
+  getProjectDocuments,
+  type Project 
+} from '@/lib/construction'
+import { 
+  DOCUMENT_EXPIRATION_CONFIG,
+  calculateExpirationDate,
+  calculateDaysUntilExpiration,
+  type DocumentExpirationConfig
+} from '@/lib/document-expiration-config'
+import { createClient } from '@/utils/supabase/client'
 
 interface ExpirationData {
   id: string
@@ -31,27 +48,239 @@ export default function DocumentExpirationSection({ projectId }: DocumentExpirat
   useEffect(() => {
     const fetchExpirations = async () => {
       try {
-        const supabase = createClient()
+        // Obtener datos del proyecto usando la misma función que el backoffice
+        const project = await getProjectById(projectId)
         
-        // Obtener fechas de vencimiento del proyecto - solo documentos vigentes (días > 0)
-        const { data, error } = await supabase
-          .from('project_expiration_summary')
-          .select('*')
-          .eq('project_id', projectId)
-          .gt('days_remaining', 0) // Solo documentos con días restantes > 0 (vigentes)
-          .order('days_remaining', { ascending: true })
-
-        if (error) {
-          console.error('Error fetching expirations:', error)
-          setError('Error al cargar las fechas de vencimiento')
+        if (!project) {
+          setError('Proyecto no encontrado')
           return
         }
 
-        // Filtro adicional en el cliente para asegurar que solo se muestren días positivos
-        const validExpirations = (data || []).filter(exp => exp.days_remaining > 0)
+        const validExpirations: ExpirationData[] = []
+
+        // Calcular vigencia del Informe de Inhibición usando la misma lógica del backoffice
+        if (project.inhibition_report_upload_date) {
+          const daysRemaining = calculateInhibitionReportDaysRemaining(project.inhibition_report_upload_date)
+          
+          if (daysRemaining !== null && daysRemaining > 0) {
+            const uploadDate = new Date(project.inhibition_report_upload_date)
+            const expiryDate = new Date(uploadDate.getTime() + (90 * 24 * 60 * 60 * 1000))
+            
+            validExpirations.push({
+              id: `inhibition-report-${project.id}`,
+              section_name: 'Informe de Inhibición',
+              expiration_date: expiryDate.toISOString(),
+              days_remaining: daysRemaining,
+              status: daysRemaining <= 15 ? 'critical' : daysRemaining <= 30 ? 'warning' : 'normal'
+            })
+          }
+        }
+
+        // Calcular vigencia del Informe de Dominio usando la misma lógica del backoffice
+        if (project.domain_report_upload_date) {
+          const daysRemaining = calculateDomainReportDaysRemaining(project.domain_report_upload_date)
+          
+          if (daysRemaining > 0) {
+            const uploadDate = new Date(project.domain_report_upload_date)
+            const expiryDate = new Date(uploadDate.getTime() + (90 * 24 * 60 * 60 * 1000))
+            
+            validExpirations.push({
+              id: `domain-report-${project.id}`,
+              section_name: 'Informe de Dominio',
+              expiration_date: expiryDate.toISOString(),
+              days_remaining: daysRemaining,
+              status: daysRemaining <= 10 ? 'critical' : daysRemaining <= 30 ? 'warning' : 'normal'
+            })
+          }
+        }
+
+        // Calcular vigencia de la Póliza de Seguro usando la misma lógica del backoffice
+        if (project.insurance_policy_expiry_date) {
+          const daysRemaining = calculateInsurancePolicyDaysRemaining(project.insurance_policy_expiry_date)
+          
+          if (daysRemaining > 0) {
+            validExpirations.push({
+              id: `insurance-policy-${project.id}`,
+              section_name: 'Póliza de Seguro',
+              expiration_date: project.insurance_policy_expiry_date,
+              days_remaining: daysRemaining,
+              status: daysRemaining <= 30 ? 'critical' : daysRemaining <= 60 ? 'warning' : 'normal'
+            })
+          }
+        }
+
+        // Obtener documentos del proyecto desde project_documents
+        const supabase = createClient()
         
-        console.log('Datos recibidos:', data)
-        console.log('Datos filtrados:', validExpirations)
+        // Primero, obtener documentos marcados como completados para excluirlos
+        // Consultar tanto project_expiration_dates como project_stage_completions
+        const [expirationCompletedResult, stageCompletedResult] = await Promise.all([
+          supabase
+            .from('project_expiration_dates')
+            .select('section_name')
+            .eq('project_id', projectId)
+            .not('completed_at', 'is', null),
+          supabase
+            .from('project_stage_completions')
+            .select('stage_name')
+            .eq('project_id', projectId)
+            .eq('completed', true)
+        ])
+
+        const completedSectionNames = new Set()
+        
+        // Agregar secciones completadas desde project_expiration_dates
+        if (expirationCompletedResult.data) {
+          expirationCompletedResult.data.forEach(item => {
+            completedSectionNames.add(item.section_name)
+          })
+        }
+        
+        // Agregar etapas completadas desde project_stage_completions
+        if (stageCompletedResult.data) {
+          stageCompletedResult.data.forEach(item => {
+            completedSectionNames.add(item.stage_name)
+          })
+        }
+
+        console.log('Secciones completadas (excluidas de vigencias):', Array.from(completedSectionNames))
+
+        const { data: projectDocuments, error: docsError } = await supabase
+          .from('project_documents')
+          .select('*')
+          .eq('project_id', projectId)
+          .not('upload_date', 'is', null)
+
+        if (docsError) {
+          console.error('Error fetching project documents:', docsError)
+        } else if (projectDocuments) {
+          // Procesar cada documento que tenga fecha de carga
+          for (const doc of projectDocuments) {
+            if (!doc.upload_date || !doc.section_name) continue
+
+            // Excluir secciones completadas
+            if (completedSectionNames.has(doc.section_name)) {
+              console.log(`Excluyendo sección completada: ${doc.section_name}`)
+              continue
+            }
+
+            // Buscar configuración de vencimiento para esta sección
+            const config = DOCUMENT_EXPIRATION_CONFIG.find(
+              config => config.sectionName === doc.section_name
+            )
+
+            if (config) {
+              try {
+                // Calcular fecha de vencimiento usando la configuración
+                const expirationDate = calculateExpirationDate(
+                  doc.upload_date, 
+                  doc.section_name, 
+                  project.project_type || ''
+                )
+                
+                // Calcular días restantes
+                const expirationInfo = calculateDaysUntilExpiration(expirationDate)
+                
+                // Solo incluir si no está vencido y tiene días restantes positivos
+                if (!expirationInfo.isExpired && expirationInfo.days > 0) {
+                  let status: 'expired' | 'critical' | 'warning' | 'normal' = 'normal'
+                  
+                  if (expirationInfo.isExpired) {
+                    status = 'expired'
+                  } else if (expirationInfo.days <= 7) {
+                    status = 'critical'
+                  } else if (expirationInfo.isExpiringSoon) {
+                    status = 'warning'
+                  }
+
+                  validExpirations.push({
+                    id: `${doc.section_name.toLowerCase().replace(/\s+/g, '-')}-${project.id}`,
+                    section_name: doc.section_name,
+                    expiration_date: expirationDate,
+                    days_remaining: expirationInfo.days,
+                    status
+                  })
+                }
+              } catch (error) {
+                console.error(`Error calculating expiration for ${doc.section_name}:`, error)
+              }
+            }
+          }
+        }
+
+        // Obtener fechas de carga desde project_upload_dates
+        const { data: uploadDates, error: uploadError } = await supabase
+          .from('project_upload_dates')
+          .select('*')
+          .eq('project_id', projectId)
+
+        if (uploadError) {
+          console.error('Error fetching upload dates:', uploadError)
+        } else if (uploadDates) {
+          // Procesar cada fecha de carga
+          for (const uploadDate of uploadDates) {
+            if (!uploadDate.upload_date || !uploadDate.section_name) continue
+
+            // Evitar duplicados (ya procesados desde project_documents)
+            const alreadyExists = validExpirations.some(
+              exp => exp.section_name === uploadDate.section_name
+            )
+            if (alreadyExists) continue
+
+            // Excluir secciones completadas
+            if (completedSectionNames.has(uploadDate.section_name)) {
+              console.log(`Excluyendo sección completada: ${uploadDate.section_name}`)
+              continue
+            }
+
+            // Buscar configuración de vencimiento para esta sección
+            const config = DOCUMENT_EXPIRATION_CONFIG.find(
+              config => config.sectionName === uploadDate.section_name
+            )
+
+            if (config) {
+              try {
+                // Calcular fecha de vencimiento usando la configuración
+                const expirationDate = calculateExpirationDate(
+                  uploadDate.upload_date, 
+                  uploadDate.section_name, 
+                  project.project_type || ''
+                )
+                
+                // Calcular días restantes
+                const expirationInfo = calculateDaysUntilExpiration(expirationDate)
+                
+                // Solo incluir si no está vencido y tiene días restantes positivos
+                if (!expirationInfo.isExpired && expirationInfo.days > 0) {
+                  let status: 'expired' | 'critical' | 'warning' | 'normal' = 'normal'
+                  
+                  if (expirationInfo.isExpired) {
+                    status = 'expired'
+                  } else if (expirationInfo.days <= 7) {
+                    status = 'critical'
+                  } else if (expirationInfo.isExpiringSoon) {
+                    status = 'warning'
+                  }
+
+                  validExpirations.push({
+                    id: `${uploadDate.section_name.toLowerCase().replace(/\s+/g, '-')}-${project.id}`,
+                    section_name: uploadDate.section_name,
+                    expiration_date: expirationDate,
+                    days_remaining: expirationInfo.days,
+                    status
+                  })
+                }
+              } catch (error) {
+                console.error(`Error calculating expiration for ${uploadDate.section_name}:`, error)
+              }
+            }
+          }
+        }
+
+        // Ordenar por días restantes (menor a mayor)
+        validExpirations.sort((a, b) => a.days_remaining - b.days_remaining)
+        
+        console.log('Vigencias calculadas:', validExpirations)
         
         setExpirations(validExpirations)
       } catch (err) {
@@ -62,9 +291,7 @@ export default function DocumentExpirationSection({ projectId }: DocumentExpirat
       }
     }
 
-    if (projectId) {
-      fetchExpirations()
-    }
+    fetchExpirations()
   }, [projectId])
 
   if (loading) {

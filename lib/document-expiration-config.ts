@@ -16,15 +16,9 @@ export const DOCUMENT_EXPIRATION_CONFIG: DocumentExpirationConfig[] = [
   // Permisos y documentación inicial
   {
     sectionName: 'Permiso de obra',
-    expirationDays: 365, // 1 año por defecto
+    expirationDays: 365, // 1 año
     description: 'Permiso municipal de construcción',
-    category: 'permiso',
-    conditionalDays: {
-      'Microobra': 730,  // 2 años
-      'Obra Menor': 1095, // 3 años
-      'Obra Media': 1460, // 4 años
-      'Obra Mayor': 2190  // 6 años
-    }
+    category: 'permiso'
   },
   {
     sectionName: 'Planos aprobados',
@@ -67,9 +61,15 @@ export const DOCUMENT_EXPIRATION_CONFIG: DocumentExpirationConfig[] = [
   // Documentos de obra
   {
     sectionName: 'Alta Inicio de obra',
-    expirationDays: 30, // 30 días
+    expirationDays: 30, // 30 días por defecto
     description: 'Declaración de inicio de obra',
-    category: 'obra'
+    category: 'obra',
+    conditionalDays: {
+      'Microobra': 730,  // 2 años
+      'Obra Menor': 1095, // 3 años
+      'Obra Media': 1460, // 4 años
+      'Obra Mayor': 2190  // 6 años
+    }
   },
   {
     sectionName: 'Cartel de Obra',

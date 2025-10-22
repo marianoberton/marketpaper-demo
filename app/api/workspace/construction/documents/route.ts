@@ -160,6 +160,39 @@ export async function POST(request: NextRequest) {
       // No fallar la operación principal
     }
 
+    // Lógica especial: Si se carga "Alta Inicio de obra", marcar "Permiso de obra" como completado
+    if (sectionName === 'Alta Inicio de obra') {
+      try {
+        console.log(`🏗️ Detectado documento "Alta Inicio de obra" - marcando "Permiso de obra" como completado`)
+        
+        // Marcar "Permiso de obra" como completado en project_expiration_dates
+        const { data: permisoCompletion, error: permisoError } = await supabase
+          .from('project_expiration_dates')
+          .upsert({
+            project_id: projectId,
+            section_name: 'Permiso de obra',
+            expiration_date: null, // Null indica que está completado
+            completed_at: new Date().toISOString(),
+            completed_by: currentUser.id,
+            created_by: currentUser.id,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'project_id,section_name'
+          })
+          .select()
+
+        if (permisoError) {
+          console.error('❌ Error al marcar Permiso de obra como completado:', permisoError)
+        } else {
+          console.log('✅ Permiso de obra marcado como completado exitosamente')
+          console.log('✅ Resultado:', JSON.stringify(permisoCompletion, null, 2))
+        }
+      } catch (completionError) {
+        console.error('💥 Error procesando completado de Permiso de obra:', completionError)
+        // No fallar la operación principal
+      }
+    }
+
     return NextResponse.json({
       id: document.id,
       filename: document.filename,

@@ -209,11 +209,11 @@ export default function ProjectEconomicInfo({ projectId }: ProjectEconomicInfoPr
                   const amount = categoryTotals[key as keyof typeof categoryTotals]
                   
                   return (
-                    <div key={key} className="bg-white rounded-lg p-3 sm:p-4 border border-gray-200 text-center">
-                      <div className="text-xs sm:text-sm font-medium text-gray-600 mb-2">
-                        {label}
+                    <div key={key} className="bg-white rounded-lg p-3 sm:p-4 border border-gray-200 text-center flex flex-col justify-between min-h-[100px]">
+                      <div className="text-xs sm:text-sm font-medium text-gray-600 mb-2 min-h-[2.5rem] flex items-center justify-center">
+                        <span className="text-center leading-tight">{label}</span>
                       </div>
-                      <div className="text-base sm:text-lg font-bold text-gray-900">
+                      <div className="text-base sm:text-lg font-bold text-gray-900 whitespace-nowrap overflow-hidden text-ellipsis">
                         {formatCurrency(amount)}
                       </div>
                     </div>
