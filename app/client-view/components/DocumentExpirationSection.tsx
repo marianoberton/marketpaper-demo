@@ -122,8 +122,18 @@ export default function DocumentExpirationSection({ projectId }: DocumentExpirat
               <div>
                 <h4 className="font-medium text-gray-900 text-sm">{expiration.section_name}</h4>
                 <p className="text-xs text-gray-600">
-                  Vence: {new Date(expiration.expiration_date).toLocaleDateString('es-AR')}
+                  {expiration.section_name === 'Demolición' 
+                    ? 'Plazo para finalizar demolición'
+                    : expiration.section_name === 'Permiso de Demolición - Informe'
+                    ? 'Plazo para cargar documento "Demolición"'
+                    : `Vence: ${new Date(expiration.expiration_date).toLocaleDateString('es-AR')}`
+                  }
                 </p>
+                {(expiration.section_name === 'Demolición' || expiration.section_name === 'Permiso de Demolición - Informe') && (
+                  <p className="text-xs text-gray-500">
+                    Vence: {new Date(expiration.expiration_date).toLocaleDateString('es-AR')}
+                  </p>
+                )}
               </div>
             </div>
             <div className="text-right">

@@ -50,9 +50,10 @@ export const DOCUMENT_EXPIRATION_CONFIG: DocumentExpirationConfig[] = [
     description: 'Consulta a la Dirección General de Interpretación Urbanística',
     category: 'informe'
   },
+  // Documentos de demolición con lógica especial
   {
-    sectionName: 'Permiso de Demolición',
-    expirationDays: 365, // 365 días
+    sectionName: 'Permiso de Demolición - Informe',
+    expirationDays: 365, // 1 año para cargar Demolición
     description: 'Permiso para trabajos de demolición',
     category: 'permiso'
   },
@@ -78,7 +79,7 @@ export const DOCUMENT_EXPIRATION_CONFIG: DocumentExpirationConfig[] = [
   },
   {
     sectionName: 'Demolición',
-    expirationDays: 365, // Actualizado a 365 días según nuevos criterios
+    expirationDays: 365, // 1 año para finalizar demolición
     description: 'Documentación de trabajos de demolición',
     category: 'obra'
   },
@@ -112,6 +113,12 @@ export const DOCUMENT_EXPIRATION_CONFIG: DocumentExpirationConfig[] = [
     sectionName: 'Informe de dominio',
     expirationDays: 90, // 3 meses
     description: 'Informe de dominio del inmueble',
+    category: 'informe'
+  },
+  {
+    sectionName: 'Informe de inhibición',
+    expirationDays: 90, // 3 meses
+    description: 'Informe de inhibición del inmueble',
     category: 'informe'
   },
 
@@ -148,9 +155,18 @@ export function calculateExpirationDate(uploadDate: string, sectionName: string,
   
   // Para Consulta DGIUR, usar días hábiles
   if (sectionName === 'Consulta DGIUR') {
-    const { calculateDGIURExpirationDate } = require('./utils/date-utils');
-    const expiration = calculateDGIURExpirationDate(upload);
-    return expiration.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+    try {
+      const { calculateDGIURExpirationDate } = require('./utils/date-utils');
+      const expiration = calculateDGIURExpirationDate(upload);
+      return expiration.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+    } catch (error) {
+      console.warn('Error loading date-utils, using calendar days for DGIUR:', error);
+      // Fallback a días calendario si no se puede cargar el módulo
+      const expirationDays = getExpirationDays(sectionName, projectType);
+      const expiration = new Date(upload);
+      expiration.setDate(expiration.getDate() + expirationDays);
+      return expiration.toISOString().split('T')[0];
+    }
   }
   
   // Para otros documentos, usar días calendario

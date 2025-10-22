@@ -218,11 +218,38 @@ export async function POST(request: NextRequest) {
       // No fallar la operación principal
     }
 
+    // Procesar relaciones automáticas de documentos
+    let relationshipResults = []
+    try {
+      const relationshipResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/workspace/construction/document-relationships`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': request.headers.get('Authorization') || '',
+          'Cookie': request.headers.get('Cookie') || ''
+        },
+        body: JSON.stringify({
+          project_id,
+          section_name,
+          upload_date
+        })
+      })
+
+      if (relationshipResponse.ok) {
+        const relationshipData = await relationshipResponse.json()
+        relationshipResults = relationshipData.relationships_processed || []
+      }
+    } catch (relationshipError) {
+      console.error('Error processing document relationships:', relationshipError)
+      // No fallar la operación principal
+    }
+
     return NextResponse.json({
       success: true,
       upload_date,
       expiration_date: expirationDate,
       documents_updated: updatedDocuments?.length || 0,
+      relationships_processed: relationshipResults,
       message: `Fecha de carga actualizada para ${updatedDocuments?.length || 0} documentos en la sección "${section_name}"`
     })
 

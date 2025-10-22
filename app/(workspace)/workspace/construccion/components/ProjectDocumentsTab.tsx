@@ -1,7 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import { FileText } from 'lucide-react'
 import { Project } from '@/lib/construction'
+import { deleteProjectDocument } from '@/lib/storage'
+import { toast } from 'sonner'
 import ProjectAllDocuments from './ProjectAllDocuments'
 
 interface ProjectDocumentsTabProps {
@@ -24,6 +27,7 @@ interface ProjectDocumentsTabProps {
   onUploadDateChange: (section: string, date: string) => void
   onSaveUploadDate: (section: string) => void
   setTodayUploadDate: (section: string) => void
+  onDocumentDeleted?: () => void
 }
 
 export default function ProjectDocumentsTab({
@@ -45,8 +49,10 @@ export default function ProjectDocumentsTab({
   shouldShowUploadDate,
   onUploadDateChange,
   onSaveUploadDate,
-  setTodayUploadDate
+  setTodayUploadDate,
+  onDocumentDeleted
 }: ProjectDocumentsTabProps) {
+  const [isDeleting, setIsDeleting] = useState(false)
   // Función para obtener el icono del archivo
   const getFileIcon = (type: string) => {
     if (type === 'pdf') return '📄'
@@ -76,9 +82,29 @@ export default function ProjectDocumentsTab({
     }
   }
 
-  const handleDeleteDocument = (documentId: string) => {
-    // Implementar lógica de eliminación
-    console.log('Eliminar documento:', documentId)
+  const handleDeleteDocument = async (documentId: string) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar este documento?')) {
+      return
+    }
+
+    setIsDeleting(true)
+    
+    try {
+      await deleteProjectDocument(documentId)
+      
+      toast.success('Documento eliminado exitosamente')
+      
+      // Llamar a la función de recarga si está disponible
+      if (onDocumentDeleted) {
+        onDocumentDeleted()
+      }
+      
+    } catch (error: any) {
+      console.error('Error deleting document:', error)
+      toast.error(`Error al eliminar el documento: ${error.message}`)
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   return (

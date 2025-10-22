@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Upload, Calendar, FileText, Check, X, FileImage, FileSpreadsheet, File } from 'lucide-react'
+import { ChevronDown, ChevronRight, Upload, Calendar, FileText, Check, X, FileImage, FileSpreadsheet, File, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,10 +12,10 @@ import { Card } from '@/components/ui/card'
 import { formatFileSize } from '@/lib/storage'
 import { 
   formatArgentinaDate, 
-  calculateExpirationDate, 
   calculateDaysUntilExpiration,
   getTodayInputValue 
 } from '@/lib/utils/date-utils'
+import { calculateExpirationDate } from '@/lib/document-expiration-config'
 import DocumentPreviewModal from './DocumentPreviewModal'
 
 // Tipo de documento que el componente realmente renderiza
@@ -57,23 +57,11 @@ interface DocumentSectionProps {
   onSetOneYearExpiration?: (sectionName: string) => void
   isSavingDate?: boolean
   savedUploadDate?: string // Cambio: fecha de carga guardada
+  // Nuevas props para el sistema de etapas completadas
+  isStageCompleted?: boolean
+  onStageCompletionToggle?: (sectionName: string, completed: boolean) => void
+  isTogglingCompletion?: boolean
 }
-
-  // Función para calcular días restantes hasta el vencimiento basado en fecha de carga
-  const calculateDaysRemaining = (uploadDate: string): { days: number; isExpired: boolean; isExpiringSoon: boolean } => {
-    if (!uploadDate) {
-      return { days: 0, isExpired: false, isExpiringSoon: false };
-    }
-    
-    try {
-      // Calcular fecha de vencimiento (1 año después de la fecha de carga)
-      const expirationDate = calculateExpirationDate(uploadDate);
-      return calculateDaysUntilExpiration(expirationDate);
-    } catch (error) {
-      console.error('Error calculating days remaining:', error);
-      return { days: 0, isExpired: false, isExpiringSoon: false };
-    }
-  }
 
 export default function DocumentSection({
   title,
@@ -99,11 +87,37 @@ export default function DocumentSection({
   onSaveUploadDate,
   onSetOneYearExpiration,
   isSavingDate = false,
-  savedUploadDate
+  savedUploadDate,
+  // Nuevas props para el sistema de etapas completadas
+  isStageCompleted = false,
+  onStageCompletionToggle,
+  isTogglingCompletion = false
 }: DocumentSectionProps) {
   const [dragOver, setDragOver] = useState(false)
   const [previewDocument, setPreviewDocument] = useState<DisplayDocument | null>(null)
   const inputId = `file-input-${sectionName.replace(/[^a-zA-Z0-9_-]/g, '-')}`
+
+  // Función para calcular días restantes hasta el vencimiento basado en fecha de carga
+  const calculateDaysRemaining = (uploadDate: string): { days: number; isExpired: boolean; isExpiringSoon: boolean } => {
+    if (!uploadDate) {
+      return { days: 0, isExpired: false, isExpiringSoon: false };
+    }
+    
+    try {
+      // Calcular fecha de vencimiento usando la configuración específica por tipo de documento
+      const expirationDate = calculateExpirationDate(uploadDate, sectionName);
+      return calculateDaysUntilExpiration(expirationDate);
+    } catch (error) {
+      console.error('Error calculating days remaining:', error);
+      return { days: 0, isExpired: false, isExpiringSoon: false };
+    }
+  }
+
+  // Debug: Log del estado de las props relacionadas con completitud
+  console.log(`🔍 [DocumentSection] "${sectionName}" - Props recibidas:`)
+  console.log(`🔍 [DocumentSection] isStageCompleted: ${isStageCompleted}`)
+  console.log(`🔍 [DocumentSection] isTogglingCompletion: ${isTogglingCompletion}`)
+  console.log(`🔍 [DocumentSection] onStageCompletionToggle: ${typeof onStageCompletionToggle}`)
 
   // Calcular días restantes para mostrar en el contador
   const daysInfo = savedUploadDate ? calculateDaysRemaining(savedUploadDate) : null
@@ -153,50 +167,63 @@ export default function DocumentSection({
           ? 'ring-2 ring-green-200' 
           : ''
     }`}>
-      {/* Header de la tira */}
-      <div 
-        className={`p-4 cursor-pointer transition-all duration-200 ${
-          noDocumentationRequired
-            ? 'bg-gray-100 border-b border-gray-200'
-            : hasDocuments 
-              ? 'bg-green-50 border-b border-green-200' 
-              : isExpanded 
-                ? 'bg-blue-50 border-b' 
-                : 'hover:bg-gray-50'
-        }`}
-        onClick={onToggle}
-      >
+      {/* Header con título y controles */}
+      <div className="p-4 border-b bg-gray-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {isExpanded ? (
-              <ChevronDown className="h-5 w-5 text-gray-500" />
-            ) : (
-              <ChevronRight className="h-5 w-5 text-gray-500" />
-            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onToggle}
+              className="p-1 h-auto"
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </Button>
             
-            <div className="flex items-center gap-2">
-              <h3 className="font-medium text-gray-900">{title}</h3>
+            <div className="flex items-center gap-3">
+              <h3 className={`text-sm font-medium ${isStageCompleted ? 'text-green-700' : 'text-gray-900'}`}>
+                {title}
+              </h3>
+              
+              {/* Botón de check para marcar etapa como completada */}
+              {onStageCompletionToggle && (
+                <Button
+                  variant={isStageCompleted ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => onStageCompletionToggle(sectionName, !isStageCompleted)}
+                  disabled={isTogglingCompletion}
+                  className={`
+                    flex items-center gap-2 text-xs px-3 py-1 h-7
+                    ${isStageCompleted 
+                      ? 'bg-green-600 hover:bg-green-700 text-white border-green-600' 
+                      : 'text-gray-600 hover:text-green-600 hover:border-green-300'
+                    }
+                  `}
+                  title={isStageCompleted ? "Marcar como pendiente" : "Marcar como completada"}
+                >
+                  {isTogglingCompletion ? (
+                    <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <CheckCircle2 className={`h-3 w-3 ${isStageCompleted ? 'fill-current' : ''}`} />
+                  )}
+                  <span className="font-medium">
+                    {isStageCompleted ? 'Completada' : 'Marcar completada'}
+                  </span>
+                </Button>
+              )}
             </div>
           </div>
-
-          <div className="flex items-center gap-3">
-            {/* Contador de documentos mejorado */}
+          
+          <div className="flex items-center gap-2">
+            {/* Badge de estado de documentos */}
             {hasDocuments && (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1">
-                  <FileText className="h-3 w-3 text-gray-500" />
-                  <Badge 
-                    variant={documents.length > 0 ? "default" : "secondary"} 
-                    className={`text-xs font-medium ${
-                      documents.length > 5 ? 'bg-green-100 text-green-800 border-green-200' :
-                      documents.length > 2 ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                      'bg-gray-100 text-gray-800 border-gray-200'
-                    }`}
-                  >
-                    {documents.length}
-                  </Badge>
-                </div>
-              </div>
+              <Badge variant="secondary" className="text-xs">
+                {documents.length} {documents.length === 1 ? 'documento' : 'documentos'}
+              </Badge>
             )}
             {/* Mostrar badge incluso cuando no hay documentos para indicar sección vacía */}
             {!hasDocuments && (
@@ -301,8 +328,8 @@ export default function DocumentSection({
 
              {/* Espacio para información adicional */}
              <div className="flex-1">
-               {/* Campo fecha de carga */}
-               {showExpirationDate && (
+               {/* Campo fecha de carga - Solo mostrar si la etapa NO está completada */}
+               {showExpirationDate && !isStageCompleted && (
                  <div className="space-y-2">
                    <div className="flex items-center justify-between">
                      <Label htmlFor={`upload-date-${sectionName}`} className="text-sm font-medium text-gray-700">
@@ -325,7 +352,7 @@ export default function DocumentSection({
                        type="date"
                        value={uploadDate}
                        onChange={(e) => onUploadDateChange?.(e.target.value)}
-                       className="flex-1"
+                       className={`flex-1 ${savedUploadDate ? 'border-green-300 bg-green-50' : ''}`}
                        placeholder="Seleccionar fecha de carga"
                        max={getTodayInputValue()}
                      />
@@ -338,18 +365,19 @@ export default function DocumentSection({
                        disabled={!uploadDate || isSavingDate}
                        size="sm"
                        className="px-3"
+                       variant={savedUploadDate ? "outline" : "default"}
                      >
-                       {isSavingDate ? 'Guardando...' : 'Guardar'}
+                       {isSavingDate ? 'Guardando...' : (savedUploadDate ? 'Editar fecha' : 'Guardar')}
                      </Button>
                    </div>
                    {savedUploadDate && (
-                     <div className="space-y-2">
-                       <div className="flex items-center gap-2 text-sm text-green-600">
+                     <div className="p-3 bg-green-50 border border-green-200 rounded-lg space-y-2">
+                       <div className="flex items-center gap-2 text-sm text-green-700 font-medium">
                          <Check className="h-4 w-4" />
-                         <span>Fecha de carga: {formatArgentinaDate(savedUploadDate)}</span>
+                         <span>Fecha de carga guardada: {formatArgentinaDate(savedUploadDate)}</span>
                        </div>
                        <div className="text-sm text-gray-600">
-                         <span>Vence: {formatArgentinaDate(calculateExpirationDate(savedUploadDate))}</span>
+                         <span>Vence: {formatArgentinaDate(calculateExpirationDate(savedUploadDate, sectionName))}</span>
                          {daysInfo && (
                            <Badge 
                              variant={daysInfo.isExpired ? "destructive" : daysInfo.isExpiringSoon ? "secondary" : "outline"}
@@ -364,6 +392,19 @@ export default function DocumentSection({
                        </div>
                      </div>
                    )}
+                 </div>
+               )}
+               
+               {/* Mensaje cuando la etapa está completada */}
+               {isStageCompleted && (
+                 <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                   <div className="flex items-center gap-2 text-sm text-green-700">
+                     <CheckCircle2 className="h-4 w-4" />
+                     <span className="font-medium">Etapa completada</span>
+                   </div>
+                   <p className="text-xs text-green-600 mt-1">
+                     Las fechas de vigencia están ocultas para esta etapa.
+                   </p>
                  </div>
                )}
              </div>

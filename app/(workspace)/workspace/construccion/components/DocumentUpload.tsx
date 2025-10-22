@@ -6,6 +6,7 @@ import { useWorkspace } from '@/components/workspace-context'
 import { deleteProjectDocument } from '@/lib/storage'
 import { useDirectFileUpload } from '@/lib/hooks/useDirectFileUpload'
 import DocumentSection from './DocumentSection'
+import { toast } from 'sonner'
 
 // Tipo local usado por este componente
 type FrontendProjectDocument = {
@@ -56,6 +57,10 @@ interface DocumentUploadProps {
   onSetOneYearExpiration?: (sectionName: string) => void
   isSavingDate?: boolean
   savedExpirationDate?: string
+  // Nuevas props para el sistema de etapas completadas
+  isStageCompleted?: boolean
+  onStageCompletionToggle?: (sectionName: string, completed: boolean) => void
+  isTogglingCompletion?: boolean
 }
 
 export default function DocumentUpload({ 
@@ -79,6 +84,10 @@ export default function DocumentUpload({
   onSetOneYearExpiration,
   isSavingDate = false,
   savedExpirationDate,
+  // Nuevas props para el sistema de etapas completadas
+  isStageCompleted = false,
+  onStageCompletionToggle,
+  isTogglingCompletion = false
 }: DocumentUploadProps) {
   const [documents, setDocuments] = useState<FrontendProjectDocument[]>([])
   const [loading, setLoading] = useState(true)
@@ -320,6 +329,9 @@ export default function DocumentUpload({
         // Disparar evento para recargar fechas de vencimiento
         window.dispatchEvent(new CustomEvent('reloadDeadlineDates'))
 
+        // Mostrar notificación de éxito
+        toast.success(`Documento "${file.name}" subido exitosamente`)
+
         // REMOVIDO: Ya no guardamos automáticamente la fecha de vencimiento
         // El usuario debe usar el botón "Guardar fecha" manualmente
       }
@@ -397,6 +409,10 @@ export default function DocumentUpload({
         onSetOneYearExpiration={onSetOneYearExpiration}
         isSavingDate={isSavingDate}
         savedUploadDate={savedExpirationDate}
+        // Nuevas props para el sistema de etapas completadas
+        isStageCompleted={isStageCompleted}
+        onStageCompletionToggle={onStageCompletionToggle}
+        isTogglingCompletion={isTogglingCompletion}
       />
     </div>
   )

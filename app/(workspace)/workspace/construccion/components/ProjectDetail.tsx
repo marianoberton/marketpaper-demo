@@ -35,6 +35,7 @@ import {
   X,
   Shield
 } from 'lucide-react'
+import { toast } from 'sonner'
 import Image from 'next/image'
 import { Project, mockProjectStages, ProjectProfessional } from '@/lib/construction'
 import { uploadProjectImage } from '@/lib/storage'
@@ -267,10 +268,13 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
         [sectionName]: date
       }))
 
+      // Mostrar toast de éxito
+      toast.success(`Fecha de carga guardada para ${sectionName}`)
+
       console.log(`Fecha de carga guardada para ${sectionName}: ${date}`)
     } catch (error) {
       console.error('Error saving upload date:', error)
-      alert('Error al guardar la fecha de carga. Por favor, inténtalo de nuevo.')
+      toast.error('Error al guardar la fecha de carga. Por favor, inténtalo de nuevo.')
     } finally {
       setSavingDates(prev => ({ ...prev, [sectionName]: false }))
     }
@@ -942,6 +946,7 @@ export default function ProjectDetail({ project, onBack, onStageChange, onProjec
             onUploadDateChange={handleUploadDateChange}
             onSaveUploadDate={(requestName: string) => handleSaveUploadDate(requestName, uploadDates[requestName] || '')}
             setTodayUploadDate={setTodayUploadDate}
+            onDocumentDeleted={loadProjectDocuments}
           />
         )}
 

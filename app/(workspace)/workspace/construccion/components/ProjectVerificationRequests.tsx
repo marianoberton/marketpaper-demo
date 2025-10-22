@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CheckCircle } from 'lucide-react'
 import DocumentUpload from './DocumentUpload'
@@ -51,6 +51,119 @@ export function ProjectVerificationRequests({
   handleDocumentUploaded,
   loadProjectDocuments
 }: ProjectVerificationRequestsProps) {
+  // Estado para manejar las etapas completadas
+  const [completedStages, setCompletedStages] = useState<Set<string>>(new Set())
+  const [togglingStages, setTogglingStages] = useState<Set<string>>(new Set())
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Cargar el estado inicial de etapas completadas
+  useEffect(() => {
+    const loadCompletedStages = async () => {
+      try {
+        const response = await fetch(`/api/workspace/construction/stage-completions?projectId=${project.id}`)
+        if (response.ok) {
+          const data = await response.json()
+          console.log('🔄 Datos iniciales recibidos:', data)
+          
+          // Extraer solo los stage_name de las etapas que están completadas
+          const completedStageNames = (data.completedStages || [])
+            .filter((stage: any) => stage.completed === true)
+            .map((stage: any) => stage.stage_name as string)
+          
+          console.log('🔄 Etapas completadas iniciales:', completedStageNames)
+          setCompletedStages(new Set<string>(completedStageNames))
+        } else {
+          console.error('Error al cargar etapas completadas:', response.statusText)
+        }
+      } catch (error) {
+        console.error('Error al cargar etapas completadas:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (project.id) {
+      loadCompletedStages()
+    }
+  }, [project.id])
+
+  // Función para manejar el toggle de completado de etapas
+  const handleStageCompletionToggle = useCallback(async (stageName: string) => {
+    console.log('🔄 handleStageCompletionToggle llamado para:', stageName)
+    console.log('📋 Project ID:', project.id)
+    
+    const isCurrentlyCompleted = completedStages.has(stageName)
+    const newCompletedState = !isCurrentlyCompleted
+    
+    console.log('📊 Estado actual:', isCurrentlyCompleted, '→ Nuevo estado:', newCompletedState)
+
+    // Marcar como "toggling" para mostrar loading
+    setTogglingStages(prev => new Set(prev).add(stageName))
+
+    try {
+      const url = '/api/workspace/construction/stage-completions'
+      const payload = {
+        projectId: project.id,
+        stageName,
+        completed: newCompletedState
+      }
+      
+      console.log('🌐 Haciendo petición POST a:', url)
+      console.log('📦 Payload:', payload)
+      console.log('🔍 window.location.origin:', window.location.origin)
+      
+      console.log('🚀 Iniciando fetch...')
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      })
+      console.log('🎯 Fetch completado!')
+
+      console.log('📡 Respuesta recibida:', response.status, response.statusText)
+      console.log('🔍 response.ok:', response.ok)
+
+      if (response.ok) {
+        console.log('✅ Respuesta OK, parseando JSON...')
+        const data = await response.json()
+        console.log('✅ Datos recibidos:', data)
+        console.log('📋 completedStages array:', data.completedStages)
+        
+        // Extraer solo los stage_name de las etapas que están completadas
+        const completedStageNames = data.completedStages
+          .filter((stage: any) => stage.completed === true)
+          .map((stage: any) => stage.stage_name as string)
+        
+        console.log('🔄 Etapas completadas filtradas:', completedStageNames)
+        console.log('🔄 Actualizando estado local con:', completedStageNames)
+        
+        // Actualizar el estado local con las etapas completadas
+        const newCompletedStages = new Set<string>(completedStageNames)
+        console.log('🎯 Nuevo Set de etapas completadas:', newCompletedStages)
+        console.log('🔄 Llamando setCompletedStages...')
+        setCompletedStages(newCompletedStages)
+        console.log('✅ setCompletedStages llamado exitosamente')
+      } else {
+        console.error('❌ Respuesta no OK, parseando error...')
+        const errorData = await response.json()
+        console.error('❌ Error al actualizar estado de etapa:', errorData.error)
+        console.error('❌ Status:', response.status, response.statusText)
+        // TODO: Mostrar mensaje de error al usuario
+      }
+    } catch (error) {
+      console.error('💥 Error al actualizar estado de etapa:', error)
+      // TODO: Mostrar mensaje de error al usuario
+    } finally {
+      // Quitar del estado de "toggling"
+      setTogglingStages(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(stageName)
+        return newSet
+      })
+    }
+  }, [completedStages, project.id])
   return (
     <Card>
       <CardHeader>
@@ -82,6 +195,10 @@ export function ProjectVerificationRequests({
               }}
               isInitiallyExpanded={false}
               externalDocuments={getSectionExternalDocs('Verificaciones - Prefactibilidad del proyecto')}
+              // Props para el sistema de etapas completadas
+              isStageCompleted={completedStages.has('Verificaciones - Prefactibilidad del proyecto')}
+              onStageCompletionToggle={() => handleStageCompletionToggle('Verificaciones - Prefactibilidad del proyecto')}
+              isTogglingCompletion={togglingStages.has('Verificaciones - Prefactibilidad del proyecto')}
             />
           </div>
         </div>
@@ -139,6 +256,10 @@ export function ProjectVerificationRequests({
                     // Manejar eliminación de documento
                     console.log('Documento eliminado:', documentId)
                   }}
+                  // Props para el sistema de etapas completadas
+                  isStageCompleted={completedStages.has(request.name)}
+                  onStageCompletionToggle={() => handleStageCompletionToggle(request.name)}
+                  isTogglingCompletion={togglingStages.has(request.name)}
                 />
             ))}
           </div>
@@ -181,6 +302,10 @@ export function ProjectVerificationRequests({
                   onDocumentDeleted={(): void => {
                     loadProjectDocuments();
                   }}
+                  // Props para el sistema de etapas completadas
+                  isStageCompleted={completedStages.has(request.name)}
+                  onStageCompletionToggle={() => handleStageCompletionToggle(request.name)}
+                  isTogglingCompletion={togglingStages.has(request.name)}
                 />
             ))}
           </div>
@@ -219,6 +344,10 @@ export function ProjectVerificationRequests({
                   onDocumentDeleted={(): void => {
                     loadProjectDocuments();
                   }}
+                  // Props para el sistema de etapas completadas
+                  isStageCompleted={completedStages.has(request.name)}
+                  onStageCompletionToggle={() => handleStageCompletionToggle(request.name)}
+                  isTogglingCompletion={togglingStages.has(request.name)}
                 />
               ))}
           </div>
