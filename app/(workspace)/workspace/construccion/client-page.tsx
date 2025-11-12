@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
@@ -131,6 +132,8 @@ export default function ConstruccionClientPage() {
   const [projectStages] = useState<ProjectStage[]>(mockProjectStages)
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStage, setFilterStage] = useState('all')
   const [filterClient, setFilterClient] = useState('all')
@@ -581,16 +584,9 @@ export default function ConstruccionClientPage() {
       const project = projects.find(p => p.id === projectId)
       if (!project) return
       
-      // Confirmación antes de eliminar
-      const confirmed = window.confirm(
-        `¿Estás seguro de que quieres eliminar el proyecto "${project.name}"?\n\n` +
-        'Esta acción no se puede deshacer. Se eliminarán también todos los documentos asociados.'
-      )
-      
-      if (!confirmed) return
-      
       const response = await fetch(`/api/workspace/construction/projects?id=${projectId}`, {
         method: 'DELETE',
+        credentials: 'include',
       })
 
       if (!response.ok) {
@@ -608,6 +604,9 @@ export default function ConstruccionClientPage() {
         setSelectedProject(null)
       }
       
+      // Recargar proyectos desde el servidor para asegurar sincronización
+      await loadProjects()
+
       // Mostrar mensaje de éxito
       alert(data.message || 'Proyecto eliminado exitosamente')
       
@@ -769,39 +768,40 @@ export default function ConstruccionClientPage() {
             </CardContent>
           </Card>
 
-          {/* Grid de proyectos */}
-          {filteredProjects.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProjects.map((project) => (
-                <Card key={project.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group">
-                  <div className="relative h-48 overflow-hidden">
-                    <Image
-                      src={project.cover_image_url || '/placeholder-project.jpg'}
-                      alt={project.name}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-3 right-3 z-10">
-                      <Badge className={`${getStageColor(project.current_stage || '')} text-white`}>
-                        {project.current_stage}
-                      </Badge>
-                    </div>
-                    <div className="absolute top-3 left-3 z-10">
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="h-8 w-8 p-0 bg-red-600/80 hover:bg-red-700 backdrop-blur-sm"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDeleteProject(project.id)
-                        }}
-                        title="Eliminar proyecto"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none z-0" />
-                  </div>
+      {/* Grid de proyectos */}
+      {filteredProjects.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredProjects.map((project) => (
+            <Card key={project.id} className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer group">
+              <div className="relative h-48 overflow-hidden">
+                <Image
+                  src={project.cover_image_url || '/placeholder-project.jpg'}
+                  alt={project.name}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute top-3 right-3 z-10">
+                  <Badge className={`${getStageColor(project.current_stage || '')} text-white`}>
+                    {project.current_stage}
+                  </Badge>
+                </div>
+                <div className="absolute top-3 left-3 z-10">
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="h-8 w-8 p-0 bg-red-600/80 hover:bg-red-700 backdrop-blur-sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setProjectToDelete(project)
+                      setShowDeleteConfirm(true)
+                    }}
+                    title="Eliminar proyecto"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none z-0" />
+              </div>
                   
                   <CardContent className="p-6">
                     <div className="space-y-3">
@@ -887,6 +887,44 @@ export default function ConstruccionClientPage() {
         clients={clients}
         projectStages={projectStages}
       />
+
+      {/* Confirmación de eliminación */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent onClick={(e) => e.stopPropagation()}>
+          <DialogHeader>
+            <DialogTitle>Eliminar proyecto</DialogTitle>
+            <DialogDescription>
+              {projectToDelete ? (
+                `¿Estás seguro de que quieres eliminar el proyecto "${projectToDelete.name}"? Esta acción no se puede deshacer y también se eliminarán los documentos asociados.`
+              ) : (
+                '¿Estás seguro de eliminar este proyecto?'
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDeleteConfirm(false)
+                setProjectToDelete(null)
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (!projectToDelete) return
+                await handleDeleteProject(projectToDelete.id)
+                setShowDeleteConfirm(false)
+                setProjectToDelete(null)
+              }}
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

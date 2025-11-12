@@ -7,6 +7,15 @@
 
 ### ✅ Completado Recientemente (Sesión Actual)
 
+#### Fix: Creación de proyecto — compatibilidad de columnas (POST /api/workspace/construction/projects)
+- Problema: errores al insertar cuando el esquema no tenía columnas nuevas (`director_obra`, `project_usage`, `profesionales`).
+- Causa raíz: el payload del cliente incluía campos recientes no presentes en algunos entornos/migraciones.
+- Cambios:
+  - Backend: filtrado estricto de campos permitidos y mapeo a columnas legacy (`director_obra`→`architect`, `project_usage`→`project_use`, fallback de `profesionales`→`inspector_name`).
+  - Normalización de strings vacíos → `NULL` para `TEXT`/`DATE` recurrentes.
+- Impacto: inserciones robustas en entornos con migraciones parciales; sin ruptura de contrato.
+- Fecha: 2025-11-12. Módulo: Construcción.
+
 #### **Fix: Creación de proyecto — fechas vacías (POST /api/workspace/construction/projects)**
 - Error detectado: Postgres `22007 invalid input syntax for type date: ""` al crear proyecto.
 - Causa raíz: el formulario enviaba `start_date`/`end_date` como cadena vacía `""`.
@@ -244,3 +253,21 @@ public/
 ```
 
 **Estado Final**: Sistema completamente operativo y listo para presentar a clientes potenciales. Pendientes menores que no afectan la funcionalidad demo: gestión de solicitudes de registro y logout desde panel admin.
+
+---
+
+#### Fix: UI — Estado faltante en modal de eliminación (Construcción)
+- Problema: `ReferenceError: showDeleteConfirm is not defined` al renderizar `ConstruccionClientPage`.
+- Causa raíz: estados `showDeleteConfirm` y `projectToDelete` se usaban pero no estaban definidos.
+- Cambio: se agregaron `useState` para ambos estados en `app/(workspace)/workspace/construccion/client-page.tsx`.
+- Impacto: la página renderiza sin errores y el diálogo de confirmación funciona como esperado.
+- Fecha: 2025-11-12.
+
+#### Fix: Borrado de proyecto — sesión y revalidación (Construcción)
+- Problema: al confirmar la eliminación, el proyecto seguía visible tras refrescar.
+- Causa raíz: la llamada `DELETE` no enviaba cookies de sesión; el estado local no revalidaba la lista desde servidor.
+- Cambios:
+  - Frontend: `handleDeleteProject` usa `credentials: 'include'` y ejecuta `loadProjects()` al éxito.
+  - Backend: `DELETE /api/workspace/construction/projects` registra `projectId`, `deletedCount` y retorna filas borradas con `.select('id')`.
+- Impacto: borrado consistente y trazabilidad mejorada para diagnosticar políticas RLS/permisos.
+- Fecha: 2025-11-12. Módulo: Construcción.

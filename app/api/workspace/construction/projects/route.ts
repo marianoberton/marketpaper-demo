@@ -126,27 +126,71 @@ export async function POST(request: NextRequest) {
       targetCompanyId = currentUser.company_id
     }
 
-    // Limpiar datos antes de enviar a la base de datos
-    const processedData = { ...projectData, company_id: targetCompanyId }
-    
-    // Convertir strings vacíos a null para evitar problemas
-    if (processedData.barrio === '') processedData.barrio = null
-    if (processedData.ciudad === '') processedData.ciudad = null
-    if (processedData.address === '') processedData.address = null
-    if (processedData.architect === '') processedData.architect = null
-    if (processedData.builder === '') processedData.builder = null
-    if (processedData.notes === '') processedData.notes = null
-    // Normalizar fechas: Postgres no acepta "" para columnas DATE
-    if (processedData.start_date === '') processedData.start_date = null
-    if (processedData.end_date === '') processedData.end_date = null
+    // Limpiar y normalizar datos antes de enviar a la base de datos
+    const rawData = { ...projectData, company_id: targetCompanyId }
 
-    // Extraer expedientes del projectData antes de crear el proyecto
-    const { expedientes, ...projectDataWithoutExpedientes } = processedData
+    // Convertir strings vacíos a null para evitar problemas en columnas TEXT/DATE
+    const toNullIfEmpty = (val: any) => (val === '' ? null : val)
 
-    // Crear el proyecto
+    rawData.barrio = toNullIfEmpty(rawData.barrio)
+    rawData.ciudad = toNullIfEmpty(rawData.ciudad)
+    rawData.address = toNullIfEmpty(rawData.address)
+    rawData.architect = toNullIfEmpty(rawData.architect)
+    rawData.builder = toNullIfEmpty(rawData.builder)
+    rawData.notes = toNullIfEmpty(rawData.notes)
+    rawData.start_date = toNullIfEmpty(rawData.start_date)
+    rawData.end_date = toNullIfEmpty(rawData.end_date)
+    rawData.dgro_file_number = toNullIfEmpty(rawData.dgro_file_number)
+    rawData.project_type = toNullIfEmpty(rawData.project_type)
+    rawData.project_use = toNullIfEmpty(rawData.project_use)
+    rawData.current_stage = toNullIfEmpty(rawData.current_stage)
+    rawData.permit_status = toNullIfEmpty(rawData.permit_status)
+    rawData.inspector_name = toNullIfEmpty(rawData.inspector_name)
+
+    // Compatibilidad hacia atrás: mapear nuevos campos a columnas existentes
+    // director_obra -> architect (si architect no viene)
+    if (rawData.director_obra && !rawData.architect) {
+      rawData.architect = rawData.director_obra
+    }
+
+    // project_usage -> project_use (si project_use no viene)
+    if (rawData.project_usage && !rawData.project_use) {
+      rawData.project_use = rawData.project_usage
+    }
+
+    // profesionales (JSONB) puede no existir en algunos esquemas.
+    // Si llega y hay al menos uno, setear inspector_name con el primero como fallback.
+    if (Array.isArray(rawData.profesionales) && rawData.profesionales.length > 0 && !rawData.inspector_name) {
+      const firstProf = rawData.profesionales[0]
+      if (firstProf && typeof firstProf.name === 'string') {
+        rawData.inspector_name = firstProf.name
+      }
+    }
+
+    // Construir objeto de inserción solo con campos seguros/conocidos
+    const allowedInsertFields = [
+      // Base 0004
+      'company_id', 'name', 'address', 'surface', 'architect', 'builder', 'status',
+      'cover_image_url', 'dgro_file_number', 'project_type', 'project_use',
+      // 0005 enhance
+      'client_id', 'start_date', 'end_date', 'budget', 'current_stage', 'permit_status', 'inspector_name', 'notes',
+      // Campos ampliamente usados (si existen en DB, no fallarán por null)
+      'barrio', 'ciudad'
+    ] as const
+
+    const insertData: Record<string, any> = {}
+    for (const key of allowedInsertFields) {
+      const val = (rawData as any)[key]
+      if (val !== undefined) insertData[key] = val
+    }
+
+    // Extraer expedientes del payload antes de crear el proyecto
+    const { expedientes } = rawData
+
+    // Crear el proyecto con campos filtrados y mapeados
     const { data: project, error } = await supabase
       .from('projects')
-      .insert(projectDataWithoutExpedientes)
+      .insert(insertData)
       .select(`
         *,
         client:clients(*),
@@ -366,7 +410,8 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verificar permisos - solo super admin o usuarios de la misma empresa
-    if (currentUser.role !== 'super_admin' && currentUser.company_id !== project.company_id) {
+    const canDelete = currentUser.role === 'super_admin' || currentUser.company_id === project.company_id
+    if (!canDelete) {
       return NextResponse.json({ error: 'Sin permisos para eliminar este proyecto' }, { status: 403 })
     }
 
@@ -389,15 +434,21 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Eliminar el proyecto (las eliminaciones en cascada se encargarán de las dependencias)
-    const { error: deleteError } = await supabase
+    const { data: deletedRows, error: deleteError } = await supabase
       .from('projects')
       .delete()
       .eq('id', projectId)
+      .select('id')
 
     if (deleteError) {
       console.error('Error deleting project:', deleteError)
       return NextResponse.json({ error: 'Error al eliminar el proyecto' }, { status: 500 })
     }
+
+    console.log('🔍 DELETE /projects result:', {
+      projectId,
+      deletedCount: deletedRows?.length || 0,
+    })
 
     return NextResponse.json({ 
       message: `Proyecto "${project.name}" eliminado exitosamente.${warningMessage}` 
