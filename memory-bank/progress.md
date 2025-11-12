@@ -7,6 +7,15 @@
 
 ### ✅ Completado Recientemente (Sesión Actual)
 
+#### **Fix: Creación de proyecto — fechas vacías (POST /api/workspace/construction/projects)**
+- Error detectado: Postgres `22007 invalid input syntax for type date: ""` al crear proyecto.
+- Causa raíz: el formulario enviaba `start_date`/`end_date` como cadena vacía `""`.
+- Cambios:
+  - Backend: normalización de `start_date` y `end_date` a `NULL` si llegan como `""` en `app/api/workspace/construction/projects/route.ts`.
+  - Frontend: el `CreateProjectModal` elimina `start_date`/`end_date` del payload si están vacíos.
+- Impacto: creación de proyectos estable sin errores de fecha; sin cambios de contrato.
+- Fecha: 2025-11-12. Módulo: Construcción.
+
 #### **1. Resolución Completa de Errores Técnicos**
 - **Arquitectura de autenticación reestructurada**:
   - `lib/auth-client.ts`: Funciones para componentes cliente usando browser client
@@ -234,4 +243,4 @@ public/
 ✓ Experiencia de usuario pulida
 ```
 
-**Estado Final**: Sistema completamente operativo y listo para presentar a clientes potenciales. Pendientes menores que no afectan la funcionalidad demo: gestión de solicitudes de registro y logout desde panel admin. 
+**Estado Final**: Sistema completamente operativo y listo para presentar a clientes potenciales. Pendientes menores que no afectan la funcionalidad demo: gestión de solicitudes de registro y logout desde panel admin.

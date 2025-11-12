@@ -781,12 +781,12 @@ export default function ConstruccionClientPage() {
                       fill
                       className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    <div className="absolute top-3 right-3">
+                    <div className="absolute top-3 right-3 z-10">
                       <Badge className={`${getStageColor(project.current_stage || '')} text-white`}>
                         {project.current_stage}
                       </Badge>
                     </div>
-                    <div className="absolute top-3 left-3">
+                    <div className="absolute top-3 left-3 z-10">
                       <Button
                         size="sm"
                         variant="destructive"
@@ -800,7 +800,7 @@ export default function ConstruccionClientPage() {
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none z-0" />
                   </div>
                   
                   <CardContent className="p-6">

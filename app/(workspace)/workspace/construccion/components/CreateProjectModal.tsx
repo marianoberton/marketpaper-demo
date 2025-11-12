@@ -230,6 +230,14 @@ export default function CreateProjectModal({
         expedientes: expedientes
       }
       delete projectWithoutImage.cover_image_url
+      // Evitar enviar fechas vacías: el backend convierte "" a NULL,
+      // pero desde el cliente preferimos no enviar las claves si no hay valor.
+      if (projectWithoutImage.start_date === '') {
+        delete (projectWithoutImage as any).start_date
+      }
+      if (projectWithoutImage.end_date === '') {
+        delete (projectWithoutImage as any).end_date
+      }
       
       // Solo incluir enable_tax_management si está activado
       // (para evitar problemas si la migración no se ha ejecutado)

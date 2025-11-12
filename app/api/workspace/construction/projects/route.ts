@@ -136,6 +136,9 @@ export async function POST(request: NextRequest) {
     if (processedData.architect === '') processedData.architect = null
     if (processedData.builder === '') processedData.builder = null
     if (processedData.notes === '') processedData.notes = null
+    // Normalizar fechas: Postgres no acepta "" para columnas DATE
+    if (processedData.start_date === '') processedData.start_date = null
+    if (processedData.end_date === '') processedData.end_date = null
 
     // Extraer expedientes del projectData antes de crear el proyecto
     const { expedientes, ...projectDataWithoutExpedientes } = processedData
