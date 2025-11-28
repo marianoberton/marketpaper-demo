@@ -219,6 +219,25 @@ export async function POST(request: NextRequest) {
       if (expedientesError) {
         console.error('Error creating expedientes:', expedientesError)
         // No fallar la creación del proyecto por error en expedientes
+      } else {
+        // IMPORTANTE: Si se crearon expedientes, necesitamos recargar el proyecto
+        // para devolverlo con los expedientes incluidos.
+        // De lo contrario, el frontend recibirá un proyecto sin expedientes,
+        // y al editarlo y guardar, sobreescribirá (borrará) los expedientes de la BD.
+        const { data: projectWithExpedientes, error: reloadError } = await supabase
+          .from('projects')
+          .select(`
+            *,
+            client:clients(*),
+            expedientes:project_expedientes(*)
+          `)
+          .eq('id', project.id)
+          .single()
+          
+        if (!reloadError && projectWithExpedientes) {
+          console.log('🔍 DEBUG: Proyecto recargado con expedientes:', projectWithExpedientes.expedientes)
+          return NextResponse.json({ project: projectWithExpedientes }, { status: 201 })
+        }
       }
     }
 
@@ -304,7 +323,8 @@ export async function PUT(request: NextRequest) {
       .eq('id', id)
       .select(`
         *,
-        client:clients(*)
+        client:clients(*),
+        expedientes:project_expedientes(*)
       `)
       .single()
 
@@ -333,8 +353,10 @@ export async function PUT(request: NextRequest) {
 
     // Manejar expedientes SOLO si se proporcionan explícitamente
     // IMPORTANTE: No eliminar expedientes si no se envían en la actualización
+    let expedientesUpdated = false
     if (expedientes !== undefined && Array.isArray(expedientes)) {
-      console.log('🔍 DEBUG: Actualizando expedientes explícitamente:', expedientes)
+      console.log('🔍 DEBUG PUT: Recibido array de expedientes. Cantidad:', expedientes.length)
+      console.log('🔍 DEBUG PUT: Contenido de expedientes:', JSON.stringify(expedientes, null, 2))
       
       // Primero eliminar expedientes existentes
       const { error: deleteError } = await supabase
@@ -344,6 +366,8 @@ export async function PUT(request: NextRequest) {
 
       if (deleteError) {
         console.error('Error deleting existing expedientes:', deleteError)
+      } else {
+        console.log('🔍 DEBUG PUT: Expedientes anteriores eliminados correctamente')
       }
 
       // Luego insertar los nuevos expedientes
@@ -355,16 +379,46 @@ export async function PUT(request: NextRequest) {
           status: exp.status || 'Pendiente'
         }))
 
+        console.log('🔍 DEBUG PUT: Insertando nuevos expedientes:', JSON.stringify(expedientesData, null, 2))
+
         const { error: expedientesError } = await supabase
           .from('project_expedientes')
           .insert(expedientesData)
 
         if (expedientesError) {
           console.error('Error creating expedientes:', expedientesError)
+        } else {
+          console.log('🔍 DEBUG PUT: Nuevos expedientes insertados correctamente')
+          expedientesUpdated = true
         }
+      } else {
+        // Si el array está vacío, significa que se eliminaron todos, por lo que hubo actualización
+        expedientesUpdated = true
       }
     } else {
-      console.log('🔍 DEBUG: No se enviaron expedientes en la actualización, manteniendo los existentes')
+      console.log('🔍 DEBUG: No se enviaron expedientes en la actualización (undefined o no es array), manteniendo los existentes')
+      if (expedientes !== undefined) {
+        console.log('🔍 DEBUG: expedientes value:', expedientes)
+      }
+    }
+
+    // Si se actualizaron los expedientes, necesitamos recargar el proyecto
+    // para devolverlo con los expedientes actualizados
+    if (expedientesUpdated) {
+      const { data: projectWithExpedientes, error: reloadError } = await supabase
+        .from('projects')
+        .select(`
+          *,
+          client:clients(*),
+          expedientes:project_expedientes(*)
+        `)
+        .eq('id', id)
+        .single()
+      
+      if (!reloadError && projectWithExpedientes) {
+        console.log('🔍 DEBUG: Proyecto recargado con expedientes actualizados:', projectWithExpedientes.expedientes)
+        return NextResponse.json({ project: projectWithExpedientes })
+      }
     }
 
     console.log('Project updated successfully:', project.id)
