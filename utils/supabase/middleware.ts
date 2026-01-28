@@ -55,7 +55,23 @@ export async function updateSession(request: NextRequest) {
   )
 
   // IMPORTANT: The `auth.getUser()` method must be called to refresh the session.
-  const { data: { user } } = await supabase.auth.getUser()
+  let user = null
+  try {
+    const { data: { user: authUser }, error } = await supabase.auth.getUser()
+    if (error) {
+      // If we have an invalid token, we just treat it as logged out
+      // preventing the "Invalid Refresh Token" crash
+      if (error.message?.includes('Refresh Token Not Found') || error.message?.includes('Invalid Refresh Token')) {
+        console.warn('Middleware: Invalid refresh token, treating as logged out.')
+      } else {
+        console.error('Middleware: Auth error:', error)
+      }
+    } else {
+      user = authUser
+    }
+  } catch (err) {
+    console.error('Middleware: Unexpected auth error:', err)
+  }
 
   const { pathname } = request.nextUrl
 

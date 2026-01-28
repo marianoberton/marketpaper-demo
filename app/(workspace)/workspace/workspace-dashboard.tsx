@@ -35,20 +35,10 @@ export function WorkspaceDashboard() {
       
       // Mapear el nombre del módulo a su ruta
       const moduleRoutes: { [key: string]: string } = {
-        'construccion': '/workspace/construccion',
-        'crm': '/workspace/crm',
-        'projects': '/workspace/projects',
-        'analytics': '/workspace/analytics',
-        'team': '/workspace/team',
-        'calendar': '/workspace/calendar',
-        'documents': '/workspace/documents',
-        'knowledge': '/workspace/knowledge',
-        'bots': '/workspace/bots',
-        'expenses': '/workspace/expenses',
-        'marketing': '/workspace/marketing',
-        'sales': '/workspace/sales',
-        'settings': '/workspace/settings'
-      }
+                'construccion': '/workspace/construccion',
+                'crm': '/workspace/crm',
+                'settings': '/workspace/settings'
+              }
       
       const targetRoute = moduleRoutes[singleModule]
       if (targetRoute) {

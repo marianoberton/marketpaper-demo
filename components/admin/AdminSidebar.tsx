@@ -4,12 +4,12 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { 
-  LayoutDashboard, 
-  Building2, 
-  Users, 
-  Key, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  Building2,
+  Users,
+  Key,
+  BarChart3,
   Settings,
   BookTemplate,
   DollarSign,
@@ -18,7 +18,8 @@ import {
   ChevronRight,
   Plus,
   UserPlus,
-  Package
+  Package,
+  Ticket
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -65,16 +66,10 @@ const navigation = [
     badge: null
   },
   {
-    name: 'API Keys',
-    href: '/admin/api-keys',
-    icon: Key,
-    badge: { count: 12, color: 'blue' }
-  },
-  {
-    name: 'Analytics',
-    href: '/admin/analytics',
-    icon: BarChart3,
-    badge: { count: 3, color: 'red' }
+    name: 'Tickets',
+    href: '/admin/tickets',
+    icon: Ticket,
+    badge: null // Se puede agregar badge dinámico después
   },
   {
     name: 'Configuración',
@@ -98,8 +93,8 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             className={cn(
               'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 flex-1',
               'hover:bg-white/80 hover:shadow-sm',
-              isActive 
-                ? 'bg-blue-50 text-blue-700 shadow-sm border border-blue-100' 
+              isActive
+                ? 'bg-blue-50 text-blue-700 shadow-sm border border-blue-100'
                 : 'text-gray-600 hover:text-gray-900',
               collapsed && 'justify-center px-2'
             )}
@@ -114,7 +109,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               <>
                 <span className="flex-1 truncate">{item.name}</span>
                 {item.badge && (
-                  <Badge 
+                  <Badge
                     variant={item.badge.color === 'red' ? 'destructive' : 'default'}
                     className="h-5 px-1.5 text-xs"
                   >
@@ -124,7 +119,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               </>
             )}
           </Link>
-          
+
           {/* Quick Action Button - Outside the main link */}
           {!collapsed && item.quickAction && (
             <Link
@@ -135,7 +130,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             </Link>
           )}
         </div>
-        
+
         {/* Tooltip for collapsed state */}
         {collapsed && (
           <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">

@@ -4,12 +4,12 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { 
-  LayoutDashboard, 
-  Users, 
-  UserPlus, 
-  Activity, 
-  BarChart3, 
+import {
+  LayoutDashboard,
+  Users,
+  UserPlus,
+  Activity,
+  BarChart3,
   Settings,
   ChevronDown,
   ChevronRight,
@@ -55,24 +55,30 @@ const navigation = [
     icon: Hammer,
   },
   {
-    name: 'Analytics',
-    href: '/workspace/analytics',
-    icon: BarChart3,
-  },
-  {
     name: 'Configuración',
-    href: '/workspace/settings',
     icon: Settings,
+    children: [
+      {
+        name: 'General',
+        href: '/workspace/settings',
+        icon: Settings,
+      },
+      {
+        name: 'Equipo',
+        href: '/workspace/settings/users',
+        icon: Users,
+      }
+    ]
   }
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
-  const [expandedItems, setExpandedItems] = useState<string[]>(['CRM'])
+  const [expandedItems, setExpandedItems] = useState<string[]>(['CRM', 'Configuración'])
 
   const toggleExpanded = (name: string) => {
-    setExpandedItems(prev => 
-      prev.includes(name) 
+    setExpandedItems(prev =>
+      prev.includes(name)
         ? prev.filter(item => item !== name)
         : [...prev, name]
     )

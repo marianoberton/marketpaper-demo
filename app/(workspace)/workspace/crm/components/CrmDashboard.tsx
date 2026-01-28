@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { 
   Users, 
@@ -13,7 +14,8 @@ import {
   BookOpen,
   Zap,
   Inbox,
-  Calendar
+  Calendar,
+  Loader2
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -23,6 +25,44 @@ interface CrmDashboardProps {
 }
 
 export function CrmDashboard({ companyId }: CrmDashboardProps) {
+  const [stats, setStats] = useState({
+    totalContacts: 0,
+    newLeads: 0,
+    activeOpportunities: 0,
+    conversionRate: 0,
+    loading: true
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!companyId) return;
+      try {
+        const response = await fetch(`/api/workspace/crm/contacts?company_id=${companyId}`);
+        if (response.ok) {
+          const data = await response.json();
+          const contacts = data.contacts || [];
+          
+          const total = contacts.length;
+          // Asumimos que los "Leads Nuevos" son los de tipo 'lead' creados recientemente (o todos por ahora)
+          const leads = contacts.filter((c: any) => c.type === 'lead').length;
+          
+          setStats({
+            totalContacts: total,
+            newLeads: leads,
+            activeOpportunities: 0, // TODO: Implementar endpoint de oportunidades
+            conversionRate: 0, // TODO: Calcular tasa real
+            loading: false
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching dashboard stats:", error);
+        setStats(prev => ({ ...prev, loading: false }));
+      }
+    };
+
+    fetchStats();
+  }, [companyId]);
+
   // Helper function to build URLs with company_id
   const buildUrl = (path: string) => {
     if (!companyId) return path;
@@ -126,7 +166,9 @@ export function CrmDashboard({ companyId }: CrmDashboardProps) {
               <UserPlus className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">+0</div>
+              <div className="text-2xl font-bold">
+                {stats.loading ? <Loader2 className="h-6 w-6 animate-spin" /> : `+${stats.newLeads}`}
+              </div>
               <p className="text-xs text-muted-foreground">
                 Desde la última semana
               </p>
@@ -141,7 +183,9 @@ export function CrmDashboard({ companyId }: CrmDashboardProps) {
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">
+                {stats.loading ? <Loader2 className="h-6 w-6 animate-spin" /> : stats.totalContacts}
+              </div>
               <p className="text-xs text-muted-foreground">
                 Base de datos de clientes
               </p>

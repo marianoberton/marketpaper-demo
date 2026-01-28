@@ -19,7 +19,7 @@ interface WorkspaceContextProps {
 
 const WorkspaceContext = createContext<WorkspaceContextProps | undefined>(undefined)
 
-export function WorkspaceProvider({ 
+export function WorkspaceProvider({
   children,
   companyFeatures,
   companyId,
@@ -27,7 +27,7 @@ export function WorkspaceProvider({
   companyLogoUrl,
   isLoading,
   availableModules,
-} : { 
+}: {
   children: ReactNode
   companyFeatures: string[]
   companyId?: string
@@ -68,7 +68,7 @@ export function WorkspaceProvider({
     loadUserData()
   }, [])
 
-  const value = { 
+  const value = {
     companyFeatures,
     companyId,
     companyName,
@@ -104,7 +104,7 @@ export function useIsSuperAdmin() {
       try {
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
-        
+
         if (!user) {
           setIsSuperAdmin(false)
           setLoading(false)
@@ -118,7 +118,18 @@ export function useIsSuperAdmin() {
           .eq('status', 'active')
           .single()
 
-        setIsSuperAdmin(!!superAdmin)
+        if (superAdmin) {
+          setIsSuperAdmin(true)
+          return
+        }
+
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+
+        setIsSuperAdmin(profile?.role === 'super_admin')
       } catch (error) {
         console.error('Error checking super admin status:', error)
         setIsSuperAdmin(false)

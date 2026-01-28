@@ -62,7 +62,7 @@ export default function ModulesPage() {
       toast.error('Todos los campos son obligatorios.')
       return;
     }
-    
+
     try {
       const isEdit = !!currentModule.id;
       const response = await fetch('/api/admin/modules', {
@@ -79,7 +79,7 @@ export default function ModulesPage() {
       }
 
       const savedModule = await response.json();
-      
+
       if (isEdit) {
         setModules(prev => prev.map(m => m.id === savedModule.id ? savedModule : m));
         toast.success(`Módulo "${savedModule.name}" actualizado.`)
@@ -91,7 +91,7 @@ export default function ModulesPage() {
           toast.warning(`Módulo "${savedModule.name}" creado. Nota: Auto-generación de archivos solo funciona en desarrollo local.`)
         }
       }
-      
+
       setIsDialogOpen(false)
       setCurrentModule({})
 
@@ -124,7 +124,7 @@ export default function ModulesPage() {
       console.error(error);
     }
   }
-  
+
   const handleOpenDialog = (module: Partial<Module> | null = null) => {
     setCurrentModule(module || {});
     setIsDialogOpen(true);
@@ -137,7 +137,54 @@ export default function ModulesPage() {
         description="Crea y administra los módulos que estarán disponibles en la plataforma para asignar a los templates."
         accentColor="blue"
       />
-      
+
+      {/* Development Workflow Guide */}
+      <Card className="border-blue-200 bg-blue-50/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2 text-blue-800">
+            <Box className="h-5 w-5" />
+            📚 Cómo crear un nuevo módulo
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm">
+            <div className="flex flex-col items-center text-center p-3 bg-white rounded-lg border">
+              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mb-2">1</div>
+              <div className="font-medium">Crear aquí</div>
+              <div className="text-gray-500 text-xs">Nombre, ruta, icono</div>
+            </div>
+            <div className="flex flex-col items-center text-center p-3 bg-white rounded-lg border">
+              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mb-2">2</div>
+              <div className="font-medium">Auto-generación</div>
+              <div className="text-gray-500 text-xs">Archivos creados en dev</div>
+            </div>
+            <div className="flex flex-col items-center text-center p-3 bg-white rounded-lg border">
+              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mb-2">3</div>
+              <div className="font-medium">Personalizar</div>
+              <div className="text-gray-500 text-xs">Editar código en IDE</div>
+            </div>
+            <div className="flex flex-col items-center text-center p-3 bg-white rounded-lg border">
+              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold mb-2">4</div>
+              <div className="font-medium">Deploy</div>
+              <div className="text-gray-500 text-xs">Commit + push a prod</div>
+            </div>
+            <div className="flex flex-col items-center text-center p-3 bg-white rounded-lg border">
+              <div className="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center font-bold mb-2">5</div>
+              <div className="font-medium">Asignar</div>
+              <div className="text-gray-500 text-xs">En Templates</div>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs">
+            <span className="text-amber-600">⚠️</span>
+            <div className="text-amber-800">
+              <strong>Nota:</strong> La auto-generación de archivos solo funciona en desarrollo local.
+              Los archivos se crean en <code className="bg-amber-100 px-1 rounded">app/(workspace)/workspace/[ruta]/</code>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex justify-end">
         <Button onClick={() => handleOpenDialog()}>
           <PlusCircle className="mr-2 h-4 w-4" />
@@ -162,7 +209,7 @@ export default function ModulesPage() {
               </p>
             </div>
           )}
-          
+
           {modules.length > 0 && (
             <div className="space-y-8">
               {/* Dashboard Modules */}
@@ -205,7 +252,7 @@ export default function ModulesPage() {
                   )}
                 </div>
               </div>
-              
+
               {/* Workspace Modules */}
               <div>
                 <h3 className="text-lg font-semibold text-green-700 mb-4 flex items-center gap-2">
@@ -262,36 +309,36 @@ export default function ModulesPage() {
           <div className="space-y-6 py-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nombre del Módulo</Label>
-              <Input 
-                id="name" 
-                value={currentModule.name || ''} 
-                onChange={(e) => setCurrentModule(p => ({ ...p, name: e.target.value }))} 
-                placeholder="Ej: Gestión Documental" 
+              <Input
+                id="name"
+                value={currentModule.name || ''}
+                onChange={(e) => setCurrentModule(p => ({ ...p, name: e.target.value }))}
+                placeholder="Ej: Gestión Documental"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="route_path">Ruta del Módulo</Label>
-              <Input 
-                id="route_path" 
-                value={currentModule.route_path || ''} 
-                onChange={(e) => setCurrentModule(p => ({ ...p, route_path: e.target.value }))} 
-                placeholder="Ej: /workspace/documentos" 
+              <Input
+                id="route_path"
+                value={currentModule.route_path || ''}
+                onChange={(e) => setCurrentModule(p => ({ ...p, route_path: e.target.value }))}
+                placeholder="Ej: /workspace/documentos"
               />
               <p className="text-xs text-muted-foreground">La ruta debe empezar con /workspace/</p>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="icon">Icono (Lucide React)</Label>
-              <Input 
-                id="icon" 
-                value={currentModule.icon || ''} 
-                onChange={(e) => setCurrentModule(p => ({ ...p, icon: e.target.value }))} 
-                placeholder="Ej: FileText, Users, BarChart3" 
+              <Input
+                id="icon"
+                value={currentModule.icon || ''}
+                onChange={(e) => setCurrentModule(p => ({ ...p, icon: e.target.value }))}
+                placeholder="Ej: FileText, Users, BarChart3"
               />
               <p className="text-xs text-muted-foreground">Busca iconos en: <a href="https://lucide.dev/icons" target="_blank" className="text-blue-500 underline">lucide.dev/icons</a></p>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="category">Categoría</Label>
               <Select onValueChange={(value: 'Dashboard' | 'Workspace') => setCurrentModule(p => ({ ...p, category: value }))} value={currentModule.category}>
@@ -304,7 +351,7 @@ export default function ModulesPage() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="text-sm text-muted-foreground border rounded-lg p-4 bg-muted/50 space-y-2">
               <p className="font-medium text-foreground">ℹ️ Diferencia entre categorías:</p>
               <ul className="space-y-2 text-xs">
@@ -312,7 +359,7 @@ export default function ModulesPage() {
                 <li><strong>🏢 Workspace:</strong> Módulos con herramientas de trabajo (CRM, proyectos, documentos, etc.)</li>
               </ul>
             </div>
-            
+
             <div className="text-sm border rounded-lg p-4 bg-blue-50 border-blue-200 space-y-2">
               <p className="font-medium text-blue-800">🛠️ Herramienta de Desarrollo Local:</p>
               <ul className="space-y-1 text-xs text-blue-700">

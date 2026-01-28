@@ -9,7 +9,7 @@ import { createClient } from '@/utils/supabase/server'
 
 export default async function CompaniesPage() {
   const companies = await getAllCompanies()
-  
+
   // Fetch available templates
   const supabase = await createClient()
   const { data: templates } = await supabase
@@ -28,9 +28,6 @@ export default async function CompaniesPage() {
   const stats = {
     total: transformedCompanies.length,
     active: transformedCompanies.filter(c => c.status === 'active').length,
-    trial: transformedCompanies.filter(c => c.status === 'trial').length,
-    suspended: transformedCompanies.filter(c => c.status === 'suspended').length,
-    totalRevenue: transformedCompanies.reduce((sum, c) => sum + (c.monthly_price || 0), 0),
   }
 
   const formatCurrency = (amount: number) => {
@@ -56,8 +53,8 @@ export default async function CompaniesPage() {
         </Link>
       </div>
 
-      {/* Enhanced Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      {/* Stats Cards - Simplified */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -84,64 +81,16 @@ export default async function CompaniesPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">En Prueba</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.trial}</p>
+                <p className="text-sm text-gray-600">Inactivas</p>
+                <p className="text-2xl font-bold text-gray-500">{stats.total - stats.active}</p>
               </div>
-              <Calendar className="h-8 w-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Suspendidas</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.suspended}</p>
-              </div>
-              <Calendar className="h-8 w-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Ingresos Mensuales</p>
-                <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.totalRevenue)}</p>
-              </div>
-              <DollarSign className="h-8 w-8 text-green-500" />
+              {/* Using a neutral icon for inactive */}
+              <Building2 className="h-8 w-8 text-gray-400" />
             </div>
           </CardContent>
         </Card>
       </div>
-      
-      {/* Enhanced Status Guide */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardHeader>
-          <CardTitle className="text-blue-900 text-lg">Guía de Estados</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <Badge variant="default" className="text-xs">Activa</Badge>
-              <span className="text-blue-800">Acceso completo a la plataforma</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="text-xs">Prueba</Badge>
-              <span className="text-blue-800">Período de prueba gratuita</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="destructive" className="text-xs">Suspendida</Badge>
-              <span className="text-blue-800">Acceso bloqueado</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs">Cancelada</Badge>
-              <span className="text-blue-800">Suscripción cancelada</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      
+
       <CompaniesClientPage companies={transformedCompanies} templates={templates || []} />
     </div>
   )

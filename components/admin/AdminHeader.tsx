@@ -16,8 +16,20 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 
+import { Sidebar } from '@/components/admin/AdminSidebar'
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import { Menu } from 'lucide-react'
+
+// ...
+
 export function Header() {
   const [user, setUser] = useState<any>(null)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -44,8 +56,24 @@ export function Header() {
 
   return (
     <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/60 sticky top-0 z-40">
-      <div className="px-6 py-3">
-        <div className="flex justify-between items-center">
+      <div className="px-4 sm:px-6 py-3">
+        <div className="flex justify-between items-center gap-4">
+
+          {/* Mobile Menu Trigger */}
+          <div className="md:hidden">
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="-ml-2">
+                  <Menu className="h-5 w-5 text-gray-600" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="p-0 w-72">
+                <SheetTitle className="sr-only">Menú de Navegación</SheetTitle>
+                <Sidebar collapsed={false} onToggle={() => setIsMobileMenuOpen(false)} />
+              </SheetContent>
+            </Sheet>
+          </div>
+
           {/* Left side - Search */}
           <div className="flex items-center flex-1 max-w-lg">
             <div className="relative w-full">
@@ -68,19 +96,6 @@ export function Header() {
 
           {/* Right side - Actions and user menu */}
           <div className="flex items-center gap-3">
-            {/* Quick Stats */}
-            <div className="hidden lg:flex items-center gap-4 px-4 py-2 bg-gray-50/80 rounded-lg">
-              <div className="text-center">
-                <div className="text-lg font-semibold text-blue-600">1</div>
-                <div className="text-xs text-gray-500">Empresas</div>
-              </div>
-              <div className="w-px h-8 bg-gray-200"></div>
-              <div className="text-center">
-                <div className="text-lg font-semibold text-green-600">€29</div>
-                <div className="text-xs text-gray-500">MRR</div>
-              </div>
-            </div>
-
             {/* Notifications */}
             <Button
               variant="ghost"
@@ -88,9 +103,6 @@ export function Header() {
               className="relative h-9 w-9 rounded-lg hover:bg-gray-100"
             >
               <Bell className="h-4 w-4" />
-              <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs bg-red-500 hover:bg-red-500">
-                3
-              </Badge>
             </Button>
 
             {/* User menu */}

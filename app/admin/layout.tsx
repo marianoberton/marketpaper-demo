@@ -13,11 +13,11 @@ export default function AdminLayout({
 
   return (
     <div className="flex h-screen bg-gray-50/50">
-      {/* Sidebar */}
-      <div className={`${sidebarCollapsed ? 'w-16' : 'w-64'} transition-all duration-300 ease-in-out`}>
+      {/* Sidebar - Hidden on mobile, controlled by Header */}
+      <div className={`hidden md:block ${sidebarCollapsed ? 'w-16' : 'w-64'} transition-all duration-300 ease-in-out`}>
         <Sidebar collapsed={sidebarCollapsed} onToggle={() => setSidebarCollapsed(!sidebarCollapsed)} />
       </div>
-      
+
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         <Header />

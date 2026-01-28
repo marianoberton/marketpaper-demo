@@ -118,14 +118,25 @@ export interface DailyUsageStats {
 
 export async function isSuperAdmin(userId: string): Promise<boolean> {
   const supabaseAdmin = createSupabaseAdmin()
-  const { data, error } = await supabaseAdmin
+  
+  // Check super_admins table (legacy/compatibility)
+  const { data: superAdminTable } = await supabaseAdmin
     .from('super_admins')
     .select('id')
     .eq('user_id', userId)
     .eq('status', 'active')
     .single()
 
-  return !error && !!data
+  if (superAdminTable) return true
+
+  // Check user_profiles role (new standard)
+  const { data: profile } = await supabaseAdmin
+    .from('user_profiles')
+    .select('role')
+    .eq('id', userId)
+    .single()
+
+  return profile?.role === 'super_admin'
 }
 
 export async function createSuperAdmin(userData: {

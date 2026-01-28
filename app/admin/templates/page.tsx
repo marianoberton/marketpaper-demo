@@ -34,8 +34,6 @@ interface ClientTemplate {
   name: string
   description?: string
   category: string
-  monthly_price: number
-  setup_fee: number
   is_active: boolean
   created_at: string
   dashboard_modules: string[]
@@ -76,8 +74,6 @@ const MemoizedTemplateDialog = React.memo(({ isOpen, onClose, onSave, template, 
     name: '',
     description: '',
     category: 'standard',
-    monthly_price: 0,
-    setup_fee: 0,
     max_users: 5,
     max_contacts: 1000,
     max_api_calls: 10000,
@@ -93,8 +89,6 @@ const MemoizedTemplateDialog = React.memo(({ isOpen, onClose, onSave, template, 
         name: template.name,
         description: template.description || '',
         category: template.category,
-        monthly_price: template.monthly_price,
-        setup_fee: template.setup_fee,
         max_users: template.max_users,
         max_contacts: template.max_contacts,
         max_api_calls: template.max_api_calls,
@@ -109,8 +103,6 @@ const MemoizedTemplateDialog = React.memo(({ isOpen, onClose, onSave, template, 
         name: '',
         description: '',
         category: 'standard',
-        monthly_price: 0,
-        setup_fee: 0,
         max_users: 5,
         max_contacts: 1000,
         max_api_calls: 10000,
@@ -195,33 +187,7 @@ const MemoizedTemplateDialog = React.memo(({ isOpen, onClose, onSave, template, 
               />
             </div>
 
-            {/* Precios y límites */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="monthly_price">Precio mensual (€)</Label>
-                <Input
-                  id="monthly_price"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.monthly_price}
-                  onChange={e => handleChange('monthly_price', parseFloat(e.target.value) || 0)}
-                  autoComplete="off"
-                />
-              </div>
-              <div>
-                <Label htmlFor="setup_fee">Tarifa de configuración (€)</Label>
-                <Input
-                  id="setup_fee"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.setup_fee}
-                  onChange={e => handleChange('setup_fee', parseFloat(e.target.value) || 0)}
-                  autoComplete="off"
-                />
-              </div>
-            </div>
+
 
             <div className="grid grid-cols-3 gap-4">
               <div>
@@ -278,7 +244,7 @@ const MemoizedTemplateDialog = React.memo(({ isOpen, onClose, onSave, template, 
                     onChange={handleDynamicModuleChange}
                   />
                 </div>
-                
+
                 {/* Módulos Workspace */}
                 <div>
                   <h3 className="text-lg font-medium mb-3 text-green-700">🏢 Módulos Workspace</h3>
@@ -289,7 +255,7 @@ const MemoizedTemplateDialog = React.memo(({ isOpen, onClose, onSave, template, 
                     onChange={handleDynamicModuleChange}
                   />
                 </div>
-                
+
                 {/* Resumen de selección */}
                 <div className="pt-4 border-t">
                   <h4 className="font-medium text-gray-700 mb-2">Resumen de Selección:</h4>
@@ -435,7 +401,7 @@ export default function TemplatesPage() {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Error al eliminar la plantilla.');
       }
-      
+
       await loadTemplates(); // Recargar
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Un error inesperado ocurrió.');
@@ -446,13 +412,13 @@ export default function TemplatesPage() {
     if (!window.confirm(`¿Quieres duplicar la plantilla "${template.name}"?`)) {
       return;
     }
-    
+
     setIsSaving(true);
     setError(null);
-    
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { id, created_at, ...templateData } = template;
-    
+
     try {
       await fetch('/api/admin/templates', {
         method: 'POST',
@@ -484,7 +450,7 @@ export default function TemplatesPage() {
   const filteredTemplates = templates.filter(template => {
     const searchLower = searchTerm.toLowerCase()
     return template.name.toLowerCase().includes(searchLower) ||
-           template.description?.toLowerCase().includes(searchLower)
+      template.description?.toLowerCase().includes(searchLower)
   })
 
   const formatCurrency = (amount: number) => {
@@ -537,6 +503,16 @@ export default function TemplatesPage() {
         </CardContent>
       </Card>
 
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+          <div className="flex">
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Templates List */}
       <div className="space-y-4">
         {filteredTemplates.length === 0 ? (
@@ -576,16 +552,15 @@ export default function TemplatesPage() {
                 <CardContent>
                   <p className="text-sm text-gray-600 mb-4">{template.description}</p>
                   <div className="space-y-3">
-                    <div className="flex justify-between text-sm"><span className="text-gray-600">Precio mensual:</span><span className="font-medium">{formatCurrency(template.monthly_price)}</span></div>
-                    {template.setup_fee > 0 && (<div className="flex justify-between text-sm"><span className="text-gray-600">Configuración:</span><span className="font-medium">{formatCurrency(template.setup_fee)}</span></div>)}
                     <div className="flex justify-between text-sm"><span className="text-gray-600">Máx. usuarios:</span><span className="font-medium">{template.max_users}</span></div>
                     <div className="flex justify-between text-sm"><span className="text-gray-600">Máx. contactos:</span><span className="font-medium">{template.max_contacts.toLocaleString()}</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-gray-600">Llamadas API:</span><span className="font-medium">{template.max_api_calls.toLocaleString()}</span></div>
                   </div>
                   <div className="mt-4 space-y-3">
                     {/* Dashboard Modules */}
                     <div>
                       <h4 className="text-sm font-medium text-blue-700 mb-1 flex items-center gap-1">
-                        📊 Dashboard 
+                        📊 Dashboard
                         ({availableModules.filter(m => m.category === 'Dashboard' && template.modules?.includes(m.id)).length})
                       </h4>
                       <div className="flex flex-wrap gap-1">
@@ -610,11 +585,11 @@ export default function TemplatesPage() {
                         })()}
                       </div>
                     </div>
-                    
+
                     {/* Workspace Modules */}
                     <div>
                       <h4 className="text-sm font-medium text-green-700 mb-1 flex items-center gap-1">
-                        🏢 Workspace 
+                        🏢 Workspace
                         ({availableModules.filter(m => m.category === 'Workspace' && template.modules?.includes(m.id)).length})
                       </h4>
                       <div className="flex flex-wrap gap-1">

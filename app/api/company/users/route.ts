@@ -1,0 +1,181 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+
+// GET - List users from my company
+export async function GET(request: NextRequest) {
+  const cookieStore = await cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name) => cookieStore.get(name)?.value,
+      },
+    }
+  )
+
+  // Check authentication
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  }
+
+  // Get current user's profile to check role and company
+  const { data: currentUser, error: userError } = await supabase
+    .from('user_profiles')
+    .select('id, role, company_id')
+    .eq('id', user.id)
+    .single()
+
+  if (userError || !currentUser) {
+    return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
+  }
+
+  // Only company_owner and company_admin can list users
+  if (!['super_admin', 'company_owner', 'company_admin'].includes(currentUser.role)) {
+    return NextResponse.json({ error: 'No tienes permisos para ver usuarios' }, { status: 403 })
+  }
+
+  // Super admins see all, company admins see their company
+  let query = supabase
+    .from('user_profiles')
+    .select('id, email, full_name, role, status, last_login, created_at, company_id, avatar_url')
+    .order('created_at', { ascending: false })
+
+  if (currentUser.role !== 'super_admin') {
+    query = query.eq('company_id', currentUser.company_id)
+  }
+
+  const { data: users, error: usersError } = await query
+
+  if (usersError) {
+    console.error('Error fetching users:', usersError)
+    return NextResponse.json({ error: 'Error al obtener usuarios' }, { status: 500 })
+  }
+
+  return NextResponse.json({ 
+    users: users || [],
+    currentUserRole: currentUser.role 
+  })
+}
+
+// PUT - Update user (role, status)
+export async function PUT(request: NextRequest) {
+  const cookieStore = await cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name) => cookieStore.get(name)?.value,
+      },
+    }
+  )
+
+  // Check authentication
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  }
+
+  const body = await request.json()
+  const { userId, role, status } = body
+
+  if (!userId) {
+    return NextResponse.json({ error: 'userId es requerido' }, { status: 400 })
+  }
+
+  // Get current user's profile
+  const { data: currentUser } = await supabase
+    .from('user_profiles')
+    .select('id, role, company_id')
+    .eq('id', user.id)
+    .single()
+
+  if (!currentUser) {
+    return NextResponse.json({ error: 'Usuario actual no encontrado' }, { status: 404 })
+  }
+
+  // Get target user
+  const { data: targetUser } = await supabase
+    .from('user_profiles')
+    .select('id, role, company_id')
+    .eq('id', userId)
+    .single()
+
+  if (!targetUser) {
+    return NextResponse.json({ error: 'Usuario objetivo no encontrado' }, { status: 404 })
+  }
+
+  // Permission checks
+  const canManage = checkCanManageUser(currentUser, targetUser, role)
+  if (!canManage.allowed) {
+    return NextResponse.json({ error: canManage.reason }, { status: 403 })
+  }
+
+  // Prepare update data
+  const updateData: Record<string, any> = {}
+  if (role) updateData.role = role
+  if (status) updateData.status = status
+
+  if (Object.keys(updateData).length === 0) {
+    return NextResponse.json({ error: 'Nada que actualizar' }, { status: 400 })
+  }
+
+  const { data: updatedUser, error: updateError } = await supabase
+    .from('user_profiles')
+    .update(updateData)
+    .eq('id', userId)
+    .select()
+    .single()
+
+  if (updateError) {
+    console.error('Error updating user:', updateError)
+    return NextResponse.json({ error: 'Error al actualizar usuario' }, { status: 500 })
+  }
+
+  return NextResponse.json({ user: updatedUser })
+}
+
+// Helper function to check permissions
+function checkCanManageUser(
+  currentUser: { role: string; company_id: string },
+  targetUser: { role: string; company_id: string },
+  newRole?: string
+): { allowed: boolean; reason?: string } {
+  // Super admin can manage anyone
+  if (currentUser.role === 'super_admin') {
+    return { allowed: true }
+  }
+
+  // Must be in same company
+  if (currentUser.company_id !== targetUser.company_id) {
+    return { allowed: false, reason: 'No puedes gestionar usuarios de otra empresa' }
+  }
+
+  // Cannot modify your own role
+  if (currentUser.role === targetUser.role) {
+    return { allowed: false, reason: 'No puedes modificar tu propio rol' }
+  }
+
+  // Role hierarchy
+  const roleHierarchy: Record<string, string[]> = {
+    'company_owner': ['company_admin', 'manager', 'employee', 'viewer'],
+    'company_admin': ['manager', 'employee', 'viewer'],
+  }
+
+  const allowedTargetRoles = roleHierarchy[currentUser.role] || []
+  
+  // Check if can manage target's current role
+  if (!allowedTargetRoles.includes(targetUser.role)) {
+    return { allowed: false, reason: 'No tienes permisos para gestionar este usuario' }
+  }
+
+  // Check if new role is allowed
+  if (newRole && !allowedTargetRoles.includes(newRole)) {
+    return { allowed: false, reason: `No puedes asignar el rol ${newRole}` }
+  }
+
+  return { allowed: true }
+}
