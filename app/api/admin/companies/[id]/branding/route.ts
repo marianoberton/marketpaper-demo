@@ -21,9 +21,10 @@ interface CustomColors {
 // GET: Obtener configuración de branding
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
     const user = await getCurrentUser()
 
@@ -39,7 +40,7 @@ export async function GET(
     const { data: company, error } = await supabase
       .from('companies')
       .select('id, name, custom_colors, theme_config, logo_url')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (error) {
@@ -65,9 +66,10 @@ export async function GET(
 // PUT: Actualizar configuración de branding
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
     const user = await getCurrentUser()
 
@@ -107,7 +109,7 @@ export async function PUT(
         theme_config,
         updated_at: new Date().toISOString()
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select('id, name, custom_colors, theme_config')
       .single()
 
