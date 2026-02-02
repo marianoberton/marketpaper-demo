@@ -393,7 +393,7 @@ export default function TemplatesPage() {
 
     setError(null);
     try {
-      const response = await fetch(`/api/admin/templates/${templateId}`, {
+      const response = await fetch(`/api/admin/templates?id=${templateId}`, {
         method: 'DELETE',
       });
 

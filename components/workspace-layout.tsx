@@ -4,11 +4,12 @@ import { WorkspaceNav } from "@/components/workspace-nav";
 import { ContentViewToggle } from "@/components/content-view-toggle";
 import { LayoutToggle } from "@/components/layout-toggle";
 import { SidebarToggle } from "@/components/sidebar-toggle";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { useLayout } from "@/components/layout-context";
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetTrigger, 
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
   SheetTitle,
   SheetClose
 } from "@/components/ui/sheet";
@@ -68,6 +69,7 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
 
             {/* Controles */}
             <div className="flex items-center gap-2">
+              <ThemeToggle />
               <LayoutToggle />
               <Button
                 variant="outline"
@@ -99,9 +101,8 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
       {/* Desktop Sidebar */}
       <aside className={`hidden lg:block fixed left-0 top-0 z-40 ${sidebarWidth} h-screen border-r bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-xl transition-all duration-300`}>
         <div className="flex h-full max-h-screen flex-col">
-          <div className={`flex h-20 items-center border-b bg-gradient-to-r from-white/50 to-gray-50/30 dark:from-gray-900/50 dark:to-gray-800/30 ${
-            isCollapsed ? 'flex-col justify-center px-2 gap-2' : 'justify-between px-6'
-          }`}>
+          <div className={`flex h-20 items-center border-b bg-gradient-to-r from-white/50 to-gray-50/30 dark:from-gray-900/50 dark:to-gray-800/30 ${isCollapsed ? 'flex-col justify-center px-2 gap-2' : 'justify-between px-6'
+            }`}>
             {isCollapsed ? (
               <>
                 {/* Logo/Icon when collapsed */}
@@ -115,7 +116,7 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
                     title={companyName || 'Workspace'}
                   />
                 ) : (
-                  <div 
+                  <div
                     className="font-logo text-lg font-bold text-brilliant-blue"
                     title={companyName || 'Workspace'}
                   >
@@ -157,36 +158,42 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
           <div className="flex-1 overflow-auto py-2">
             <WorkspaceNav />
           </div>
-          
+
           {/* Vista Tabs Toggle */}
           <div className={`border-t p-3 ${isCollapsed ? 'flex justify-center' : ''}`}>
             <ContentViewToggle />
           </div>
-          
+
           {/* User Info & Logout en la parte inferior */}
-          <div className={`border-t bg-gradient-to-r from-white/50 to-gray-50/30 dark:from-gray-900/50 dark:to-gray-800/30 p-4 ${
-            isCollapsed ? 'flex flex-col items-center gap-2' : ''
-          }`}>
+          <div className={`border-t bg-gradient-to-r from-white/50 to-gray-50/30 dark:from-gray-900/50 dark:to-gray-800/30 p-4 ${isCollapsed ? 'flex flex-col items-center gap-2' : ''
+            }`}>
             {isCollapsed ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLogout}
-                className="w-full flex items-center justify-center hover:bg-red-50 hover:text-red-600"
-                title="Cerrar Sesión"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
+              <>
+                <ThemeToggle />
+                <div className="w-full h-px bg-border my-2" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleLogout}
+                  className="w-full flex items-center justify-center hover:bg-red-50 hover:text-red-600"
+                  title="Cerrar Sesión"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </>
             ) : (
               <>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-8 h-8 bg-gradient-to-br from-brilliant-blue to-plum rounded-full flex items-center justify-center">
-                    <User className="h-4 w-4 text-white" />
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-brilliant-blue to-plum rounded-full flex items-center justify-center">
+                      <User className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{userName || 'Usuario'}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{companyName || 'Manager'}</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{userName || 'Usuario'}</p>
-                    <p className="text-xs text-gray-500 truncate">{companyName || 'Manager'}</p>
-                  </div>
+                  <ThemeToggle />
                 </div>
                 <Button
                   variant="outline"
@@ -213,89 +220,90 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="flex flex-col bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
-             <div className="flex h-20 items-center justify-center border-b bg-gradient-to-r from-white/50 to-gray-50/30 dark:from-gray-900/50 dark:to-gray-800/30">
-               <div className="flex items-center gap-3">
-                 {companyLogoUrl ? (
-                   <Image
-                     src={companyLogoUrl}
-                     alt={`Logo de ${companyName}`}
-                     width={64}
-                     height={64}
-                     className="object-contain rounded"
-                   />
-                 ) : (
-                   <div className="font-logo text-2xl font-bold text-brilliant-blue">
-                     {companyName || 'Workspace'}
-                   </div>
-                 )}
-               </div>
-               <SheetTitle className="sr-only">Navegación Workspace</SheetTitle>
-             </div>
-             <div className="flex-1 overflow-auto py-2">
-               <WorkspaceNav />
-             </div>
-             
-             {/* Vista Tabs Toggle en Mobile */}
-             <div className="border-t p-3">
-               <ContentViewToggle />
-             </div>
-             
-             {/* User info y logout en mobile */}
-             <div className="border-t p-4 bg-gradient-to-r from-white/50 to-gray-50/30">
-               <div className="flex items-center gap-3 mb-3">
-                 <div className="w-8 h-8 bg-gradient-to-br from-brilliant-blue to-plum rounded-full flex items-center justify-center">
-                   <User className="h-4 w-4 text-white" />
-                 </div>
-                 <div className="flex-1">
-                   <p className="text-sm font-medium text-gray-900">{userName || 'Usuario'}</p>
-                   <p className="text-xs text-gray-500">{companyName || 'Manager'}</p>
-                 </div>
-               </div>
-               <Button
-                 variant="outline"
-                 size="sm"
-                 onClick={handleLogout}
-                 className="w-full flex items-center gap-2 hover:bg-red-50 hover:border-red-300 hover:text-red-600"
-               >
-                 <LogOut className="h-4 w-4" />
-                 Cerrar Sesión
-               </Button>
-             </div>
-             <SheetClose />
+            <div className="flex h-20 items-center justify-center border-b bg-gradient-to-r from-white/50 to-gray-50/30 dark:from-gray-900/50 dark:to-gray-800/30">
+              <div className="flex items-center gap-3">
+                {companyLogoUrl ? (
+                  <Image
+                    src={companyLogoUrl}
+                    alt={`Logo de ${companyName}`}
+                    width={64}
+                    height={64}
+                    className="object-contain rounded"
+                  />
+                ) : (
+                  <div className="font-logo text-2xl font-bold text-brilliant-blue">
+                    {companyName || 'Workspace'}
+                  </div>
+                )}
+              </div>
+              <SheetTitle className="sr-only">Navegación Workspace</SheetTitle>
+            </div>
+            <div className="flex-1 overflow-auto py-2">
+              <WorkspaceNav />
+            </div>
+
+            {/* Vista Tabs Toggle en Mobile */}
+            <div className="border-t p-3">
+              <ContentViewToggle />
+            </div>
+
+            {/* User info y logout en mobile */}
+            <div className="border-t p-4 bg-gradient-to-r from-white/50 to-gray-50/30">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-brilliant-blue to-plum rounded-full flex items-center justify-center">
+                  <User className="h-4 w-4 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">{userName || 'Usuario'}</p>
+                  <p className="text-xs text-gray-500">{companyName || 'Manager'}</p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2 hover:bg-red-50 hover:border-red-300 hover:text-red-600"
+              >
+                <LogOut className="h-4 w-4" />
+                Cerrar Sesión
+              </Button>
+            </div>
+            <SheetClose />
           </SheetContent>
         </Sheet>
         <div className="flex items-center gap-2">
-           {showBackLink && (
-             <Link href="/admin" className="text-muted-foreground hover:text-foreground transition-colors">
-               <ArrowLeft className="h-4 w-4" />
-             </Link>
-           )}
-           <div className="flex items-center gap-2">
-             {companyLogoUrl ? (
-               <Image
-                 src={companyLogoUrl}
-                 alt={`Logo de ${companyName}`}
-                 width={24}
-                 height={24}
-                 className="object-contain rounded"
-               />
-             ) : (
-               <div className="font-logo text-xl font-bold text-brilliant-blue">
-                 {companyName || 'Workspace'}
-               </div>
-             )}
-           </div>
-           <div className="flex items-center gap-2">
-             <LayoutToggle />
-             <Button
-               variant="outline"
-               size="sm"
-               onClick={handleLogout}
-               className="hover:bg-red-50 hover:border-red-300 hover:text-red-600"
-             >
-               <LogOut className="h-4 w-4" />
-             </Button>
-           </div>
+          {showBackLink && (
+            <Link href="/admin" className="text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          )}
+          <div className="flex items-center gap-2">
+            {companyLogoUrl ? (
+              <Image
+                src={companyLogoUrl}
+                alt={`Logo de ${companyName}`}
+                width={24}
+                height={24}
+                className="object-contain rounded"
+              />
+            ) : (
+              <div className="font-logo text-xl font-bold text-brilliant-blue">
+                {companyName || 'Workspace'}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <LayoutToggle />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              className="hover:bg-red-50 hover:border-red-300 hover:text-red-600"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 

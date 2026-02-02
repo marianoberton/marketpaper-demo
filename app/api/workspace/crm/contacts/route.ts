@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 3. Unificar datos
-    const unifiedContacts = []
+    const unifiedContacts: any[] = []
 
     // Mapear Clients a CrmContact
     if (clients) {

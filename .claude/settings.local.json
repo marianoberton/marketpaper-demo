@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(head:*)",
+      "Bash(cat:*)",
+      "Bash(npx supabase db push)"
+    ]
+  }
+}

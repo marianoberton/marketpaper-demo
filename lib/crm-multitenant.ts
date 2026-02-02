@@ -470,6 +470,7 @@ export async function getCurrentCompany(companyIdFromQuery: string) {
       name,
       features,
       logo_url,
+      custom_colors,
       template:client_templates (available_features)
     `)
     .eq('id', companyIdFromQuery)
@@ -515,18 +516,14 @@ export async function getAvailableModules() {
 // New function to get modules for a specific company based on their template
 export async function getModulesForCompany(companyId: string) {
   const supabase = await createServerClient();
-  
+
   // 1. Get company with its template
   const { data: company, error: companyError } = await supabase
     .from('companies')
     .select(`
       id,
       template_id,
-      features,
-      client_templates!template_id (
-        id,
-        available_features
-      )
+      features
     `)
     .eq('id', companyId)
     .single();
@@ -548,7 +545,12 @@ export async function getModulesForCompany(companyId: string) {
           name,
           route_path,
           icon,
-          category
+          category,
+          display_order,
+          is_core,
+          allowed_roles,
+          requires_integration,
+          description
         )
       `)
       .eq('template_id', company.template_id);
@@ -560,8 +562,9 @@ export async function getModulesForCompany(companyId: string) {
     }
   }
 
-  // 3. Fallback: If no template or no modules in template, use features array
-  if (modulesList.length === 0 && company.features) {
+  // 3. Fallback: If no template or no modules in template, use features array (legacy)
+  if (modulesList.length === 0 && company.features && Array.isArray(company.features) && company.features.length > 0) {
+    console.warn(`[GET_MODULES_FOR_COMPANY] Company ${companyId} usando fallback features[]`);
     // Map features to basic modules structure for backward compatibility
     const featureModules = company.features.map((feature: string) => ({
       id: feature,
@@ -569,22 +572,25 @@ export async function getModulesForCompany(companyId: string) {
       route_path: getFeatureRoutePath(feature),
       icon: getFeatureIcon(feature),
       category: getFeatureCategory(feature),
+      display_order: 100,
+      is_core: false,
       featureId: feature // Add featureId for compatibility
     }));
     modulesList = featureModules;
   }
 
-  // 4. Final fallback: If still no modules, use template's available_features
-  if (modulesList.length === 0 && company.client_templates && Array.isArray(company.client_templates) && company.client_templates[0]?.available_features) {
-    const templateFeatures = company.client_templates[0].available_features.map((feature: string) => ({
-      id: feature,
-      name: getFeatureDisplayName(feature),
-      route_path: getFeatureRoutePath(feature),
-      icon: getFeatureIcon(feature),
-      category: getFeatureCategory(feature),
-      featureId: feature // Add featureId for compatibility
-    }));
-    modulesList = templateFeatures;
+  // 4. Final fallback: If still no modules, load core modules
+  if (modulesList.length === 0) {
+    console.warn(`[GET_MODULES_FOR_COMPANY] Company ${companyId} sin módulos. Cargando core.`);
+    const { data: coreModules, error: coreError } = await supabase
+      .from('modules')
+      .select('*')
+      .eq('is_core', true)
+      .order('display_order');
+
+    if (!coreError && coreModules) {
+      modulesList = coreModules;
+    }
   }
 
   return modulesList;

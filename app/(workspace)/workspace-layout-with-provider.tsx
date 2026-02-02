@@ -2,12 +2,23 @@
 
 import { WorkspaceLayout } from '@/components/workspace-layout'
 import { WorkspaceProvider, useIsSuperAdmin } from '@/components/workspace-context'
+import { WorkspaceThemeProvider } from '@/components/workspace-theme-provider'
 
 interface Company {
   id: string
   name: string
   features: string[]
   logo_url?: string
+  custom_colors?: {
+    light?: {
+      primary?: string
+      accent?: string
+    }
+    dark?: {
+      primary?: string
+      accent?: string
+    }
+  } | null
 }
 
 interface WorkspaceLayoutWithProviderProps {
@@ -56,10 +67,11 @@ export function WorkspaceLayoutWithProvider({
   const companyName = initialCompanyData?.name
   const companyId = initialCompanyData?.id
   const companyLogoUrl = initialCompanyData?.logo_url
+  const customColors = initialCompanyData?.custom_colors
   const isLoading = !initialCompanyData; // True if no data was passed from server
 
   return (
-    <WorkspaceProvider 
+    <WorkspaceProvider
       companyFeatures={companyFeatures}
       companyId={companyId}
       companyName={companyName}
@@ -67,9 +79,11 @@ export function WorkspaceLayoutWithProvider({
       isLoading={isLoading}
       availableModules={availableModules || []}
     >
-      <WorkspaceLayoutWithSuperAdminCheck>
-        {children}
-      </WorkspaceLayoutWithSuperAdminCheck>
+      <WorkspaceThemeProvider customColors={customColors}>
+        <WorkspaceLayoutWithSuperAdminCheck>
+          {children}
+        </WorkspaceLayoutWithSuperAdminCheck>
+      </WorkspaceThemeProvider>
     </WorkspaceProvider>
   )
 } 

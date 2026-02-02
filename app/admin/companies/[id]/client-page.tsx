@@ -1,35 +1,34 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { 
-  Building2, 
-  Users, 
-  DollarSign, 
-  Settings,
+import {
+  Building2,
+  Users,
   ArrowLeft,
-  Edit,
-  Key,
   BarChart3,
   Calendar,
   Mail,
   Phone,
   Globe,
-  AlertTriangle,
   PlusCircle,
   MoreHorizontal,
   ArrowRight,
   Upload,
-  Image as ImageIcon
+  Image as ImageIcon,
+  FileStack
 } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { UserFormDialog } from '@/components/admin/UserFormDialog'
+import { IntegrationsTab } from '@/components/admin/IntegrationsTab'
+import { TemplateManagementTab } from '@/components/admin/TemplateManagementTab'
+import { ColorCustomizer } from '@/components/admin/ColorCustomizer'
 import {
   Table,
   TableBody,
@@ -46,7 +45,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { deleteUserAction } from './actions'
-import { createClient } from '@/utils/supabase/client'
 import { toast } from 'sonner'
 
 // Re-using interfaces from the original page
@@ -67,6 +65,7 @@ interface Company {
   trial_ends_at?: string
   features: string[]
   logo_url?: string
+  template_id?: string | null
 }
 
 interface CompanyUser {
@@ -101,25 +100,23 @@ interface UsageStats {
 interface CompanyDetailsClientProps {
   initialCompany: Company | null;
   initialUsers: CompanyUser[];
-  initialApiKeys: ApiKey[];
   initialUsageStats: UsageStats | null;
 }
 
-export default function CompanyDetailsClient({ 
-  initialCompany, 
-  initialUsers, 
-  initialApiKeys, 
-  initialUsageStats 
+export default function CompanyDetailsClient({
+  initialCompany,
+  initialUsers,
+
+  initialUsageStats
 }: CompanyDetailsClientProps) {
-  
+
   const [company, setCompany] = useState<Company | null>(initialCompany)
   const [users, setUsers] = useState<CompanyUser[]>(initialUsers)
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>(initialApiKeys)
   const [usageStats, setUsageStats] = useState<UsageStats | null>(initialUsageStats)
   const [isUserFormOpen, setIsUserFormOpen] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null);
   const [userToEdit, setUserToEdit] = useState<CompanyUser | null>(null);
-  
+
   // Logo upload state
   const [isUploading, setIsUploading] = useState(false)
   const [logoFile, setLogoFile] = useState<File | null>(null)
@@ -151,7 +148,7 @@ export default function CompanyDetailsClient({
       suspended: 'destructive',
       cancelled: 'outline'
     }
-    
+
     const labels: Record<string, string> = {
       active: 'Activo',
       trial: 'Prueba',
@@ -223,7 +220,7 @@ export default function CompanyDetailsClient({
   // Logo upload functions
   const handleLogoUpload = async (file: File) => {
     if (!company) return
-    
+
     setIsUploading(true)
     try {
       console.log('🔧 Starting logo upload for company:', company.id)
@@ -232,36 +229,36 @@ export default function CompanyDetailsClient({
         size: file.size,
         type: file.type
       })
-      
+
       // Create form data for API call
       const formData = new FormData()
       formData.append('file', file)
-      
+
       console.log('📡 Calling API route for upload...')
-      
+
       // Call our API route instead of direct Supabase call
       const response = await fetch(`/api/admin/companies/${company.id}/logo`, {
         method: 'POST',
         body: formData
       })
-      
+
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`)
       }
-      
+
       const result = await response.json()
-      
+
       if (!result.success) {
         throw new Error(result.error || 'Upload failed')
       }
-      
+
       console.log('✅ Upload successful:', result)
-      
+
       // Update local state with the new logo URL
       setCompany({ ...company, logo_url: result.logoUrl })
       toast.success('Logo actualizado exitosamente')
-      
+
     } catch (error) {
       console.error('❌ Logo upload failed:', error)
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido al subir el logo'
@@ -271,7 +268,7 @@ export default function CompanyDetailsClient({
       setLogoFile(null)
     }
   }
-  
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -281,7 +278,7 @@ export default function CompanyDetailsClient({
         type: file.type,
         sizeInMB: (file.size / 1024 / 1024).toFixed(2)
       })
-      
+
       // Validate file type
       const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/svg+xml', 'image/webp', 'image/gif']
       if (!validTypes.includes(file.type)) {
@@ -290,7 +287,7 @@ export default function CompanyDetailsClient({
         e.target.value = '' // Clear the input
         return
       }
-      
+
       // Validate file size (50MB)
       const maxSize = 50 * 1024 * 1024 // 50MB
       if (file.size > maxSize) {
@@ -299,7 +296,7 @@ export default function CompanyDetailsClient({
         e.target.value = '' // Clear the input
         return
       }
-      
+
       console.log('✅ File validation passed')
       setLogoFile(file)
     }
@@ -323,216 +320,285 @@ export default function CompanyDetailsClient({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Link href="/admin/companies">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{company.name}</h1>
-            <p className="text-gray-600">Detalles y configuración de la empresa</p>
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Link href="/admin/companies" className="hover:text-foreground transition-colors">
+          Empresas
+        </Link>
+        <span>/</span>
+        <span className="text-foreground font-medium">{company.name}</span>
+      </div>
+
+      <div className="rounded-xl border bg-card overflow-hidden">
+        <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-md text-white font-bold text-xl shrink-0">
+              {company.logo_url ? (
+                <Image
+                  src={company.logo_url}
+                  alt={`Logo de ${company.name}`}
+                  width={56}
+                  height={56}
+                  className="object-contain rounded-xl"
+                />
+              ) : (
+                company.name.substring(0, 2).toUpperCase()
+              )}
+            </div>
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-bold">{company.name}</h1>
+                {getStatusBadge(company.status)}
+                {getPlanBadge(company.plan)}
+              </div>
+              <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+                <span className="font-mono">/{company.slug}</span>
+                {company.contact_email && (
+                  <span className="flex items-center gap-1">
+                    <Mail className="h-3.5 w-3.5" />
+                    {company.contact_email}
+                  </span>
+                )}
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5" />
+                  {formatDate(company.created_at)}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link href={`/workspace?company_id=${company.id}`} passHref>
+              <Button>
+                <ArrowRight className="h-4 w-4 mr-2" />
+                Ir al Workspace
+              </Button>
+            </Link>
           </div>
         </div>
-        <div className="flex space-x-3">
-          <Link href={`/workspace?company_id=${company.id}`} passHref>
-            <Button>
-              <ArrowRight className="h-4 w-4 mr-2" />
-              Ir al Workspace
-            </Button>
-          </Link>
-          <Button variant="outline">
-            <Edit className="h-4 w-4 mr-2" />
-            Editar
-          </Button>
-          <Button variant="outline">
-            <Settings className="h-4 w-4 mr-2" />
-            Configurar
-          </Button>
+
+        {/* Stat cards inline */}
+        <div className="grid grid-cols-2 md:grid-cols-4 border-t divide-x">
+          <div className="p-4 flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+              <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Usuarios</p>
+              <p className="text-lg font-semibold">{usageStats?.current_users || 0}<span className="text-sm font-normal text-muted-foreground"> / {company.max_users}</span></p>
+            </div>
+          </div>
+          <div className="p-4 flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+              <BarChart3 className="h-4 w-4 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Contactos</p>
+              <p className="text-lg font-semibold">{usageStats?.current_contacts || 0}<span className="text-sm font-normal text-muted-foreground"> / {company.max_contacts}</span></p>
+            </div>
+          </div>
+          <div className="p-4 flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+              <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Módulos</p>
+              <p className="text-lg font-semibold">{company.features?.length || 0}</p>
+            </div>
+          </div>
+          <div className="p-4 flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+              <Calendar className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Última Actividad</p>
+              <p className="text-sm font-medium">{usageStats?.last_activity ? formatDateTime(usageStats.last_activity) : 'Sin actividad'}</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Company Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Estado</p>
-                <div className="mt-1">
-                  {getStatusBadge(company.status)}
-                </div>
-              </div>
-              <Building2 className="h-8 w-8 text-blue-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Plan</p>
-                <div className="mt-1">
-                  {getPlanBadge(company.plan)}
-                </div>
-              </div>
-              <DollarSign className="h-8 w-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Usuarios</p>
-                <p className="text-lg font-bold">{usageStats?.current_users} / {company.max_users}</p>
-              </div>
-              <Users className="h-8 w-8 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Registro</p>
-                <p className="text-lg font-semibold">{formatDate(company.created_at)}</p>
-              </div>
-              <Calendar className="h-8 w-8 text-orange-500" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview">
         <TabsList>
-          <TabsTrigger value="overview">Resumen</TabsTrigger>
+          <TabsTrigger value="overview">General</TabsTrigger>
           <TabsTrigger value="users">Usuarios</TabsTrigger>
-          <TabsTrigger value="apikeys">API Keys</TabsTrigger>
-          <TabsTrigger value="usage">Uso y Facturación</TabsTrigger>
-          <TabsTrigger value="settings">Configuración</TabsTrigger>
+          <TabsTrigger value="template">
+            <FileStack className="w-4 h-4 mr-2" />
+            Plantilla y Módulos
+          </TabsTrigger>
+          <TabsTrigger value="apikeys">Integraciones</TabsTrigger>
+          <TabsTrigger value="branding">Branding</TabsTrigger>
+          <TabsTrigger value="usage">Facturación</TabsTrigger>
+          <TabsTrigger value="settings">Configuración Avanzada</TabsTrigger>
         </TabsList>
         <TabsContent value="overview">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Información de contacto */}
             <Card>
-                <CardHeader>
-                    <CardTitle>Información General</CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-4">
-                    <div className="flex items-center space-x-2">
-                        <Mail className="h-4 w-4 text-gray-500"/>
-                        <a href={`mailto:${company.contact_email}`} className="text-blue-600 hover:underline">{company.contact_email}</a>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Phone className="h-4 w-4 text-gray-500"/>
-                        <span>{company.contact_phone || 'No disponible'}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Globe className="h-4 w-4 text-gray-500"/>
-                        <a href={company.domain} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{company.domain || 'No disponible'}</a>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Users className="h-4 w-4 text-gray-500"/>
-                        <span>ID de Empresa: {company.id}</span>
-                    </div>
-                </CardContent>
+              <CardHeader>
+                <CardTitle className="text-base">Información de Contacto</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Email</p>
+                    <a href={`mailto:${company.contact_email}`} className="text-sm text-blue-600 hover:underline">{company.contact_email}</a>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <Phone className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Teléfono</p>
+                    <p className="text-sm">{company.contact_phone || 'No disponible'}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                    <Globe className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Dominio</p>
+                    {company.domain ? (
+                      <a href={company.domain} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">{company.domain}</a>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No disponible</p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
             </Card>
+
+            {/* Uso de recursos */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Uso de Recursos</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div>
+                  <div className="flex items-center justify-between text-sm mb-1.5">
+                    <span className="text-muted-foreground">Usuarios</span>
+                    <span className="font-medium">{usageStats?.current_users || 0} / {company.max_users}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${getUsageColor(getUsagePercentage(usageStats?.current_users || 0, company.max_users))}`}
+                      style={{ width: `${Math.min(getUsagePercentage(usageStats?.current_users || 0, company.max_users), 100)}%` }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between text-sm mb-1.5">
+                    <span className="text-muted-foreground">Contactos</span>
+                    <span className="font-medium">{usageStats?.current_contacts || 0} / {company.max_contacts}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${getUsageColor(getUsagePercentage(usageStats?.current_contacts || 0, company.max_contacts))}`}
+                      style={{ width: `${Math.min(getUsagePercentage(usageStats?.current_contacts || 0, company.max_contacts), 100)}%` }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center justify-between text-sm mb-1.5">
+                    <span className="text-muted-foreground">Módulos activos</span>
+                    <span className="font-medium">{company.features?.length || 0}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {company.features?.map((feature) => (
+                      <Badge key={feature} variant="secondary" className="text-xs">
+                        {feature}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
         <TabsContent value="users">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle>Usuarios ({users.length})</CardTitle>
-                        <CardDescription>Usuarios asociados a esta empresa.</CardDescription>
-                    </div>
-                    <Button onClick={handleOpenCreateDialog}>
-                        <PlusCircle className="h-4 w-4 mr-2" />
-                        Añadir Usuario
-                    </Button>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Nombre</TableHead>
-                                <TableHead>Rol</TableHead>
-                                <TableHead>Último Inicio de Sesión</TableHead>
-                                <TableHead>Estado</TableHead>
-                                <TableHead>
-                                    <span className="sr-only">Acciones</span>
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {users.map((user) => (
-                                <TableRow key={user.id}>
-                                    <TableCell className="font-medium">
-                                        <div className="flex flex-col">
-                                            <span>{user.full_name}</span>
-                                            <span className="text-sm text-gray-500">{user.email}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>{user.role}</TableCell>
-                                    <TableCell>{formatDateTime(user.last_login)}</TableCell>
-                                    <TableCell>{getStatusBadge(user.status)}</TableCell>
-                                    <TableCell>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button aria-haspopup="true" size="icon" variant="ghost">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                    <span className="sr-only">Toggle menu</span>
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                                                <DropdownMenuItem onClick={() => handleOpenEditDialog(user)}>Editar</DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    className="text-red-600"
-                                                    onClick={() => handleDeleteUser(user.id)}
-                                                >
-                                                    Eliminar
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                    {actionError && <p className="text-sm text-red-500 mt-2">{actionError}</p>}
-                </CardContent>
-            </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Usuarios ({users.length})</CardTitle>
+                <CardDescription>Usuarios asociados a esta empresa.</CardDescription>
+              </div>
+              <Button onClick={handleOpenCreateDialog}>
+                <PlusCircle className="h-4 w-4 mr-2" />
+                Añadir Usuario
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nombre</TableHead>
+                    <TableHead>Rol</TableHead>
+                    <TableHead>Último Inicio de Sesión</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>
+                      <span className="sr-only">Acciones</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex flex-col">
+                          <span>{user.full_name}</span>
+                          <span className="text-sm text-gray-500">{user.email}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{user.role}</TableCell>
+                      <TableCell>{formatDateTime(user.last_login)}</TableCell>
+                      <TableCell>{getStatusBadge(user.status)}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={() => handleOpenEditDialog(user)}>Editar</DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={() => handleDeleteUser(user.id)}
+                            >
+                              Eliminar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {actionError && <p className="text-sm text-red-500 mt-2">{actionError}</p>}
+            </CardContent>
+          </Card>
         </TabsContent>
-        
+
+        <TabsContent value="template">
+          <TemplateManagementTab
+            companyId={company.id}
+            initialTemplateId={company.template_id}
+          />
+        </TabsContent>
+
         <TabsContent value="apikeys">
-          <Card>
-            <CardHeader>
-              <CardTitle>API Keys</CardTitle>
-              <CardDescription>Gestiona las claves API de la empresa</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-500 text-center py-8">Funcionalidad de API Keys por implementar</p>
-            </CardContent>
-          </Card>
+          <IntegrationsTab companyId={company.id} />
         </TabsContent>
-        
-        <TabsContent value="usage">
-          <Card>
-            <CardHeader>
-              <CardTitle>Uso y Facturación</CardTitle>
-              <CardDescription>Estadísticas de uso y costos</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-500 text-center py-8">Funcionalidad de facturación por implementar</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="settings">
+
+        <TabsContent value="branding">
           <div className="space-y-6">
-            {/* Logo Management */}
+            {/* Logo Management (movido desde tab Configuración) */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -565,7 +631,7 @@ export default function CompanyDetailsClient({
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex-1 space-y-4">
                     <div>
                       <Label htmlFor="logo-upload" className="text-sm font-medium">
@@ -575,7 +641,7 @@ export default function CompanyDetailsClient({
                         Formatos: JPEG, PNG, SVG, WebP, GIF. Tamaño máximo: 50MB
                       </p>
                     </div>
-                    
+
                     <div className="flex items-center gap-4">
                       <Input
                         id="logo-upload"
@@ -586,7 +652,7 @@ export default function CompanyDetailsClient({
                         className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                       />
                       {logoFile && (
-                        <Button 
+                        <Button
                           onClick={() => handleLogoUpload(logoFile)}
                           disabled={isUploading}
                           className="flex items-center gap-2"
@@ -605,7 +671,7 @@ export default function CompanyDetailsClient({
                         </Button>
                       )}
                     </div>
-                    
+
                     {logoFile && (
                       <div className="p-3 bg-blue-50 rounded-lg">
                         <p className="text-sm font-medium text-blue-900">
@@ -618,7 +684,7 @@ export default function CompanyDetailsClient({
                     )}
                   </div>
                 </div>
-                
+
                 {/* Preview in Workspace */}
                 {company.logo_url && (
                   <div className="mt-6 p-4 bg-gray-50 rounded-lg">
@@ -637,7 +703,51 @@ export default function CompanyDetailsClient({
                 )}
               </CardContent>
             </Card>
-            
+
+            {/* Colores Personalizados - NUEVO */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Colores Personalizados</CardTitle>
+                <CardDescription>
+                  Define los colores que se usarán en el workspace de esta empresa
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ColorCustomizer companyId={company.id} />
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="usage">
+          <Card>
+            <CardHeader>
+              <CardTitle>Uso y Facturación</CardTitle>
+              <CardDescription>Estadísticas de uso y costos</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500 text-center py-8">Funcionalidad de facturación por implementar</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="settings">
+          <div className="space-y-6">
+            {/* ID y configuraciones técnicas */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Información Técnica</CardTitle>
+                <CardDescription>Identificadores y configuraciones del sistema</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Users className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm font-medium">ID de Empresa:</span>
+                  <code className="text-sm bg-gray-100 px-2 py-1 rounded">{company.id}</code>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Other Settings */}
             <Card>
               <CardHeader>
@@ -650,7 +760,7 @@ export default function CompanyDetailsClient({
             </Card>
           </div>
         </TabsContent>
-        
+
         {/* Other tabs content... */}
       </Tabs>
       <UserFormDialog

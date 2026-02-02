@@ -437,8 +437,8 @@ export default function ContactsClientPage() {
                             Cliente Activo
                           </Badge>
                         )}
-                        <Badge className={getLeadScoreColor(contact.leadScore)}>
-                          {contact.leadScore}
+                        <Badge className={getLeadScoreColor(contact.lead_score)}>
+                          {contact.lead_score}
                         </Badge>
                         <Badge className={getStatusColor(contact.status)}>
                           {contact.status?.toUpperCase()}

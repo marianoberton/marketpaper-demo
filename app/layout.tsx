@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Concert_One, Space_Grotesk, Manrope } from "next/font/google";
+import { Concert_One, Manrope, Karla } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LayoutProvider } from "@/components/layout-context";
@@ -12,13 +12,13 @@ const concertOne = Concert_One({
   weight: ["400"],
 });
 
-const spaceGrotesk = Space_Grotesk({
+const manrope = Manrope({
   variable: "--font-heading",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
-const manrope = Manrope({
+const karla = Karla({
   variable: "--font-body",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -36,7 +36,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`${concertOne.variable} ${spaceGrotesk.variable} ${manrope.variable} antialiased font-body ${GeistSans.className}`}>
+      <body className={`${concertOne.variable} ${manrope.variable} ${karla.variable} antialiased font-body ${GeistSans.className}`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

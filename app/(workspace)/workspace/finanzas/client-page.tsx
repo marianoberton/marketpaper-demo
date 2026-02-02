@@ -151,10 +151,10 @@ export default function FinanzasClientPage() {
 
   const loadImportedFiles = async () => {
     try {
-      const url = workspace.companyId 
-        ? `/api/workspace/finanzas/imports?company_id=${workspace.companyId}`
-        : '/api/workspace/finanzas/imports'
-      
+      const url = workspace.companyId
+        ? `/api/workspace/finanzas/import?company_id=${workspace.companyId}`
+        : '/api/workspace/finanzas/import'
+
       const response = await fetch(url)
       
       if (!response.ok) {

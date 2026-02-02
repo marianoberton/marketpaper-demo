@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { Bell, Search, LogOut, User, Settings, Command } from 'lucide-react'
+import { Bell, Search, LogOut, User, Settings, Command, Moon, Sun, Monitor } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -14,8 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-
+import { useTheme } from 'next-themes'
 import { Sidebar } from '@/components/admin/AdminSidebar'
 import {
   Sheet,
@@ -31,6 +30,7 @@ export function Header() {
   const [user, setUser] = useState<any>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const router = useRouter()
+  const { theme, setTheme } = useTheme()
 
   useEffect(() => {
     getCurrentUser()
@@ -140,6 +140,23 @@ export function Header() {
                 <DropdownMenuItem>
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Configuración</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs text-muted-foreground font-normal">Tema</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => setTheme('light')}>
+                  <Sun className="mr-2 h-4 w-4" />
+                  <span>Claro</span>
+                  {theme === 'light' && <span className="ml-auto text-xs text-muted-foreground">✓</span>}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme('dark')}>
+                  <Moon className="mr-2 h-4 w-4" />
+                  <span>Oscuro</span>
+                  {theme === 'dark' && <span className="ml-auto text-xs text-muted-foreground">✓</span>}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme('system')}>
+                  <Monitor className="mr-2 h-4 w-4" />
+                  <span>Sistema</span>
+                  {theme === 'system' && <span className="ml-auto text-xs text-muted-foreground">✓</span>}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-red-600">

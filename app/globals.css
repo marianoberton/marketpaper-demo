@@ -38,11 +38,17 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --color-signal-yellow: #FCCD12;
-  --color-orange-500: #f97316;
-  --color-brilliant-blue: #0077B6;
-  --color-plum: #310629;
-  --color-slate-900: #0f172a;
+
+  /* Custom Semantic Colors */
+  --color-canvas: var(--background);
+  --color-ink: var(--foreground);
+  --color-lime: #CED600;
+  --color-orange: #EE9B00;
+  --color-structure: #E5E5E5;
+  --color-surface: #F2F2F2;
+  --color-mineral: #1C1C1C;
+  --color-pure-black: #000000;
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -51,142 +57,183 @@
 
 :root {
   --radius: 0.625rem;
-  /* FOMO Brand Colors - Light Mode */
-  --background: #FFFFFF;
-  --foreground: #0f172a; /* slate-900 for main text */
+
+  /* Modern Minimalist Palette - Light Mode */
+
+  /* Canvas (Background) */
+  --background: #FAFAFA;
+  /* Ink (Foreground) */
+  --foreground: #272727;
+
   --card: #FFFFFF;
-  --card-foreground: #0f172a;
+  --card-foreground: #272727;
+
   --popover: #FFFFFF;
-  --popover-foreground: #0f172a;
-  --primary: #FCCD12; /* Signal Yellow for primary actions */
-  --primary-foreground: #0f172a;
-  --secondary: #f1f5f9; /* Light slate for secondary */
-  --secondary-foreground: #0f172a;
-  --muted: #f8fafc;
-  --muted-foreground: #64748b;
-  --accent: #FCCD12; /* Signal Yellow for accents */
-  --accent-foreground: #0f172a;
+  --popover-foreground: #272727;
+
+  --primary: #CED600;
+  --primary-foreground: #1C1C1C;
+
+  --secondary: #F2F2F2;
+  --secondary-foreground: #272727;
+
+  --muted: #E5E5E5;
+  --muted-foreground: #666666;
+
+  --accent: #F2F2F2;
+  --accent-foreground: #EE9B00;
+
   --destructive: #ef4444;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #FCCD12; /* Signal Yellow for focus rings */
-  --chart-1: #FCCD12; /* Signal Yellow */
-  --chart-2: #f97316; /* Orange 500 */
-  --chart-3: #0077B6; /* Brilliant Blue */
-  --chart-4: #310629; /* Plum */
-  --chart-5: #64748b; /* Slate for additional data */
+  --destructive-foreground: #FFFFFF;
+
+  --border: #E5E5E5;
+  --input: #E5E5E5;
+  --ring: #CED600;
+
+  --chart-1: #CED600;
+  --chart-2: #EE9B00;
+  --chart-3: #1C1C1C;
+  --chart-4: #666666;
+  --chart-5: #E5E5E5;
+
   --sidebar: #FFFFFF;
-  --sidebar-foreground: #0f172a;
-  --sidebar-primary: #FCCD12;
-  --sidebar-primary-foreground: #0f172a;
-  --sidebar-accent: #f8fafc;
-  --sidebar-accent-foreground: #0f172a;
-  --sidebar-border: #e2e8f0;
-  --sidebar-ring: #FCCD12;
+  --sidebar-foreground: #272727;
+  --sidebar-primary: #CED600;
+  --sidebar-primary-foreground: #1C1C1C;
+  --sidebar-accent: #F2F2F2;
+  --sidebar-accent-foreground: #272727;
+  --sidebar-border: #E5E5E5;
+  --sidebar-ring: #CED600;
 }
 
 .dark {
-  /* FOMO Brand Colors - Dark Mode */
-  --background: #0f172a; /* Slate 900 */
-  --foreground: #FFFFFF;
-  --card: #1e293b; /* Slate 800 */
-  --card-foreground: #FFFFFF;
-  --popover: #1e293b;
-  --popover-foreground: #FFFFFF;
-  --primary: #FCCD12; /* Signal Yellow remains vibrant in dark mode */
-  --primary-foreground: #0f172a;
-  --secondary: #334155; /* Slate 700 */
-  --secondary-foreground: #FFFFFF;
-  --muted: #334155;
-  --muted-foreground: #94a3b8;
-  --accent: #FCCD12;
-  --accent-foreground: #0f172a;
-  --destructive: #ef4444;
-  --border: #334155;
-  --input: #334155;
-  --ring: #FCCD12;
-  --chart-1: #FCCD12;
-  --chart-2: #f97316;
-  --chart-3: #0077B6;
-  --chart-4: #310629;
-  --chart-5: #94a3b8;
-  --sidebar: #1e293b;
-  --sidebar-foreground: #FFFFFF;
-  --sidebar-primary: #FCCD12;
-  --sidebar-primary-foreground: #0f172a;
-  --sidebar-accent: #334155;
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: #334155;
-  --sidebar-ring: #FCCD12;
+  /* Modern Minimalist Palette - Dark Mode */
+
+  /* Pure Black Background */
+  --background: #000000;
+  /* Canvas (Foreground - Light Text) */
+  --foreground: #FAFAFA;
+
+  /* Ink (Card/Sidebar Background) - Using specific #272727 requested */
+  --card: #272727;
+  --card-foreground: #FAFAFA;
+
+  --popover: #272727;
+  --popover-foreground: #FAFAFA;
+
+  --primary: #CED600;
+  --primary-foreground: #1C1C1C;
+
+  --secondary: #1C1C1C;
+  /* Mineral for secondary */
+  --secondary-foreground: #FAFAFA;
+
+  --muted: #1C1C1C;
+  --muted-foreground: #A1A1AA;
+
+  --accent: #1C1C1C;
+  --accent-foreground: #CED600;
+
+  --destructive: #7f1d1d;
+  --destructive-foreground: #FFFFFF;
+
+  --border: #272727;
+  /* Ink borders */
+  --input: #272727;
+  --ring: #CED600;
+
+  --chart-1: #CED600;
+  --chart-2: #EE9B00;
+  --chart-3: #FAFAFA;
+  --chart-4: #A1A1AA;
+  --chart-5: #333333;
+
+  /* Sidebar Specifics - Ink Background */
+  --sidebar: #000000;
+  /* Sidebar background */
+  --sidebar-foreground: #FAFAFA;
+  --sidebar-primary: #CED600;
+  --sidebar-primary-foreground: #1C1C1C;
+  --sidebar-accent: #272727;
+  /* Selection state */
+  --sidebar-accent-foreground: #FAFAFA;
+  --sidebar-border: #272727;
+  --sidebar-ring: #CED600;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
-    @apply bg-background text-foreground font-body;
+    @apply bg-background text-foreground font-body tracking-normal;
   }
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-heading;
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading tracking-tight;
   }
+
   .font-logo {
     font-family: var(--font-concert);
   }
 }
 
-/* Custom FOMO gradient utilities */
+/* Custom utilities */
 @layer utilities {
-  .gradient-fomo {
-    background: linear-gradient(135deg, #FCCD12 0%, #f97316 50%, #0077B6 100%);
+  .text-lime {
+    color: #CED600;
   }
-  .gradient-fomo-text {
-    background: linear-gradient(135deg, #0077B6 0%, #310629 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+
+  .text-orange {
+    color: #EE9B00;
   }
-  .gradient-cta {
-    background: linear-gradient(135deg, #FCCD12 0%, #f97316 100%);
+
+  .text-mineral {
+    color: #1C1C1C;
   }
-  .hover-brilliant-blue {
-    @apply hover:bg-[#0077B6] hover:text-white;
+
+  .text-ink {
+    color: #272727;
   }
-  .bg-signal-yellow {
-    background-color: #FCCD12;
+
+  .bg-lime {
+    background-color: #CED600;
   }
-  .bg-orange-500 {
-    background-color: #f97316;
+
+  .bg-orange {
+    background-color: #EE9B00;
   }
-  .bg-brilliant-blue {
-    background-color: #0077B6;
+
+  .bg-mineral {
+    background-color: #1C1C1C;
   }
-  .bg-plum {
-    background-color: #310629;
+
+  .bg-ink {
+    background-color: #272727;
   }
-  .text-signal-yellow {
-    color: #FCCD12;
+
+  /* Typography tweaks */
+  .tracking-tight {
+    letter-spacing: -0.025em;
   }
-  .text-orange-500 {
-    color: #f97316;
-  }
-  .text-brilliant-blue {
-    color: #0077B6;
-  }
-  .text-plum {
-    color: #310629;
-  }
-  
-  /* Custom scrollbar styles */
+
+  /* Scrollbar override */
   .scrollbar-hide {
-    -ms-overflow-style: none;  /* Internet Explorer 10+ */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
-  .scrollbar-hide::-webkit-scrollbar { 
-    display: none;  /* Safari and Chrome */
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
-  
-  /* Ocultar indicadores de desarrollo de Next.js */
+
+  /* Hide Next.js dev indicators */
   #__next-build-watcher,
   #__vercel-live-feedback,
   [data-nextjs-toast-wrapper],
@@ -194,10 +241,5 @@
   .__next-dev-overlay {
     display: none !important;
     z-index: -1 !important;
-  }
-  
-  /* Asegurar que nada interfiera con botones en la esquina superior derecha */
-  .next-dev-overlay {
-    display: none !important;
   }
 }

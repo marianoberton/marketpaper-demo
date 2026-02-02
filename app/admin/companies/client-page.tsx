@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -22,7 +23,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import {
   MoreVertical,
-  Eye,
+  Settings,
   Search,
   ArrowRight,
   Users,
@@ -74,6 +75,7 @@ interface Company {
   current_users?: number
   client_template_id: string | null
   template_name?: string
+  logo_url?: string
 }
 
 interface Template {
@@ -323,19 +325,29 @@ export function CompaniesClientPage({ companies: initialCompanies, templates: in
             {filteredCompanies.map((company) => (
               <div
                 key={company.id}
-                className="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all duration-300 flex flex-col"
+                className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg hover:border-blue-300 hover:scale-[1.02] transition-all duration-300 flex flex-col"
               >
                 {/* Card Header: Avatar & Info */}
-                <div className="p-5 border-b border-gray-100 flex items-start justify-between">
+                <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex items-start justify-between">
                   <div className="flex items-center gap-3">
                     <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-sm text-white font-bold text-lg shrink-0">
-                      {company.name.substring(0, 2).toUpperCase()}
+                      {company.logo_url ? (
+                        <Image
+                          src={company.logo_url}
+                          alt={`Logo de ${company.name}`}
+                          width={48}
+                          height={48}
+                          className="object-contain rounded-xl"
+                        />
+                      ) : (
+                        company.name.substring(0, 2).toUpperCase()
+                      )}
                     </div>
                     <div>
-                      <h4 className="font-semibold text-gray-900 leading-tight line-clamp-1" title={company.name}>
+                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 leading-tight line-clamp-1" title={company.name}>
                         {company.name}
                       </h4>
-                      <p className="text-sm text-gray-500 font-mono">/{company.slug}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 font-mono">/{company.slug}</p>
                     </div>
                   </div>
                   <StatusEditDialog company={company} />
@@ -388,8 +400,8 @@ export function CompaniesClientPage({ companies: initialCompanies, templates: in
                 <div className="p-4 bg-gray-50 rounded-b-xl border-t border-gray-100 grid grid-cols-2 gap-3">
                   <Link href={`/admin/companies/${company.id}`} passHref className="w-full">
                     <Button variant="outline" className="w-full hover:bg-white hover:text-blue-600 border-gray-200 group-hover:border-blue-200">
-                      <Eye className="mr-2 h-4 w-4" />
-                      Detalles
+                      <Settings className="mr-2 h-4 w-4" />
+                      Configuración
                     </Button>
                   </Link>
                   <Link href={`/workspace?company_id=${company.id}`} passHref className="w-full">

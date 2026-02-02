@@ -1,7 +1,6 @@
 import {
   getCompanyById,
   getCompanyUsers,
-  getCompanyApiKeys,
   getCompanyUsageStats,
 } from '@/lib/super-admin'
 import CompanyDetailsClient from './client-page'
@@ -18,10 +17,9 @@ export default async function CompanyDetailsPage({ params }: PageProps) {
   const companyId = resolvedParams.id
 
   try {
-    const [companyData, usersData, apiKeysData, statsData] = await Promise.all([
+    const [companyData, usersData, statsData] = await Promise.all([
       getCompanyById(companyId),
       getCompanyUsers(companyId),
-      getCompanyApiKeys(companyId),
       getCompanyUsageStats(companyId),
     ])
 
@@ -33,7 +31,6 @@ export default async function CompanyDetailsPage({ params }: PageProps) {
       <CompanyDetailsClient
         initialCompany={companyData}
         initialUsers={usersData}
-        initialApiKeys={apiKeysData}
         initialUsageStats={statsData}
       />
     )
