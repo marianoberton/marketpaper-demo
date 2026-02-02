@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 
 // GET - List users from my company
 export async function GET(request: NextRequest) {
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
   // Super admins see all, company admins see their company
   let query = supabase
     .from('user_profiles')
-    .select('id, email, full_name, role, status, last_login, created_at, company_id, avatar_url')
+    .select('id, email, full_name, role, status, last_login, created_at, company_id, avatar_url, client_id')
     .order('created_at', { ascending: false })
 
   if (currentUser.role !== 'super_admin') {
@@ -54,9 +55,42 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Error al obtener usuarios' }, { status: 500 })
   }
 
-  return NextResponse.json({ 
+  // Fetch company clients for viewer invitation flow
+  // Using admin client to bypass RLS for reliable client listing
+  let companyId: string | null = currentUser.role === 'super_admin'
+    ? new URL(request.url).searchParams.get('company_id') || currentUser.company_id
+    : currentUser.company_id
+
+  // If companyId is still null (e.g., super_admin without company), infer from fetched users
+  if (!companyId && users && users.length > 0) {
+    const firstUserWithCompany = users.find((u: any) => u.company_id)
+    companyId = firstUserWithCompany?.company_id || null
+  }
+
+  let clients: { id: string; name: string }[] = []
+  if (companyId) {
+    try {
+      const supabaseAdmin = getSupabaseAdmin()
+      const { data: clientsData, error: clientsError } = await supabaseAdmin
+        .from('clients')
+        .select('id, name')
+        .eq('company_id', companyId)
+        .order('name')
+
+      if (clientsError) {
+        console.error('Error fetching clients with admin client:', clientsError)
+      } else {
+        clients = clientsData || []
+      }
+    } catch (adminError) {
+      console.error('Error creating admin client (check SUPABASE_SERVICE_ROLE_KEY):', adminError)
+    }
+  }
+
+  return NextResponse.json({
     users: users || [],
-    currentUserRole: currentUser.role 
+    clients,
+    currentUserRole: currentUser.role
   })
 }
 

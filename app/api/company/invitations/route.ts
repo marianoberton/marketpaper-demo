@@ -30,11 +30,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'No tienes permisos' }, { status: 403 })
   }
 
+  // Try query with client join first, fallback to basic query if client_id column doesn't exist yet
+  let invitations = null
+  let error = null
+
+  // First try with client relation (requires migration 0042)
   let query = supabase
     .from('company_invitations')
     .select(`
       *,
-      invited_by_user:user_profiles!invited_by(full_name, email)
+      invited_by_user:user_profiles!invited_by(full_name, email),
+      client:clients(id, name)
     `)
     .order('created_at', { ascending: false })
 
@@ -42,11 +48,31 @@ export async function GET(request: NextRequest) {
     query = query.eq('company_id', currentUser.company_id)
   }
 
-  const { data: invitations, error } = await query
+  const result = await query
+  invitations = result.data
+  error = result.error
 
+  // Fallback: if the join failed (client_id column may not exist), retry without it
   if (error) {
-    console.error('Error fetching invitations:', error)
-    return NextResponse.json({ error: 'Error al obtener invitaciones' }, { status: 500 })
+    console.warn('Invitations query with client join failed, retrying without:', error.message)
+    let fallbackQuery = supabase
+      .from('company_invitations')
+      .select(`
+        *,
+        invited_by_user:user_profiles!invited_by(full_name, email)
+      `)
+      .order('created_at', { ascending: false })
+
+    if (currentUser.role !== 'super_admin') {
+      fallbackQuery = fallbackQuery.eq('company_id', currentUser.company_id)
+    }
+
+    const fallbackResult = await fallbackQuery
+    if (fallbackResult.error) {
+      console.error('Error fetching invitations (fallback):', fallbackResult.error)
+      return NextResponse.json({ error: 'Error al obtener invitaciones' }, { status: 500 })
+    }
+    invitations = fallbackResult.data
   }
 
   return NextResponse.json({ invitations: invitations || [] })
@@ -71,7 +97,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { role } = body
+  const { role, client_id } = body
   const email = body.email?.trim().toLowerCase()
 
   if (!email) {
@@ -130,6 +156,29 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Ya existe una invitación pendiente para este email' }, { status: 400 })
   }
 
+  // Validate client_id for viewer invitations
+  const targetRole = role || 'employee'
+  if (targetRole === 'viewer' && !client_id) {
+    return NextResponse.json({ error: 'Debes seleccionar un cliente para invitaciones de tipo viewer' }, { status: 400 })
+  }
+
+  if (client_id) {
+    // Verify client belongs to the same company
+    const { data: client, error: clientError } = await supabase
+      .from('clients')
+      .select('id, company_id')
+      .eq('id', client_id)
+      .single()
+
+    if (clientError || !client) {
+      return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 })
+    }
+
+    if (client.company_id !== currentUser.company_id) {
+      return NextResponse.json({ error: 'El cliente no pertenece a tu empresa' }, { status: 403 })
+    }
+  }
+
   // Create invitation
   const { data: invitation, error: insertError } = await supabase
     .from('company_invitations')
@@ -137,9 +186,10 @@ export async function POST(request: NextRequest) {
       email,
       company_id: currentUser.company_id,
       invited_by: currentUser.id,
-      target_role: role || 'employee',
+      target_role: targetRole,
       status: 'pending',
-      requires_approval: true
+      requires_approval: true,
+      ...(client_id && targetRole === 'viewer' ? { client_id } : {})
     })
     .select()
     .single()

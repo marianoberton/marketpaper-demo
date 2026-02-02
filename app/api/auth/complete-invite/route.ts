@@ -64,7 +64,8 @@ export async function POST(request: Request) {
         role: invitation.target_role,
         company_id: invitation.company_id,
         status: 'active',
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        ...(invitation.client_id ? { client_id: invitation.client_id } : {})
       })
       .select()
 

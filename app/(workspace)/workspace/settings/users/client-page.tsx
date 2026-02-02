@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -20,9 +20,11 @@ import {
     CheckCircle,
     Clock,
     Mail,
-    Copy,
     Trash2,
-    Link as LinkIcon
+    Link as LinkIcon,
+    ExternalLink,
+    Building,
+    Info
 } from 'lucide-react'
 import {
     DropdownMenu,
@@ -43,6 +45,11 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
+interface ClientInfo {
+    id: string
+    name: string
+}
+
 interface UserProfile {
     id: string
     email: string
@@ -52,6 +59,7 @@ interface UserProfile {
     last_login: string | null
     created_at: string
     avatar_url: string | null
+    client_id: string | null
 }
 
 interface Invitation {
@@ -61,7 +69,9 @@ interface Invitation {
     status: string
     created_at: string
     expires_at: string
-    token: string // UUID used for registration
+    token: string
+    client_id: string | null
+    client: ClientInfo | null
     invited_by_user?: {
         full_name: string | null
         email: string
@@ -74,7 +84,7 @@ const roleLabels: Record<string, string> = {
     'company_admin': 'Administrador',
     'manager': 'Manager',
     'employee': 'Empleado',
-    'viewer': 'Solo lectura'
+    'viewer': 'Portal Cliente'
 }
 
 const roleIcons: Record<string, React.ElementType> = {
@@ -105,15 +115,22 @@ const statusLabels: Record<string, string> = {
 export default function CompanyUsersClientPage() {
     const [users, setUsers] = useState<UserProfile[]>([])
     const [invitations, setInvitations] = useState<Invitation[]>([])
+    const [clients, setClients] = useState<ClientInfo[]>([])
     const [currentUserRole, setCurrentUserRole] = useState<string>('')
     const [isLoading, setIsLoading] = useState(true)
     const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null)
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-    const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
+    const [isTeamInviteDialogOpen, setIsTeamInviteDialogOpen] = useState(false)
+    const [isClientInviteDialogOpen, setIsClientInviteDialogOpen] = useState(false)
     const [inviteEmail, setInviteEmail] = useState('')
     const [inviteRole, setInviteRole] = useState('employee')
+    const [inviteClientId, setInviteClientId] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const [activeTab, setActiveTab] = useState('users')
+    const [activeTab, setActiveTab] = useState('team')
+
+    const teamUsers = useMemo(() => users.filter(u => u.role !== 'viewer'), [users])
+    const viewerUsers = useMemo(() => users.filter(u => u.role === 'viewer'), [users])
+    const pendingInvitations = useMemo(() => invitations.filter(i => i.status === 'pending'), [invitations])
 
     useEffect(() => {
         fetchData()
@@ -136,6 +153,7 @@ export default function CompanyUsersClientPage() {
             if (!response.ok) throw new Error('Error al cargar usuarios')
             const data = await response.json()
             setUsers(data.users || [])
+            setClients(data.clients || [])
             setCurrentUserRole(data.currentUserRole || '')
         } catch (error: any) {
             toast.error(error.message)
@@ -145,7 +163,7 @@ export default function CompanyUsersClientPage() {
     const fetchInvitations = async () => {
         try {
             const response = await fetch('/api/company/invitations')
-            if (!response.ok) return // Silently fail if not implemented/error
+            if (!response.ok) return
             const data = await response.json()
             setInvitations(data.invitations || [])
         } catch (error) {
@@ -178,7 +196,7 @@ export default function CompanyUsersClientPage() {
         }
     }
 
-    const handleInviteUser = async () => {
+    const handleInviteTeamUser = async () => {
         if (!inviteEmail) {
             toast.error('Ingresa un email')
             return
@@ -197,18 +215,51 @@ export default function CompanyUsersClientPage() {
                 throw new Error(data.error || 'Error al enviar invitación')
             }
 
-            const data = await response.json()
             toast.success('Invitación creada correctamente')
-
-            // If we have manual link capability, show it
-            if (data.invitation?.token) {
-                // Optional: Show modal with link right away
-            }
-
             fetchInvitations()
-            setIsInviteDialogOpen(false)
+            setIsTeamInviteDialogOpen(false)
             setInviteEmail('')
             setInviteRole('employee')
+            setActiveTab('invitations')
+        } catch (error: any) {
+            toast.error(error.message || 'Error al enviar invitación')
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    const handleInviteClientUser = async () => {
+        if (!inviteEmail) {
+            toast.error('Ingresa un email')
+            return
+        }
+        if (!inviteClientId) {
+            toast.error('Selecciona un cliente')
+            return
+        }
+
+        setIsSubmitting(true)
+        try {
+            const response = await fetch('/api/company/invitations', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: inviteEmail,
+                    role: 'viewer',
+                    client_id: inviteClientId
+                })
+            })
+
+            if (!response.ok) {
+                const data = await response.json()
+                throw new Error(data.error || 'Error al enviar invitación')
+            }
+
+            toast.success('Acceso de cliente creado correctamente')
+            fetchInvitations()
+            setIsClientInviteDialogOpen(false)
+            setInviteEmail('')
+            setInviteClientId('')
             setActiveTab('invitations')
         } catch (error: any) {
             toast.error(error.message || 'Error al enviar invitación')
@@ -235,13 +286,24 @@ export default function CompanyUsersClientPage() {
     }
 
     const copyInviteLink = (token: string) => {
-        // Create link to the acceptance page
         const link = `${window.location.origin}/invite/accept?token=${token}`
-
         navigator.clipboard.writeText(link)
         toast.success('Enlace copiado al portapapeles', {
             description: 'Compártelo con el usuario para que se registre.'
         })
+    }
+
+    const getTeamRoles = () => {
+        if (currentUserRole === 'super_admin') {
+            return ['company_owner', 'company_admin', 'manager', 'employee']
+        }
+        if (currentUserRole === 'company_owner') {
+            return ['company_admin', 'manager', 'employee']
+        }
+        if (currentUserRole === 'company_admin') {
+            return ['manager', 'employee']
+        }
+        return []
     }
 
     const getAvailableRoles = () => {
@@ -284,7 +346,7 @@ export default function CompanyUsersClientPage() {
             <div className="flex flex-col gap-8 p-6">
                 <PageHeader
                     title="Usuarios de la Empresa"
-                    description="Gestiona los usuarios de tu organización"
+                    description="Gestiona tu equipo y los accesos de clientes"
                     accentColor="blue"
                 />
                 <div className="flex items-center justify-center py-12">
@@ -294,138 +356,279 @@ export default function CompanyUsersClientPage() {
         )
     }
 
+    const renderUserRow = (user: UserProfile, showClientInfo: boolean = false) => {
+        const RoleIcon = roleIcons[user.role] || User
+        return (
+            <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between py-4 gap-4">
+                <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium shrink-0 ${
+                        user.role === 'viewer'
+                            ? 'bg-gradient-to-br from-amber-500 to-orange-600'
+                            : 'bg-gradient-to-br from-blue-500 to-purple-600'
+                    }`}>
+                        {user.full_name?.[0]?.toUpperCase() || user.email[0].toUpperCase()}
+                    </div>
+                    <div>
+                        <div className="font-medium text-gray-900">
+                            {user.full_name || 'Sin nombre'}
+                        </div>
+                        <div className="text-sm text-gray-500 flex items-center gap-2">
+                            <Mail className="h-3 w-3" />
+                            {user.email}
+                        </div>
+                        {showClientInfo && user.client_id && (
+                            <div className="text-sm text-amber-700 flex items-center gap-1 mt-0.5">
+                                <Building className="h-3 w-3" />
+                                Cliente: {clients.find(c => c.id === user.client_id)?.name || 'Sin asignar'}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex items-center gap-2 text-sm text-gray-500 mr-2">
+                        <Clock className="h-4 w-4" />
+                        <span className="hidden xl:inline">Último acceso:</span>
+                        {formatDate(user.last_login)}
+                    </div>
+
+                    <Badge variant="outline" className="flex items-center gap-1">
+                        <RoleIcon className="h-3 w-3" />
+                        {roleLabels[user.role] || user.role}
+                    </Badge>
+
+                    <Badge className={statusColors[user.status] || 'bg-gray-100'}>
+                        {statusLabels[user.status] || user.status}
+                    </Badge>
+
+                    {canManageUser(user) && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                    <MoreVertical className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => {
+                                    setSelectedUser(user)
+                                    setIsEditDialogOpen(true)
+                                }}>
+                                    <Shield className="mr-2 h-4 w-4" />
+                                    Cambiar Rol
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                {user.status === 'active' ? (
+                                    <DropdownMenuItem
+                                        onClick={() => handleUpdateUser(user.id, { status: 'inactive' })}
+                                        className="text-red-600"
+                                    >
+                                        <Ban className="mr-2 h-4 w-4" />
+                                        Desactivar
+                                    </DropdownMenuItem>
+                                ) : (
+                                    <DropdownMenuItem
+                                        onClick={() => handleUpdateUser(user.id, { status: 'active' })}
+                                        className="text-green-600"
+                                    >
+                                        <CheckCircle className="mr-2 h-4 w-4" />
+                                        Activar
+                                    </DropdownMenuItem>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    )}
+                </div>
+            </div>
+        )
+    }
+
+    const renderInvitationRow = (invitation: Invitation) => {
+        const isPending = invitation.status === 'pending'
+        const isViewerInvite = invitation.target_role === 'viewer'
+
+        return (
+            <div key={invitation.id} className="flex flex-col sm:flex-row sm:items-center justify-between py-4 gap-4">
+                <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                        isViewerInvite
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                        {isViewerInvite ? <Eye className="h-5 w-5" /> : <Mail className="h-5 w-5" />}
+                    </div>
+                    <div>
+                        <div className="font-medium text-gray-900">
+                            {invitation.email}
+                        </div>
+                        <div className="text-sm text-gray-500 flex items-center gap-2 flex-wrap">
+                            <Badge variant="outline" className={`text-xs ${isViewerInvite ? 'border-amber-300 text-amber-700' : ''}`}>
+                                {isViewerInvite ? 'Portal Cliente' : roleLabels[invitation.target_role] || invitation.target_role}
+                            </Badge>
+                            {isViewerInvite && (invitation.client || invitation.client_id) && (
+                                <span className="flex items-center gap-1 text-amber-700">
+                                    <Building className="h-3 w-3" />
+                                    {invitation.client?.name || clients.find(c => c.id === invitation.client_id)?.name || 'Cliente'}
+                                </span>
+                            )}
+                            <span className="text-gray-400">•</span>
+                            <span>{formatDate(invitation.created_at)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <Badge className={statusColors[invitation.status] || 'bg-gray-100'}>
+                        {statusLabels[invitation.status] || invitation.status}
+                    </Badge>
+
+                    {isPending && (
+                        <>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex gap-2"
+                                onClick={() => copyInviteLink(invitation.token)}
+                            >
+                                <LinkIcon className="h-3 w-3" />
+                                Copiar Link
+                            </Button>
+
+                            <Button
+                                size="icon"
+                                variant="ghost"
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => handleCancelInvitation(invitation.id)}
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </>
+                    )}
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="flex flex-col gap-8 p-6">
             <PageHeader
                 title="Usuarios de la Empresa"
-                description="Gestiona los usuarios de tu organización"
+                description="Gestiona tu equipo interno y los accesos de clientes al portal"
                 accentColor="blue"
             />
 
-            {/* Actions */}
-            <div className="flex justify-between items-center">
-                <div className="text-sm text-gray-500">
-                    Gestión de equipo y accesos
-                </div>
-                <Button onClick={() => setIsInviteDialogOpen(true)}>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Invitar Usuario
-                </Button>
-            </div>
-
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="mb-4">
-                    <TabsTrigger value="users" className="flex items-center gap-2">
+                    <TabsTrigger value="team" className="flex items-center gap-2">
                         <Users className="h-4 w-4" />
-                        Usuarios Activos ({users.length})
+                        Equipo ({teamUsers.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="clients" className="flex items-center gap-2">
+                        <ExternalLink className="h-4 w-4" />
+                        Portal Clientes ({viewerUsers.length})
                     </TabsTrigger>
                     <TabsTrigger value="invitations" className="flex items-center gap-2">
                         <Mail className="h-4 w-4" />
-                        Invitaciones ({invitations.filter(i => i.status === 'pending').length})
+                        Invitaciones ({pendingInvitations.length})
                     </TabsTrigger>
                 </TabsList>
 
-                {/* Users List */}
-                <TabsContent value="users">
+                {/* ==================== TAB: EQUIPO ==================== */}
+                <TabsContent value="team">
+                    <div className="flex justify-between items-center mb-4">
+                        <div className="text-sm text-gray-500">
+                            Usuarios con acceso a la plataforma de gestión
+                        </div>
+                        <Button onClick={() => setIsTeamInviteDialogOpen(true)}>
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            Invitar al equipo
+                        </Button>
+                    </div>
                     <Card>
                         <CardHeader>
-                            <CardTitle>Equipo</CardTitle>
+                            <CardTitle>Equipo interno</CardTitle>
                             <CardDescription>
-                                Usuarios registrados en tu empresa
+                                Estos usuarios acceden a la plataforma completa del workspace
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {users.length === 0 ? (
+                            {teamUsers.length === 0 ? (
                                 <div className="text-center py-12 text-gray-500">
                                     <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                    <p>No hay usuarios registrados</p>
+                                    <p>No hay usuarios de equipo registrados</p>
                                 </div>
                             ) : (
                                 <div className="divide-y">
-                                    {users.map((user) => {
-                                        const RoleIcon = roleIcons[user.role] || User
-                                        return (
-                                            <div key={user.id} className="flex flex-col sm:flex-row sm:items-center justify-between py-4 gap-4">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium shrink-0">
-                                                        {user.full_name?.[0]?.toUpperCase() || user.email[0].toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-medium text-gray-900">
-                                                            {user.full_name || 'Sin nombre'}
-                                                        </div>
-                                                        <div className="text-sm text-gray-500 flex items-center gap-2">
-                                                            <Mail className="h-3 w-3" />
-                                                            {user.email}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-center gap-3 flex-wrap">
-                                                    <div className="flex items-center gap-2 text-sm text-gray-500 mr-2">
-                                                        <Clock className="h-4 w-4" />
-                                                        <span className="hidden xl:inline">Último acceso:</span>
-                                                        {formatDate(user.last_login)}
-                                                    </div>
-
-                                                    <Badge variant="outline" className="flex items-center gap-1">
-                                                        <RoleIcon className="h-3 w-3" />
-                                                        {roleLabels[user.role] || user.role}
-                                                    </Badge>
-
-                                                    <Badge className={statusColors[user.status] || 'bg-gray-100'}>
-                                                        {statusLabels[user.status] || user.status}
-                                                    </Badge>
-
-                                                    {canManageUser(user) && (
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <Button variant="ghost" size="icon">
-                                                                    <MoreVertical className="h-4 w-4" />
-                                                                </Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                                                                <DropdownMenuSeparator />
-                                                                <DropdownMenuItem onClick={() => {
-                                                                    setSelectedUser(user)
-                                                                    setIsEditDialogOpen(true)
-                                                                }}>
-                                                                    <Shield className="mr-2 h-4 w-4" />
-                                                                    Cambiar Rol
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuSeparator />
-                                                                {user.status === 'active' ? (
-                                                                    <DropdownMenuItem
-                                                                        onClick={() => handleUpdateUser(user.id, { status: 'inactive' })}
-                                                                        className="text-red-600"
-                                                                    >
-                                                                        <Ban className="mr-2 h-4 w-4" />
-                                                                        Desactivar
-                                                                    </DropdownMenuItem>
-                                                                ) : (
-                                                                    <DropdownMenuItem
-                                                                        onClick={() => handleUpdateUser(user.id, { status: 'active' })}
-                                                                        className="text-green-600"
-                                                                    >
-                                                                        <CheckCircle className="mr-2 h-4 w-4" />
-                                                                        Activar
-                                                                    </DropdownMenuItem>
-                                                                )}
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
+                                    {teamUsers.map((user) => renderUserRow(user))}
                                 </div>
                             )}
                         </CardContent>
                     </Card>
                 </TabsContent>
 
-                {/* Invitations List */}
+                {/* ==================== TAB: PORTAL CLIENTES ==================== */}
+                <TabsContent value="clients">
+                    <div className="flex justify-between items-center mb-4">
+                        <div className="text-sm text-gray-500">
+                            Usuarios con acceso al portal de solo lectura
+                        </div>
+                        <Button
+                            onClick={() => setIsClientInviteDialogOpen(true)}
+                            className="bg-amber-600 hover:bg-amber-700"
+                        >
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            Dar acceso a cliente
+                        </Button>
+                    </div>
+
+                    {/* Banner informativo */}
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 flex gap-3">
+                        <Info className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+                        <div className="text-sm text-amber-800">
+                            <p className="font-medium mb-1">Portal de Clientes</p>
+                            <p>
+                                Los usuarios de tipo cliente acceden a un portal de solo lectura donde pueden ver
+                                la información de sus proyectos, documentos y avance de obra.
+                                Acceden desde una URL diferente (<span className="font-mono text-xs bg-amber-100 px-1 rounded">/client-login</span>)
+                                y no tienen acceso al workspace de gestión.
+                            </p>
+                        </div>
+                    </div>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Clientes con acceso</CardTitle>
+                            <CardDescription>
+                                Usuarios externos que acceden al portal de solo lectura de sus proyectos
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {viewerUsers.length === 0 ? (
+                                <div className="text-center py-12 text-gray-500">
+                                    <Eye className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                    <p className="mb-2">No hay clientes con acceso al portal</p>
+                                    <p className="text-sm text-gray-400">
+                                        Invita a los clientes de tu empresa para que puedan ver sus proyectos
+                                    </p>
+                                    <Button
+                                        variant="link"
+                                        className="mt-2 text-amber-600"
+                                        onClick={() => setIsClientInviteDialogOpen(true)}
+                                    >
+                                        Dar acceso a un cliente
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="divide-y">
+                                    {viewerUsers.map((user) => renderUserRow(user, true))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* ==================== TAB: INVITACIONES ==================== */}
                 <TabsContent value="invitations">
                     <Card>
                         <CardHeader>
@@ -439,63 +642,10 @@ export default function CompanyUsersClientPage() {
                                 <div className="text-center py-12 text-gray-500">
                                     <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
                                     <p>No hay invitaciones pendientes</p>
-                                    <Button variant="link" onClick={() => setIsInviteDialogOpen(true)}>
-                                        Crear nueva invitación
-                                    </Button>
                                 </div>
                             ) : (
                                 <div className="divide-y">
-                                    {invitations.map((invitation) => {
-                                        const isPending = invitation.status === 'pending'
-                                        return (
-                                            <div key={invitation.id} className="flex flex-col sm:flex-row sm:items-center justify-between py-4 gap-4">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-700 shrink-0">
-                                                        <Mail className="h-5 w-5" />
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-medium text-gray-900">
-                                                            {invitation.email}
-                                                        </div>
-                                                        <div className="text-sm text-gray-500 flex items-center gap-2">
-                                                            <span>Rol: {roleLabels[invitation.target_role] || invitation.target_role}</span>
-                                                            <span>•</span>
-                                                            <span>Invitado el {formatDate(invitation.created_at)}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-center gap-3">
-                                                    <Badge className={statusColors[invitation.status] || 'bg-gray-100'}>
-                                                        {statusLabels[invitation.status] || invitation.status}
-                                                    </Badge>
-
-                                                    {isPending && (
-                                                        <>
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                className="flex gap-2"
-                                                                onClick={() => copyInviteLink(invitation.token)}
-                                                            >
-                                                                <LinkIcon className="h-3 w-3" />
-                                                                Copiar Link
-                                                            </Button>
-
-                                                            <Button
-                                                                size="icon"
-                                                                variant="ghost"
-                                                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                                onClick={() => handleCancelInvitation(invitation.id)}
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
+                                    {invitations.map((invitation) => renderInvitationRow(invitation))}
                                 </div>
                             )}
                         </CardContent>
@@ -503,7 +653,7 @@ export default function CompanyUsersClientPage() {
                 </TabsContent>
             </Tabs>
 
-            {/* Edit Role Dialog */}
+            {/* ==================== DIALOG: CAMBIAR ROL ==================== */}
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
@@ -544,18 +694,17 @@ export default function CompanyUsersClientPage() {
                 </DialogContent>
             </Dialog>
 
-            {/* Invite User Dialog */}
-            <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+            {/* ==================== DIALOG: INVITAR EQUIPO ==================== */}
+            <Dialog open={isTeamInviteDialogOpen} onOpenChange={setIsTeamInviteDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Invitar Usuario</DialogTitle>
+                        <DialogTitle>Invitar al equipo</DialogTitle>
                         <DialogDescription>
-                            Genera un enlace de invitación para un nuevo miembro.
+                            Genera un enlace de invitación para un nuevo miembro del equipo.
                         </DialogDescription>
                     </DialogHeader>
 
                     <div className="space-y-4 py-4">
-                        {/* Notice about manual process */}
                         <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-800 flex gap-2">
                             <LinkIcon className="h-4 w-4 mt-0.5 shrink-0" />
                             <div>
@@ -564,9 +713,9 @@ export default function CompanyUsersClientPage() {
                         </div>
 
                         <div>
-                            <Label htmlFor="invite-email">Email</Label>
+                            <Label htmlFor="team-invite-email">Email</Label>
                             <Input
-                                id="invite-email"
+                                id="team-invite-email"
                                 type="email"
                                 placeholder="usuario@email.com"
                                 value={inviteEmail}
@@ -582,7 +731,7 @@ export default function CompanyUsersClientPage() {
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {getAvailableRoles().map((role) => (
+                                    {getTeamRoles().map((role) => (
                                         <SelectItem key={role} value={role}>
                                             {roleLabels[role]}
                                         </SelectItem>
@@ -593,11 +742,96 @@ export default function CompanyUsersClientPage() {
                     </div>
 
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)}>
+                        <Button variant="outline" onClick={() => {
+                            setIsTeamInviteDialogOpen(false)
+                            setInviteEmail('')
+                            setInviteRole('employee')
+                        }}>
                             Cancelar
                         </Button>
-                        <Button onClick={handleInviteUser} disabled={isSubmitting || !inviteEmail}>
+                        <Button onClick={handleInviteTeamUser} disabled={isSubmitting || !inviteEmail}>
                             {isSubmitting ? 'Creando...' : 'Crear Invitación'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* ==================== DIALOG: DAR ACCESO A CLIENTE ==================== */}
+            <Dialog open={isClientInviteDialogOpen} onOpenChange={setIsClientInviteDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Dar acceso a cliente</DialogTitle>
+                        <DialogDescription>
+                            Crea un acceso al portal de clientes para que pueda ver sus proyectos.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                        <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-sm text-amber-800 flex gap-2">
+                            <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                            <div>
+                                Este usuario accederá al <strong>portal de clientes</strong> con vista de solo lectura.
+                                Podrá ver los proyectos asociados al cliente seleccionado, descargar documentos y consultar el avance de obra.
+                            </div>
+                        </div>
+
+                        <div>
+                            <Label htmlFor="client-invite-email">Email del cliente</Label>
+                            <Input
+                                id="client-invite-email"
+                                type="email"
+                                placeholder="cliente@email.com"
+                                value={inviteEmail}
+                                onChange={(e) => setInviteEmail(e.target.value)}
+                                className="mt-2"
+                            />
+                        </div>
+
+                        <div>
+                            <Label>Cliente asociado</Label>
+                            {clients.length === 0 ? (
+                                <div className="mt-2 bg-gray-50 border border-gray-200 rounded-md p-3 text-sm text-gray-600">
+                                    No hay clientes disponibles. Primero crea un cliente desde el módulo de construcción o CRM.
+                                </div>
+                            ) : (
+                                <Select value={inviteClientId} onValueChange={setInviteClientId}>
+                                    <SelectTrigger className="mt-2">
+                                        <SelectValue placeholder="Selecciona un cliente" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {clients.map((client) => (
+                                            <SelectItem key={client.id} value={client.id}>
+                                                {client.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        </div>
+
+                        <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-800 flex gap-2">
+                            <LinkIcon className="h-4 w-4 mt-0.5 shrink-0" />
+                            <div>
+                                <strong>Nota:</strong> Se generará un enlace de registro que deberás compartir con el cliente.
+                                Una vez registrado, podrá acceder al portal desde <span className="font-mono text-xs bg-blue-100 px-1 rounded">/client-login</span>.
+                            </div>
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => {
+                            setIsClientInviteDialogOpen(false)
+                            setInviteEmail('')
+                            setInviteClientId('')
+                        }}>
+                            Cancelar
+                        </Button>
+                        <Button
+                            onClick={handleInviteClientUser}
+                            disabled={isSubmitting || !inviteEmail || !inviteClientId}
+                            className="bg-amber-600 hover:bg-amber-700"
+                        >
+                            {isSubmitting ? 'Creando...' : 'Crear acceso de cliente'}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
