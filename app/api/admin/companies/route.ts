@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Fetch modules for this company's template
-      let modules = []
+      let modules: unknown[] = []
       if (company.template_id) {
         const { data: templateModules, error: modulesError } = await supabase
           .from('template_modules')
