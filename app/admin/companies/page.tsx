@@ -42,11 +42,12 @@ export default async function CompaniesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestión de Empresas</h1>
-          <p className="text-gray-600">Administra todas las empresas registradas en la plataforma</p>
+          <h1 className="text-3xl font-bold tracking-tight">Gestión de Empresas</h1>
+          <p className="text-muted-foreground">Administra todas las empresas registradas en la plataforma</p>
+          <div className="h-1 w-24 bg-primary rounded-full mt-2" />
         </div>
         <Link href="/admin/companies/create">
-          <Button>
+          <Button variant="outline">
             <Plus className="h-4 w-4 mr-2" />
             Nueva Empresa
           </Button>
@@ -55,37 +56,42 @@ export default async function CompaniesPage() {
 
       {/* Stats Cards - Simplified */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
+        <Card className="border-l-4 border-l-primary">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Empresas</p>
+                <p className="text-sm text-muted-foreground">Total Empresas</p>
                 <p className="text-2xl font-bold">{stats.total}</p>
               </div>
-              <Building2 className="h-8 w-8 text-blue-500" />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Building2 className="h-8 w-8 text-primary" />
+              </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-l-4 border-l-primary">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Activas</p>
-                <p className="text-2xl font-bold text-green-600">{stats.active}</p>
+                <p className="text-sm text-muted-foreground">Activas</p>
+                <p className="text-2xl font-bold text-primary">{stats.active}</p>
               </div>
-              <TrendingUp className="h-8 w-8 text-green-500" />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <TrendingUp className="h-8 w-8 text-primary" />
+              </div>
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="border-l-4 border-l-primary">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Inactivas</p>
-                <p className="text-2xl font-bold text-gray-500">{stats.total - stats.active}</p>
+                <p className="text-sm text-muted-foreground">Inactivas</p>
+                <p className="text-2xl font-bold text-primary">{stats.total - stats.active}</p>
               </div>
-              {/* Using a neutral icon for inactive */}
-              <Building2 className="h-8 w-8 text-gray-400" />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Building2 className="h-8 w-8 text-primary" />
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -684,11 +684,12 @@ export async function updateCompanySettings(
 
 export async function getCompanyUsers() {
   const companyId = await getCompanyIdForCurrentUser()
-  
+
   const { data, error } = await browserClient
     .from('user_profiles')
     .select('*')
     .eq('company_id', companyId)
+    .neq('role', 'super_admin') // Los super_admin no pertenecen a empresas
 
   if (error) throw error
   return data

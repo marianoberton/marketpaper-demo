@@ -14,7 +14,7 @@ export default async function HubSpotPage({
                         HubSpot Analytics
                     </h1>
                     <p className="text-muted-foreground">
-                        Dashboard de análisis avanzado de ventas y line items.
+                        Dashboard de ventas, pipeline, seguimiento y reporteria.
                     </p>
                 </div>
 

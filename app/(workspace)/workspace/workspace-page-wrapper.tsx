@@ -1,4 +1,6 @@
 import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
+import { getCurrentUser } from '@/lib/auth-server';
 import { getCurrentCompany, getModulesForCompany } from '@/lib/crm-multitenant';
 import { WorkspaceLayoutWithProvider } from '../workspace-layout-with-provider';
 
@@ -8,16 +10,45 @@ interface WorkspacePageWrapperProps {
 }
 
 export async function WorkspacePageWrapper({ children, searchParams }: WorkspacePageWrapperProps) {
-  const params = await searchParams;
-  const companyId = params?.company_id as string | undefined;
-
   let initialCompanyData = null;
   let fetchError: string | null = null;
   let availableModules: any[] = [];
 
   try {
+    // Obtener usuario autenticado
+    const user = await getCurrentUser();
+
+    if (!user) {
+      fetchError = "Usuario no autenticado.";
+      return (
+        <WorkspaceLayoutWithProvider
+          initialCompanyData={initialCompanyData}
+          fetchError={fetchError}
+          availableModules={availableModules}
+        >
+          {children}
+        </WorkspaceLayoutWithProvider>
+      );
+    }
+
+    // Obtener company_id del perfil del usuario
+    // Solo super_admin puede especificar un company_id diferente
+    const params = await searchParams;
+    let companyId = user.company_id;
+
+    if (user.role === 'super_admin' && params?.company_id) {
+      companyId = params.company_id as string;
+    }
+
     if (!companyId) {
-      fetchError = "No se proporcionó un ID de compañía en la URL.";
+      // Si es super_admin sin company_id, redirigir al panel de admin
+      // donde puede seleccionar una empresa
+      if (user.role === 'super_admin') {
+        redirect('/admin');
+      }
+
+      // Para otros usuarios sin empresa, mostrar error
+      fetchError = "Usuario sin empresa asignada. Por favor contacta al administrador.";
       return (
         <WorkspaceLayoutWithProvider
           initialCompanyData={initialCompanyData}

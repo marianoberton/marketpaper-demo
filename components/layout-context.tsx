@@ -3,7 +3,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type LayoutView = 'sidebar' | 'tabs';
-type ContentView = 'full' | 'tabs';
 
 interface LayoutContextType {
   view: LayoutView;
@@ -12,17 +11,13 @@ interface LayoutContextType {
   isCollapsed: boolean;
   setIsCollapsed: (collapsed: boolean) => void;
   toggleCollapsed: () => void;
-  contentView: ContentView;
-  setContentView: (view: ContentView) => void;
-  toggleContentView: () => void;
 }
 
 const LayoutContext = createContext<LayoutContextType | undefined>(undefined);
 
 export function LayoutProvider({ children }: { children: React.ReactNode }) {
   const [view, setViewState] = useState<LayoutView>('sidebar');
-  const [isCollapsed, setIsCollapsedState] = useState(false);
-  const [contentView, setContentViewState] = useState<ContentView>('full');
+  const [isCollapsed, setIsCollapsedState] = useState(true); // Colapsada por defecto
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -30,15 +25,10 @@ export function LayoutProvider({ children }: { children: React.ReactNode }) {
     if (savedView && (savedView === 'sidebar' || savedView === 'tabs')) {
       setViewState(savedView);
     }
-    
-    const savedCollapsed = localStorage.getItem('fomo-sidebar-collapsed');
-    if (savedCollapsed === 'true') {
-      setIsCollapsedState(true);
-    }
 
-    const savedContentView = localStorage.getItem('fomo-content-view') as ContentView;
-    if (savedContentView && (savedContentView === 'full' || savedContentView === 'tabs')) {
-      setContentViewState(savedContentView);
+    const savedCollapsed = localStorage.getItem('fomo-sidebar-collapsed');
+    if (savedCollapsed === 'false') {
+      setIsCollapsedState(false);
     }
   }, []);
 
@@ -62,27 +52,14 @@ export function LayoutProvider({ children }: { children: React.ReactNode }) {
     setIsCollapsed(newCollapsed);
   };
 
-  const setContentView = (newContentView: ContentView) => {
-    setContentViewState(newContentView);
-    localStorage.setItem('fomo-content-view', newContentView);
-  };
-
-  const toggleContentView = () => {
-    const newContentView = contentView === 'full' ? 'tabs' : 'full';
-    setContentView(newContentView);
-  };
-
   return (
-    <LayoutContext.Provider value={{ 
-      view, 
-      setView, 
-      toggleView, 
-      isCollapsed, 
-      setIsCollapsed, 
-      toggleCollapsed,
-      contentView,
-      setContentView,
-      toggleContentView
+    <LayoutContext.Provider value={{
+      view,
+      setView,
+      toggleView,
+      isCollapsed,
+      setIsCollapsed,
+      toggleCollapsed
     }}>
       {children}
     </LayoutContext.Provider>
@@ -95,4 +72,4 @@ export function useLayout() {
     throw new Error('useLayout must be used within a LayoutProvider');
   }
   return context;
-} 
+}

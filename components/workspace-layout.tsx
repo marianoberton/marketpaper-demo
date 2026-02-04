@@ -1,7 +1,6 @@
 "use client";
 
 import { WorkspaceNav } from "@/components/workspace-nav";
-import { ContentViewToggle } from "@/components/content-view-toggle";
 import { LayoutToggle } from "@/components/layout-toggle";
 import { SidebarToggle } from "@/components/sidebar-toggle";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -60,7 +59,7 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
                     className="object-contain rounded"
                   />
                 ) : (
-                  <div className="font-logo text-2xl font-bold text-brilliant-blue">
+                  <div className="text-2xl font-bold text-brilliant-blue">
                     {companyName || 'Workspace'}
                   </div>
                 )}
@@ -117,7 +116,7 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
                   />
                 ) : (
                   <div
-                    className="font-logo text-lg font-bold text-brilliant-blue"
+                    className="text-lg font-bold text-brilliant-blue"
                     title={companyName || 'Workspace'}
                   >
                     {companyName ? companyName.charAt(0).toUpperCase() : 'W'}
@@ -143,7 +142,7 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
                       className="object-contain rounded"
                     />
                   ) : (
-                    <div className="font-logo text-2xl font-bold text-brilliant-blue">
+                    <div className="text-2xl font-bold text-brilliant-blue">
                       {companyName || 'Workspace'}
                     </div>
                   )}
@@ -157,11 +156,6 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
           </div>
           <div className="flex-1 overflow-auto py-2">
             <WorkspaceNav />
-          </div>
-
-          {/* Vista Tabs Toggle */}
-          <div className={`border-t p-3 ${isCollapsed ? 'flex justify-center' : ''}`}>
-            <ContentViewToggle />
           </div>
 
           {/* User Info & Logout en la parte inferior */}
@@ -183,14 +177,14 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
               </>
             ) : (
               <>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-r from-brilliant-blue to-plum rounded-full flex items-center justify-center">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 bg-gradient-to-r from-brilliant-blue to-plum rounded-full flex items-center justify-center flex-shrink-0">
                       <User className="h-4 w-4 text-white" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{userName || 'Usuario'}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{companyName || 'Manager'}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[120px]">{userName || 'Usuario'}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[120px]">{companyName || 'Manager'}</p>
                     </div>
                   </div>
                   <ThemeToggle />
@@ -231,7 +225,7 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
                     className="object-contain rounded"
                   />
                 ) : (
-                  <div className="font-logo text-2xl font-bold text-brilliant-blue">
+                  <div className="text-2xl font-bold text-brilliant-blue">
                     {companyName || 'Workspace'}
                   </div>
                 )}
@@ -240,11 +234,6 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
             </div>
             <div className="flex-1 overflow-auto py-2">
               <WorkspaceNav />
-            </div>
-
-            {/* Vista Tabs Toggle en Mobile */}
-            <div className="border-t p-3">
-              <ContentViewToggle />
             </div>
 
             {/* User info y logout en mobile */}
@@ -287,7 +276,7 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
                 className="object-contain rounded"
               />
             ) : (
-              <div className="font-logo text-xl font-bold text-brilliant-blue">
+              <div className="text-xl font-bold text-brilliant-blue">
                 {companyName || 'Workspace'}
               </div>
             )}

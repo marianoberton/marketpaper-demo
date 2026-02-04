@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
-import { notifySlackTicketResponse } from '@/lib/slack-notifications'
 
 interface RouteParams {
   params: Promise<{ id: string }>
 }
 
-// GET - Listar mensajes de un ticket
+// GET - Listar attachments de un ticket
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: ticketId } = await params
     const supabase = await createClient()
-    
-    // Verificar autenticación
+
+    // Verificar autenticacion
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json(
@@ -41,7 +40,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    const hasAccess = 
+    const hasAccess =
       profile?.role === 'super_admin' ||
       ticket.user_id === user.id ||
       (profile?.company_id && ticket.company_id === profile.company_id)
@@ -53,35 +52,28 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Obtener mensajes
-    let query = supabase
-      .from('ticket_messages')
+    // Obtener attachments
+    const { data: attachments, error } = await supabase
+      .from('ticket_attachments')
       .select('*')
       .eq('ticket_id', ticketId)
       .order('created_at', { ascending: true })
 
-    // Excluir notas internas si no es admin
-    if (profile?.role !== 'super_admin') {
-      query = query.eq('is_internal', false)
-    }
-
-    const { data: messages, error } = await query
-
     if (error) {
-      console.error('Error fetching messages:', error)
+      console.error('Error fetching attachments:', error)
       return NextResponse.json(
-        { success: false, error: 'Error al obtener mensajes' },
+        { success: false, error: 'Error al obtener adjuntos' },
         { status: 500 }
       )
     }
 
     return NextResponse.json({
       success: true,
-      messages
+      attachments
     })
 
   } catch (error) {
-    console.error('Messages API Error:', error)
+    console.error('Attachments API Error:', error)
     return NextResponse.json(
       { success: false, error: 'Error interno del servidor' },
       { status: 500 }
@@ -89,13 +81,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-// POST - Agregar mensaje a un ticket
+// POST - Crear registro de attachment despues de upload
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: ticketId } = await params
     const supabase = await createClient()
-    
-    // Verificar autenticación
+
+    // Verificar autenticacion
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
       return NextResponse.json(
@@ -107,7 +99,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Obtener perfil del usuario
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('id, company_id, role, full_name, email')
+      .select('id, company_id, role')
       .eq('id', user.id)
       .single()
 
@@ -121,7 +113,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Verificar que el ticket existe y el usuario tiene acceso
     const { data: ticket } = await supabase
       .from('support_tickets')
-      .select('id, user_id, company_id, status, external_email, subject, slack_thread_ts')
+      .select('id, user_id, company_id')
       .eq('id', ticketId)
       .single()
 
@@ -132,7 +124,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    const hasAccess = 
+    const hasAccess =
       profile.role === 'super_admin' ||
       ticket.user_id === user.id ||
       (profile.company_id && ticket.company_id === profile.company_id)
@@ -144,96 +136,48 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Obtener datos del mensaje
+    // Obtener datos del attachment
     const body = await request.json()
-    const { message, is_internal } = body
+    const { file_name, file_path, file_size, file_type, message_id } = body
 
-    if (!message?.trim()) {
+    if (!file_name || !file_path) {
       return NextResponse.json(
-        { success: false, error: 'El mensaje es requerido' },
+        { success: false, error: 'file_name y file_path son requeridos' },
         { status: 400 }
       )
     }
 
-    // Solo admin puede crear notas internas
-    const isInternal = profile.role === 'super_admin' ? (is_internal || false) : false
-    const senderType = profile.role === 'super_admin' ? 'admin' : 'user'
-
-    // Crear mensaje
-    const { data: newMessage, error: createError } = await supabase
-      .from('ticket_messages')
+    // Crear registro de attachment
+    const { data: attachment, error: createError } = await supabase
+      .from('ticket_attachments')
       .insert({
         ticket_id: ticketId,
-        sender_type: senderType,
-        sender_id: user.id,
-        sender_name: profile.full_name || profile.email,
-        sender_email: profile.email,
-        message: message.trim(),
-        is_internal: isInternal
+        message_id: message_id || null,
+        file_name,
+        file_path,
+        file_size: file_size || null,
+        file_type: file_type || null,
+        uploaded_by: user.id
       })
       .select()
       .single()
 
     if (createError) {
-      console.error('Error creating message:', createError)
+      console.error('Error creating attachment:', createError)
       return NextResponse.json(
-        { success: false, error: 'Error al crear mensaje' },
+        { success: false, error: 'Error al crear registro de adjunto' },
         { status: 500 }
       )
     }
 
-    // Notificaciones cuando admin responde con mensaje publico
-    if (senderType === 'admin' && !isInternal && ticket.user_id) {
-      // Crear notificacion in-app para el usuario
-      const notificationResult = await supabase
-        .from('notifications')
-        .insert({
-          user_id: ticket.user_id,
-          type: 'ticket_response',
-          title: 'Nueva respuesta en tu ticket',
-          message: `Respuesta en: "${ticket.subject}"`,
-          link: `/workspace/soporte/${ticketId}`,
-          ticket_id: ticketId
-        })
-
-      if (notificationResult.error) {
-        console.error('Error creating notification:', notificationResult.error)
-      } else {
-        console.log(`[Notifications] In-app notification created for ticket response: ${ticketId}`)
-      }
-
-      // Notificar a Slack (async, no bloquea)
-      notifySlackTicketResponse(
-        { id: ticket.id, subject: ticket.subject, slack_thread_ts: ticket.slack_thread_ts },
-        message.trim(),
-        { full_name: profile.full_name, email: profile.email }
-      ).catch(err => console.error('[Slack] Error:', err))
-    }
-
-    // Si es admin respondiendo, cambiar estado a "in_progress" si estaba "open"
-    if (profile.role === 'super_admin' && ticket.status === 'open') {
-      await supabase
-        .from('support_tickets')
-        .update({ status: 'in_progress' })
-        .eq('id', ticketId)
-    }
-
-    // Si es usuario respondiendo y estaba en "waiting_user", cambiar a "open"
-    if (profile.role !== 'super_admin' && ticket.status === 'waiting_user') {
-      await supabase
-        .from('support_tickets')
-        .update({ status: 'open' })
-        .eq('id', ticketId)
-    }
-
     return NextResponse.json({
       success: true,
-      message: 'Mensaje agregado',
-      data: newMessage
+      message: 'Adjunto registrado',
+      attachment
     }, { status: 201 })
 
   } catch (error) {
-    console.error('Create Message API Error:', error)
+    console.error('Create Attachment API Error:', error)
     return NextResponse.json(
       { success: false, error: 'Error interno del servidor' },
       { status: 500 }

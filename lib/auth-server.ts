@@ -173,6 +173,7 @@ export async function getCompanyUsers(companyId: string): Promise<UserProfile[]>
     .select('*')
     .eq('company_id', companyId)
     .eq('status', 'active')
+    .neq('role', 'super_admin') // Los super_admin no pertenecen a empresas
 
   if (error || !profiles) {
     return []

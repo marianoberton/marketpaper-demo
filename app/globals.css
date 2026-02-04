@@ -49,6 +49,11 @@
   --color-mineral: #1C1C1C;
   --color-pure-black: #000000;
 
+  /* Brand Colors for Login/Register */
+  --color-brilliant-blue: #3B82F6;
+  --color-plum: #8B5CF6;
+  --color-signal-yellow: #FACC15;
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -107,57 +112,60 @@
 }
 
 .dark {
-  /* Modern Minimalist Palette - Dark Mode */
+  /* Modern Admin Dark Theme - Clean & Professional */
+  /* Using: #272727 (dark gray), #fafafa (light), #ced600 (lime accent) */
 
-  /* Pure Black Background */
-  --background: #000000;
-  /* Canvas (Foreground - Light Text) */
+  /* Main backgrounds */
+  --background: #1a1a1a;
   --foreground: #FAFAFA;
 
-  /* Ink (Card/Sidebar Background) - Using specific #272727 requested */
+  /* Cards & surfaces - slightly elevated from background */
   --card: #272727;
   --card-foreground: #FAFAFA;
 
   --popover: #272727;
   --popover-foreground: #FAFAFA;
 
+  /* Primary accent - lime */
   --primary: #CED600;
-  --primary-foreground: #1C1C1C;
+  --primary-foreground: #1a1a1a;
 
-  --secondary: #1C1C1C;
-  /* Mineral for secondary */
+  /* Secondary - subtle dark surfaces */
+  --secondary: #333333;
   --secondary-foreground: #FAFAFA;
 
-  --muted: #1C1C1C;
-  --muted-foreground: #A1A1AA;
+  /* Muted elements */
+  --muted: #333333;
+  --muted-foreground: #999999;
 
-  --accent: #1C1C1C;
+  /* Accent for highlights */
+  --accent: #333333;
   --accent-foreground: #CED600;
 
-  --destructive: #7f1d1d;
-  --destructive-foreground: #FFFFFF;
+  /* Destructive states */
+  --destructive: #dc2626;
+  --destructive-foreground: #FAFAFA;
 
-  --border: #272727;
-  /* Ink borders */
-  --input: #272727;
+  /* Borders & inputs - visible but subtle */
+  --border: #3d3d3d;
+  --input: #333333;
   --ring: #CED600;
 
+  /* Charts */
   --chart-1: #CED600;
   --chart-2: #EE9B00;
   --chart-3: #FAFAFA;
-  --chart-4: #A1A1AA;
-  --chart-5: #333333;
+  --chart-4: #999999;
+  --chart-5: #444444;
 
-  /* Sidebar Specifics - Ink Background */
-  --sidebar: #000000;
-  /* Sidebar background */
+  /* Sidebar - matches card for consistency */
+  --sidebar: #272727;
   --sidebar-foreground: #FAFAFA;
   --sidebar-primary: #CED600;
-  --sidebar-primary-foreground: #1C1C1C;
-  --sidebar-accent: #272727;
-  /* Selection state */
+  --sidebar-primary-foreground: #1a1a1a;
+  --sidebar-accent: #3d3d3d;
   --sidebar-accent-foreground: #FAFAFA;
-  --sidebar-border: #272727;
+  --sidebar-border: #3d3d3d;
   --sidebar-ring: #CED600;
 }
 
@@ -216,6 +224,15 @@
 
   .bg-ink {
     background-color: #272727;
+  }
+
+  /* Brand Gradients */
+  .gradient-cta {
+    background: linear-gradient(135deg, #CED600 0%, #EE9B00 100%);
+  }
+
+  .gradient-fomo {
+    background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
   }
 
   /* Typography tweaks */

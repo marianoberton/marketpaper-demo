@@ -4,23 +4,40 @@ import { getCurrentUser } from '@/lib/auth-server'
 
 export async function GET(request: NextRequest) {
   try {
+    // Autenticación
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'No autorizado' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
-    const company_id = searchParams.get('company_id')
+    const requestedCompanyId = searchParams.get('company_id')
     const is_active = searchParams.get('is_active')
     const parent_id = searchParams.get('parent_id')
 
+    // Determinar company_id: super_admin puede acceder a cualquier empresa
+    const company_id = currentUser.role === 'super_admin' && requestedCompanyId
+      ? requestedCompanyId
+      : currentUser.company_id
+
+    if (!company_id) {
+      return NextResponse.json(
+        { error: 'company_id es requerido' },
+        { status: 400 }
+      )
+    }
+
     const supabase = await createClient()
 
-    // Construir la query base
+    // Construir la query base - SIEMPRE filtrar por company_id
     let query = supabase
       .from('categories')
       .select('*')
+      .eq('company_id', company_id)
       .order('name', { ascending: true })
-
-    // Filtros
-    if (company_id) {
-      query = query.eq('company_id', company_id)
-    }
 
     if (is_active !== null) {
       query = query.eq('is_active', is_active === 'true')
@@ -58,9 +75,18 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Autenticación
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'No autorizado' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
     const {
-      company_id,
+      company_id: requestedCompanyId,
       name,
       description,
       color,
@@ -70,11 +96,24 @@ export async function POST(request: NextRequest) {
       budget_limit
     } = body
 
+    // Determinar company_id: super_admin puede especificar otra empresa
+    const company_id = currentUser.role === 'super_admin' && requestedCompanyId
+      ? requestedCompanyId
+      : currentUser.company_id
+
     // Validaciones
     if (!company_id || !name || !color) {
       return NextResponse.json(
         { error: 'Faltan campos requeridos (company_id, name, color)' },
         { status: 400 }
+      )
+    }
+
+    // Validar que el usuario pertenece a la empresa (excepto super_admin)
+    if (currentUser.role !== 'super_admin' && requestedCompanyId && requestedCompanyId !== currentUser.company_id) {
+      return NextResponse.json(
+        { error: 'No tiene permisos para esta empresa' },
+        { status: 403 }
       )
     }
 
@@ -162,6 +201,15 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    // Autenticación
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'No autorizado' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
     const {
       id,
@@ -194,6 +242,14 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json(
         { error: 'Categoría no encontrada' },
         { status: 404 }
+      )
+    }
+
+    // Validar permisos: solo super_admin o usuarios de la misma empresa
+    if (currentUser.role !== 'super_admin' && existingCategory.company_id !== currentUser.company_id) {
+      return NextResponse.json(
+        { error: 'No tiene permisos para modificar esta categoría' },
+        { status: 403 }
       )
     }
 
@@ -306,6 +362,15 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    // Autenticación
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'No autorizado' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
@@ -329,6 +394,14 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json(
         { error: 'Categoría no encontrada' },
         { status: 404 }
+      )
+    }
+
+    // Validar permisos: solo super_admin o usuarios de la misma empresa
+    if (currentUser.role !== 'super_admin' && existingCategory.company_id !== currentUser.company_id) {
+      return NextResponse.json(
+        { error: 'No tiene permisos para eliminar esta categoría' },
+        { status: 403 }
       )
     }
 

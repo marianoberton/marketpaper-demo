@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { StatsCard } from '@/components/ui/stats-card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -82,14 +83,7 @@ const getStatusBadge = (status: string) => {
 
 // Get plan badge
 const getPlanBadge = (plan: string) => {
-  const planConfig: Record<string, string> = {
-    starter: 'bg-gray-100 text-gray-700',
-    professional: 'bg-blue-100 text-blue-700',
-    enterprise: 'bg-purple-100 text-purple-700',
-    custom: 'bg-orange-100 text-orange-700',
-  }
-  const className = planConfig[plan] || 'bg-gray-100 text-gray-700'
-  return <Badge className={className}>{plan}</Badge>
+  return <Badge variant="secondary">{plan}</Badge>
 }
 
 // Data fetching
@@ -166,65 +160,36 @@ export default async function AdminDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">Vista general de la plataforma</p>
+          <div className="h-1 w-24 bg-primary rounded-full mt-2" />
         </div>
       </div>
 
       {/* Stats Overview */}
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Total Empresas
-            </CardTitle>
-            <Building2 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total_companies}</div>
-            <div className="flex gap-2 mt-1">
-              <span className="text-xs text-green-600 flex items-center gap-1">
-                <CheckCircle className="h-3 w-3" />
-                {stats.active_companies} activas
-              </span>
-              <span className="text-xs text-blue-600 flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {stats.trial_companies} prueba
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Total Empresas"
+          value={stats.total_companies}
+          iconName="Building2"
+          description={`${stats.active_companies} activas, ${stats.trial_companies} en prueba`}
+          status="success"
+        />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Usuarios Totales
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total_users}</div>
-            <p className="text-xs text-muted-foreground">
-              En todas las empresas
-            </p>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Usuarios Totales"
+          value={stats.total_users}
+          iconName="Users"
+          description="En todas las empresas"
+        />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Módulos Activos
-            </CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total_modules}</div>
-            <div className="flex gap-2 mt-1">
-              <span className="text-xs text-blue-600">{dashboardModules.length} dashboard</span>
-              <span className="text-xs text-green-600">{workspaceModules.length} workspace</span>
-            </div>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Módulos Activos"
+          value={stats.total_modules}
+          iconName="Package"
+          description={`${dashboardModules.length} dashboard, ${workspaceModules.length} workspace`}
+          status="warning"
+        />
       </div>
 
       {/* Quick Actions */}
@@ -235,49 +200,49 @@ export default async function AdminDashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-4">
-            <Link href="/admin/companies/create" className="block">
-              <div className="flex items-center gap-3 p-4 rounded-lg border hover:bg-accent transition-colors cursor-pointer">
-                <div className="p-2 rounded-lg bg-blue-100">
-                  <Building2 className="h-5 w-5 text-blue-600" />
+            <Link href="/admin/companies/create" className="block group">
+              <div className="flex items-center gap-3 p-4 rounded-lg border hover:bg-primary/5 hover:border-primary/30 transition-all cursor-pointer">
+                <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                  <Building2 className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium">Nueva Empresa</p>
+                  <p className="font-medium group-hover:text-primary transition-colors">Nueva Empresa</p>
                   <p className="text-xs text-muted-foreground">Registrar cliente</p>
                 </div>
               </div>
             </Link>
 
-            <Link href="/admin/templates" className="block">
-              <div className="flex items-center gap-3 p-4 rounded-lg border hover:bg-accent transition-colors cursor-pointer">
-                <div className="p-2 rounded-lg bg-purple-100">
-                  <Calendar className="h-5 w-5 text-purple-600" />
+            <Link href="/admin/templates" className="block group">
+              <div className="flex items-center gap-3 p-4 rounded-lg border hover:bg-orange/5 hover:border-orange/30 transition-all cursor-pointer">
+                <div className="p-2 rounded-lg bg-orange/10 group-hover:bg-orange/20 transition-colors">
+                  <Calendar className="h-5 w-5 text-orange" />
                 </div>
                 <div>
-                  <p className="font-medium">Plantillas</p>
+                  <p className="font-medium group-hover:text-orange transition-colors">Plantillas</p>
                   <p className="text-xs text-muted-foreground">{stats.total_templates} disponibles</p>
                 </div>
               </div>
             </Link>
 
-            <Link href="/admin/modules" className="block">
-              <div className="flex items-center gap-3 p-4 rounded-lg border hover:bg-accent transition-colors cursor-pointer">
-                <div className="p-2 rounded-lg bg-green-100">
-                  <Package className="h-5 w-5 text-green-600" />
+            <Link href="/admin/modules" className="block group">
+              <div className="flex items-center gap-3 p-4 rounded-lg border hover:bg-primary/5 hover:border-primary/30 transition-all cursor-pointer">
+                <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                  <Package className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="font-medium">Módulos</p>
+                  <p className="font-medium group-hover:text-primary transition-colors">Módulos</p>
                   <p className="text-xs text-muted-foreground">{stats.total_modules} creados</p>
                 </div>
               </div>
             </Link>
 
-            <Link href="/admin/users" className="block">
-              <div className="flex items-center gap-3 p-4 rounded-lg border hover:bg-accent transition-colors cursor-pointer">
-                <div className="p-2 rounded-lg bg-orange-100">
-                  <Users className="h-5 w-5 text-orange-600" />
+            <Link href="/admin/users" className="block group">
+              <div className="flex items-center gap-3 p-4 rounded-lg border hover:bg-orange/5 hover:border-orange/30 transition-all cursor-pointer">
+                <div className="p-2 rounded-lg bg-orange/10 group-hover:bg-orange/20 transition-colors">
+                  <Users className="h-5 w-5 text-orange" />
                 </div>
                 <div>
-                  <p className="font-medium">Usuarios</p>
+                  <p className="font-medium group-hover:text-orange transition-colors">Usuarios</p>
                   <p className="text-xs text-muted-foreground">{stats.total_users} registrados</p>
                 </div>
               </div>
@@ -313,8 +278,8 @@ export default async function AdminDashboard() {
                 {recentCompanies.map((company) => (
                   <div key={company.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-accent/50 transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-                        <span className="text-white font-semibold text-sm">
+                      <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+                        <span className="text-primary-foreground font-semibold text-sm">
                           {company.name.substring(0, 2).toUpperCase()}
                         </span>
                       </div>

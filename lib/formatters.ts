@@ -36,4 +36,18 @@ export function formatTime(seconds: number): string {
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.floor(seconds % 60);
   return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Format square meters
+ */
+export function formatM2(value: number): string {
+  return `${new Intl.NumberFormat('es-AR', { maximumFractionDigits: 1 }).format(value)} m\u00B2`;
+}
+
+/**
+ * Format currency per square meter
+ */
+export function formatCurrencyPerM2(value: number): string {
+  return `${formatCurrency(value)}/m\u00B2`;
 } 

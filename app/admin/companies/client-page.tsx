@@ -252,7 +252,7 @@ export function CompaniesClientPage({ companies: initialCompanies, templates: in
             return (
               <div
                 key={status}
-                className={`p-3 border rounded-lg cursor-pointer hover:bg-gray-50 ${company.status === status ? 'border-blue-500 bg-blue-50' : ''
+                className={`p-3 border rounded-lg cursor-pointer hover:bg-muted ${company.status === status ? 'border-primary bg-primary/10' : 'border-border'
                   }`}
                 onClick={() => {
                   if (company.status !== status) {
@@ -264,7 +264,7 @@ export function CompaniesClientPage({ companies: initialCompanies, templates: in
                   <Icon className="h-5 w-5" />
                   <div>
                     <p className="font-medium">{config.label}</p>
-                    <p className="text-sm text-gray-600">{config.description}</p>
+                    <p className="text-sm text-muted-foreground">{config.description}</p>
                   </div>
                 </div>
               </div>
@@ -277,15 +277,15 @@ export function CompaniesClientPage({ companies: initialCompanies, templates: in
 
   return (
     <Card>
-      <CardHeader className="bg-white border-b sticky top-0 z-10">
+      <CardHeader className="bg-card border-b border-border sticky top-0 z-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <CardTitle className="text-xl font-bold text-gray-900">Empresas</CardTitle>
+            <CardTitle className="text-xl font-bold text-foreground">Empresas</CardTitle>
             <CardDescription>Gestiona el acceso y configuración de tus clientes</CardDescription>
           </div>
           <div className="flex items-center gap-3 w-full md:w-auto">
             <div className="relative flex-1 md:w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder="Buscar..."
                 value={searchTerm}
@@ -306,14 +306,14 @@ export function CompaniesClientPage({ companies: initialCompanies, templates: in
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-6 bg-gray-50/50 min-h-[500px]">
+      <CardContent className="p-6 bg-muted/30 min-h-[500px]">
         {filteredCompanies.length === 0 ? (
           <div className="text-center py-12">
-            <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-              <Search className="h-10 w-10 text-gray-300" />
+            <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
+              <Search className="h-10 w-10 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No se encontraron empresas</h3>
-            <p className="text-gray-500 max-w-sm mx-auto">
+            <h3 className="text-lg font-medium text-foreground mb-2">No se encontraron empresas</h3>
+            <p className="text-muted-foreground max-w-sm mx-auto">
               {searchTerm || statusFilter !== 'all'
                 ? 'Intenta ajustar tus filtros de búsqueda.'
                 : 'Comienza registrando tu primera empresa.'
@@ -325,12 +325,12 @@ export function CompaniesClientPage({ companies: initialCompanies, templates: in
             {filteredCompanies.map((company) => (
               <div
                 key={company.id}
-                className="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg hover:border-blue-300 hover:scale-[1.02] transition-all duration-300 flex flex-col"
+                className="group bg-card rounded-xl border border-border shadow-sm hover:shadow-lg hover:border-primary transition-all duration-300 flex flex-col"
               >
                 {/* Card Header: Avatar & Info */}
-                <div className="p-5 border-b border-gray-100 dark:border-gray-700 flex items-start justify-between">
+                <div className="p-5 border-b border-border flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-sm text-white font-bold text-lg shrink-0">
+                    <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center shadow-sm text-primary-foreground font-bold text-lg shrink-0">
                       {company.logo_url ? (
                         <Image
                           src={company.logo_url}
@@ -344,10 +344,10 @@ export function CompaniesClientPage({ companies: initialCompanies, templates: in
                       )}
                     </div>
                     <div>
-                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 leading-tight line-clamp-1" title={company.name}>
+                      <h4 className="font-semibold text-foreground leading-tight line-clamp-1" title={company.name}>
                         {company.name}
                       </h4>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 font-mono">/{company.slug}</p>
+                      <p className="text-sm text-muted-foreground font-mono">/{company.slug}</p>
                     </div>
                   </div>
                   <StatusEditDialog company={company} />
@@ -356,18 +356,18 @@ export function CompaniesClientPage({ companies: initialCompanies, templates: in
                 {/* Card Body: Details */}
                 <div className="p-5 flex-1 space-y-4">
                   <div className="flex justify-between items-center text-sm">
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Users className="h-4 w-4 text-gray-400" />
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Users className="h-4 w-4" />
                       <span>{company.current_users || 0} Usuarios</span>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <Calendar className="h-4 w-4 text-gray-400" />
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
                       <span>{formatDate(company.created_at)}</span>
                     </div>
                   </div>
 
                   <div className="pt-2">
-                    <label className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1 block">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1 block">
                       Plantilla
                     </label>
                     <Select
@@ -390,22 +390,22 @@ export function CompaniesClientPage({ companies: initialCompanies, templates: in
                   </div>
 
                   {company.domain && (
-                    <div className="text-xs text-blue-600 truncate bg-blue-50 px-2 py-1 rounded w-fit max-w-full">
+                    <div className="text-xs text-primary truncate bg-primary/10 px-2 py-1 rounded w-fit max-w-full">
                       {company.domain}
                     </div>
                   )}
                 </div>
 
                 {/* Card Footer: Actions */}
-                <div className="p-4 bg-gray-50 rounded-b-xl border-t border-gray-100 grid grid-cols-2 gap-3">
+                <div className="p-4 bg-muted/50 rounded-b-xl border-t border-border grid grid-cols-2 gap-3">
                   <Link href={`/admin/companies/${company.id}`} passHref className="w-full">
-                    <Button variant="outline" className="w-full hover:bg-white hover:text-blue-600 border-gray-200 group-hover:border-blue-200">
+                    <Button variant="outline" className="w-full hover:border-primary hover:text-primary">
                       <Settings className="mr-2 h-4 w-4" />
                       Configuración
                     </Button>
                   </Link>
                   <Link href={`/workspace?company_id=${company.id}`} passHref className="w-full">
-                    <Button className="w-full bg-slate-900 hover:bg-blue-700 text-white shadow-none">
+                    <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
                       <ArrowRight className="mr-2 h-4 w-4" />
                       Entrar
                     </Button>

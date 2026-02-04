@@ -4,8 +4,17 @@ import { getCurrentUser } from '@/lib/auth-server'
 
 export async function GET(request: NextRequest) {
   try {
+    // Autenticación
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'No autorizado' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
-    const company_id = searchParams.get('company_id')
+    const requestedCompanyId = searchParams.get('company_id')
     const category_id = searchParams.get('category_id')
     const date_from = searchParams.get('date_from')
     const date_to = searchParams.get('date_to')
@@ -13,9 +22,21 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '100'
     const offset = searchParams.get('offset') || '0'
 
+    // Determinar company_id: super_admin puede acceder a cualquier empresa
+    const company_id = currentUser.role === 'super_admin' && requestedCompanyId
+      ? requestedCompanyId
+      : currentUser.company_id
+
+    if (!company_id) {
+      return NextResponse.json(
+        { error: 'company_id es requerido' },
+        { status: 400 }
+      )
+    }
+
     const supabase = await createClient()
 
-    // Construir la query base
+    // Construir la query base - SIEMPRE filtrar por company_id
     let query = supabase
       .from('expenses')
       .select(`
@@ -27,13 +48,9 @@ export async function GET(request: NextRequest) {
           icon
         )
       `)
+      .eq('company_id', company_id)
       .order('date', { ascending: false })
       .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1)
-
-    // Filtros
-    if (company_id) {
-      query = query.eq('company_id', company_id)
-    }
 
     if (category_id) {
       query = query.eq('category_id', category_id)
@@ -87,9 +104,18 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Autenticación
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'No autorizado' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
     const {
-      company_id,
+      company_id: requestedCompanyId,
       amount,
       description,
       category_id,
@@ -102,11 +128,24 @@ export async function POST(request: NextRequest) {
       recurring_frequency
     } = body
 
+    // Determinar company_id: super_admin puede especificar otra empresa
+    const company_id = currentUser.role === 'super_admin' && requestedCompanyId
+      ? requestedCompanyId
+      : currentUser.company_id
+
     // Validaciones
     if (!company_id || !amount || !description || !category_id || !date) {
       return NextResponse.json(
         { error: 'Faltan campos requeridos' },
         { status: 400 }
+      )
+    }
+
+    // Validar que el usuario pertenece a la empresa (excepto super_admin)
+    if (currentUser.role !== 'super_admin' && requestedCompanyId && requestedCompanyId !== currentUser.company_id) {
+      return NextResponse.json(
+        { error: 'No tiene permisos para esta empresa' },
+        { status: 403 }
       )
     }
 
@@ -197,6 +236,15 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    // Autenticación
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'No autorizado' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
     const {
       id,
@@ -221,7 +269,7 @@ export async function PUT(request: NextRequest) {
 
     const supabase = await createClient()
 
-    // Verificar que el gasto existe
+    // Verificar que el gasto existe y pertenece a la empresa del usuario
     const { data: existingExpense, error: fetchError } = await supabase
       .from('expenses')
       .select('*')
@@ -232,6 +280,14 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json(
         { error: 'Gasto no encontrado' },
         { status: 404 }
+      )
+    }
+
+    // Validar permisos: solo super_admin o usuarios de la misma empresa
+    if (currentUser.role !== 'super_admin' && existingExpense.company_id !== currentUser.company_id) {
+      return NextResponse.json(
+        { error: 'No tiene permisos para modificar este gasto' },
+        { status: 403 }
       )
     }
 
@@ -347,6 +403,15 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    // Autenticación
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      return NextResponse.json(
+        { error: 'No autorizado' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
@@ -370,6 +435,14 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json(
         { error: 'Gasto no encontrado' },
         { status: 404 }
+      )
+    }
+
+    // Validar permisos: solo super_admin o usuarios de la misma empresa
+    if (currentUser.role !== 'super_admin' && existingExpense.company_id !== currentUser.company_id) {
+      return NextResponse.json(
+        { error: 'No tiene permisos para eliminar este gasto' },
+        { status: 403 }
       )
     }
 

@@ -29,10 +29,12 @@ import { Menu } from 'lucide-react'
 export function Header() {
   const [user, setUser] = useState<any>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const router = useRouter()
   const { theme, setTheme } = useTheme()
 
   useEffect(() => {
+    setMounted(true)
     getCurrentUser()
   }, [])
 
@@ -55,7 +57,7 @@ export function Header() {
   }
 
   return (
-    <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/60 sticky top-0 z-40">
+    <header className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-40">
       <div className="px-4 sm:px-6 py-3">
         <div className="flex justify-between items-center gap-4">
 
@@ -64,7 +66,7 @@ export function Header() {
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="-ml-2">
-                  <Menu className="h-5 w-5 text-gray-600" />
+                  <Menu className="h-5 w-5 text-muted-foreground" />
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="p-0 w-72">
@@ -78,15 +80,15 @@ export function Header() {
           <div className="flex items-center flex-1 max-w-lg">
             <div className="relative w-full">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-gray-400" />
+                <Search className="h-4 w-4 text-muted-foreground" />
               </div>
               <input
                 type="text"
                 placeholder="Buscar clientes, usuarios..."
-                className="block w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg bg-gray-50/50 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-300 transition-colors"
+                className="block w-full pl-10 pr-4 py-2 text-sm border border-border rounded-lg bg-muted/50 placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-colors"
               />
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                <div className="flex items-center gap-1 text-xs text-gray-400">
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Command className="h-3 w-3" />
                   <span>K</span>
                 </div>
@@ -95,12 +97,26 @@ export function Header() {
           </div>
 
           {/* Right side - Actions and user menu */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {/* Theme Toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="relative h-9 w-9 rounded-lg hover:bg-muted"
+            >
+              {mounted ? (
+                theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />
+              ) : (
+                <div className="h-4 w-4" />
+              )}
+            </Button>
+
             {/* Notifications */}
             <Button
               variant="ghost"
               size="sm"
-              className="relative h-9 w-9 rounded-lg hover:bg-gray-100"
+              className="relative h-9 w-9 rounded-lg hover:bg-muted"
             >
               <Bell className="h-4 w-4" />
             </Button>
@@ -108,16 +124,16 @@ export function Header() {
             {/* User menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-9 px-2 rounded-lg hover:bg-gray-100">
+                <Button variant="ghost" className="h-9 px-2 rounded-lg hover:bg-muted">
                   <Avatar className="h-7 w-7">
                     <AvatarImage src={user?.user_metadata?.avatar_url} alt={user?.email} />
-                    <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                    <AvatarFallback className="text-xs bg-primary text-primary-foreground">
                       {user?.email ? getInitials(user.email) : 'SA'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="hidden md:block ml-2 text-left">
-                    <div className="text-sm font-medium text-gray-900">Super Admin</div>
-                    <div className="text-xs text-gray-500 truncate max-w-32">
+                    <div className="text-sm font-medium text-foreground">Super Admin</div>
+                    <div className="text-xs text-muted-foreground truncate max-w-32">
                       {user?.email}
                     </div>
                   </div>
@@ -159,7 +175,7 @@ export function Header() {
                   {theme === 'system' && <span className="ml-auto text-xs text-muted-foreground">✓</span>}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Cerrar Sesión</span>
                 </DropdownMenuItem>

@@ -76,18 +76,18 @@ interface Stats {
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-    open: { label: 'Abierto', color: 'bg-blue-100 text-blue-700', icon: <AlertCircle className="h-3 w-3" /> },
-    in_progress: { label: 'En Progreso', color: 'bg-yellow-100 text-yellow-700', icon: <Clock className="h-3 w-3" /> },
-    waiting_user: { label: 'Esperando Usuario', color: 'bg-purple-100 text-purple-700', icon: <MessageSquare className="h-3 w-3" /> },
-    resolved: { label: 'Resuelto', color: 'bg-green-100 text-green-700', icon: <CheckCircle2 className="h-3 w-3" /> },
-    closed: { label: 'Cerrado', color: 'bg-gray-100 text-gray-700', icon: <XCircle className="h-3 w-3" /> },
+    open: { label: 'Abierto', color: 'bg-primary/10 text-primary border-primary/20', icon: <AlertCircle className="h-3 w-3" /> },
+    in_progress: { label: 'En Progreso', color: 'bg-primary/10 text-primary border-primary/20', icon: <Clock className="h-3 w-3" /> },
+    waiting_user: { label: 'Esperando Usuario', color: 'bg-muted text-muted-foreground border-border', icon: <MessageSquare className="h-3 w-3" /> },
+    resolved: { label: 'Resuelto', color: 'bg-primary/10 text-primary border-primary/20', icon: <CheckCircle2 className="h-3 w-3" /> },
+    closed: { label: 'Cerrado', color: 'bg-muted text-muted-foreground border-border', icon: <XCircle className="h-3 w-3" /> },
 }
 
 const priorityConfig: Record<string, { label: string; color: string }> = {
-    urgent: { label: 'Urgente', color: 'bg-red-100 text-red-700 border-red-200' },
-    high: { label: 'Alta', color: 'bg-orange-100 text-orange-700 border-orange-200' },
-    medium: { label: 'Media', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-    low: { label: 'Baja', color: 'bg-green-100 text-green-700 border-green-200' },
+    urgent: { label: 'Urgente', color: 'bg-destructive/10 text-destructive border-destructive/20' },
+    high: { label: 'Alta', color: 'bg-primary/10 text-primary border-primary/20' },
+    medium: { label: 'Media', color: 'bg-muted text-muted-foreground border-border' },
+    low: { label: 'Baja', color: 'bg-muted text-muted-foreground border-border' },
 }
 
 export default function AdminTicketsPage() {
@@ -186,8 +186,8 @@ export default function AdminTicketsPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Tickets de Soporte</h1>
-                    <p className="text-gray-500 mt-1">Gestiona todos los tickets de soporte</p>
+                    <h1 className="text-2xl font-bold text-foreground">Tickets de Soporte</h1>
+                    <p className="text-muted-foreground mt-1">Gestiona todos los tickets de soporte</p>
                 </div>
                 <Button onClick={fetchTickets} variant="outline" size="sm">
                     <RefreshCw className="h-4 w-4 mr-2" />
@@ -198,40 +198,40 @@ export default function AdminTicketsPage() {
             {/* Stats Cards */}
             {stats && (
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    <Card className="bg-blue-50 border-blue-100">
+                    <Card className="border-l-4 border-l-primary">
                         <CardContent className="pt-4 pb-3 px-4">
-                            <div className="text-2xl font-bold text-blue-700">{stats.open}</div>
-                            <div className="text-xs text-blue-600">Abiertos</div>
+                            <div className="text-2xl font-bold text-primary">{stats.open}</div>
+                            <div className="text-xs text-muted-foreground">Abiertos</div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-yellow-50 border-yellow-100">
+                    <Card className="border-l-4 border-l-primary">
                         <CardContent className="pt-4 pb-3 px-4">
-                            <div className="text-2xl font-bold text-yellow-700">{stats.in_progress}</div>
-                            <div className="text-xs text-yellow-600">En Progreso</div>
+                            <div className="text-2xl font-bold text-primary">{stats.in_progress}</div>
+                            <div className="text-xs text-muted-foreground">En Progreso</div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-purple-50 border-purple-100">
+                    <Card className="border-l-4 border-l-primary">
                         <CardContent className="pt-4 pb-3 px-4">
-                            <div className="text-2xl font-bold text-purple-700">{stats.waiting_user}</div>
-                            <div className="text-xs text-purple-600">Esperando</div>
+                            <div className="text-2xl font-bold text-primary">{stats.waiting_user}</div>
+                            <div className="text-xs text-muted-foreground">Esperando</div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-green-50 border-green-100">
+                    <Card className="border-l-4 border-l-primary">
                         <CardContent className="pt-4 pb-3 px-4">
-                            <div className="text-2xl font-bold text-green-700">{stats.resolved}</div>
-                            <div className="text-xs text-green-600">Resueltos</div>
+                            <div className="text-2xl font-bold text-primary">{stats.resolved}</div>
+                            <div className="text-xs text-muted-foreground">Resueltos</div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-red-50 border-red-100">
+                    <Card className="border-l-4 border-l-destructive">
                         <CardContent className="pt-4 pb-3 px-4">
-                            <div className="text-2xl font-bold text-red-700">{stats.urgent}</div>
-                            <div className="text-xs text-red-600">Urgentes</div>
+                            <div className="text-2xl font-bold text-destructive">{stats.urgent}</div>
+                            <div className="text-xs text-muted-foreground">Urgentes</div>
                         </CardContent>
                     </Card>
-                    <Card className="bg-gray-50 border-gray-100">
+                    <Card className="border-l-4 border-l-primary">
                         <CardContent className="pt-4 pb-3 px-4">
-                            <div className="text-2xl font-bold text-gray-700">{stats.total}</div>
-                            <div className="text-xs text-gray-600">Total</div>
+                            <div className="text-2xl font-bold text-foreground">{stats.total}</div>
+                            <div className="text-xs text-muted-foreground">Total</div>
                         </CardContent>
                     </Card>
                 </div>
@@ -242,9 +242,9 @@ export default function AdminTicketsPage() {
                 <CardContent className="pt-4">
                     <form onSubmit={handleSearch} className="flex flex-wrap gap-4 items-end">
                         <div className="flex-1 min-w-[200px]">
-                            <label className="text-sm font-medium text-gray-700 block mb-1">Buscar</label>
+                            <label className="text-sm font-medium text-foreground block mb-1">Buscar</label>
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     placeholder="Buscar por asunto, email..."
                                     value={searchQuery}
@@ -254,7 +254,7 @@ export default function AdminTicketsPage() {
                             </div>
                         </div>
                         <div className="w-40">
-                            <label className="text-sm font-medium text-gray-700 block mb-1">Estado</label>
+                            <label className="text-sm font-medium text-foreground block mb-1">Estado</label>
                             <Select value={statusFilter} onValueChange={setStatusFilter}>
                                 <SelectTrigger>
                                     <SelectValue />
@@ -270,7 +270,7 @@ export default function AdminTicketsPage() {
                             </Select>
                         </div>
                         <div className="w-40">
-                            <label className="text-sm font-medium text-gray-700 block mb-1">Prioridad</label>
+                            <label className="text-sm font-medium text-foreground block mb-1">Prioridad</label>
                             <Select value={priorityFilter} onValueChange={setPriorityFilter}>
                                 <SelectTrigger>
                                     <SelectValue />
@@ -297,7 +297,7 @@ export default function AdminTicketsPage() {
                 <CardHeader className="pb-3">
                     <CardTitle className="text-lg">
                         Lista de Tickets
-                        <span className="text-sm font-normal text-gray-500 ml-2">
+                        <span className="text-sm font-normal text-muted-foreground ml-2">
                             ({total} tickets)
                         </span>
                     </CardTitle>
@@ -305,10 +305,10 @@ export default function AdminTicketsPage() {
                 <CardContent>
                     {loading ? (
                         <div className="flex items-center justify-center h-64">
-                            <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+                            <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
                         </div>
                     ) : error ? (
-                        <div className="flex flex-col items-center justify-center h-64 text-red-500">
+                        <div className="flex flex-col items-center justify-center h-64 text-destructive">
                             <AlertCircle className="h-8 w-8 mb-2" />
                             <p>{error}</p>
                             <Button onClick={fetchTickets} variant="outline" size="sm" className="mt-4">
@@ -316,8 +316,8 @@ export default function AdminTicketsPage() {
                             </Button>
                         </div>
                     ) : tickets.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center h-64 text-gray-500">
-                            <Ticket className="h-12 w-12 mb-4 text-gray-300" />
+                        <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
+                            <Ticket className="h-12 w-12 mb-4 text-muted-foreground" />
                             <p className="text-lg font-medium">No hay tickets</p>
                             <p className="text-sm">Los tickets aparecerán aquí cuando se creen</p>
                         </div>
@@ -345,15 +345,15 @@ export default function AdminTicketsPage() {
                                         return (
                                             <TableRow
                                                 key={ticket.id}
-                                                className="cursor-pointer hover:bg-gray-50"
+                                                className="cursor-pointer hover:bg-muted/50"
                                                 onClick={() => router.push(`/admin/tickets/${ticket.id}`)}
                                             >
                                                 <TableCell>
                                                     <div className="space-y-1">
-                                                        <div className="font-medium text-gray-900 line-clamp-1">
+                                                        <div className="font-medium text-foreground line-clamp-1">
                                                             {ticket.subject}
                                                         </div>
-                                                        <div className="text-xs text-gray-500 line-clamp-1">
+                                                        <div className="text-xs text-muted-foreground line-clamp-1">
                                                             {ticket.description.substring(0, 80)}...
                                                         </div>
                                                         {ticket.source === 'external_form' && (
@@ -368,13 +368,13 @@ export default function AdminTicketsPage() {
                                                     <div className="space-y-1">
                                                         <div className="flex items-center text-sm font-medium">
                                                             {creator.isExternal ? (
-                                                                <Mail className="h-3 w-3 mr-1 text-gray-400" />
+                                                                <Mail className="h-3 w-3 mr-1 text-muted-foreground" />
                                                             ) : (
-                                                                <User className="h-3 w-3 mr-1 text-gray-400" />
+                                                                <User className="h-3 w-3 mr-1 text-muted-foreground" />
                                                             )}
                                                             {creator.name}
                                                         </div>
-                                                        <div className="flex items-center text-xs text-gray-500">
+                                                        <div className="flex items-center text-xs text-muted-foreground">
                                                             <Building2 className="h-3 w-3 mr-1" />
                                                             {creator.company}
                                                         </div>
@@ -400,15 +400,15 @@ export default function AdminTicketsPage() {
                                                             {ticket.category.name}
                                                         </span>
                                                     ) : (
-                                                        <span className="text-gray-400 text-sm">-</span>
+                                                        <span className="text-muted-foreground text-sm">-</span>
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
-                                                    <div className="text-sm text-gray-600">
+                                                    <div className="text-sm text-muted-foreground">
                                                         {formatDate(ticket.created_at)}
                                                     </div>
                                                     {messageCount > 0 && (
-                                                        <div className="text-xs text-gray-400 flex items-center mt-1">
+                                                        <div className="text-xs text-muted-foreground flex items-center mt-1">
                                                             <MessageSquare className="h-3 w-3 mr-1" />
                                                             {messageCount} mensajes
                                                         </div>
@@ -434,8 +434,8 @@ export default function AdminTicketsPage() {
 
                             {/* Pagination */}
                             {totalPages > 1 && (
-                                <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                                    <div className="text-sm text-gray-500">
+                                <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+                                    <div className="text-sm text-muted-foreground">
                                         Página {page} de {totalPages}
                                     </div>
                                     <div className="flex gap-2">

@@ -38,14 +38,22 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'No tienes permisos para ver usuarios' }, { status: 403 })
   }
 
-  // Super admins see all, company admins see their company
+  // Build query - always exclude super_admins from company user lists
   let query = supabase
     .from('user_profiles')
     .select('id, email, full_name, role, status, last_login, created_at, company_id, avatar_url, client_id')
+    .neq('role', 'super_admin') // IMPORTANTE: Los super_admin no pertenecen a empresas
     .order('created_at', { ascending: false })
 
   if (currentUser.role !== 'super_admin') {
+    // Usuarios regulares solo ven su empresa
     query = query.eq('company_id', currentUser.company_id)
+  } else {
+    // Super admin debe especificar qué empresa quiere ver
+    const targetCompanyId = new URL(request.url).searchParams.get('company_id') || currentUser.company_id
+    if (targetCompanyId) {
+      query = query.eq('company_id', targetCompanyId)
+    }
   }
 
   const { data: users, error: usersError } = await query

@@ -76,11 +76,34 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       console.error('Error fetching messages:', messagesError)
     }
 
+    // Obtener attachments del ticket
+    const { data: attachments, error: attachmentsError } = await supabase
+      .from('ticket_attachments')
+      .select('*')
+      .eq('ticket_id', id)
+      .order('created_at', { ascending: true })
+
+    if (attachmentsError) {
+      console.error('Error fetching attachments:', attachmentsError)
+    }
+
+    // Generate public URLs for attachments
+    const attachmentsWithUrls = (attachments || []).map(att => {
+      const { data: urlData } = supabase.storage
+        .from('ticket-attachments')
+        .getPublicUrl(att.file_path)
+      return {
+        ...att,
+        publicUrl: urlData.publicUrl
+      }
+    })
+
     return NextResponse.json({
       success: true,
       ticket: {
         ...ticket,
-        messages: messages || []
+        messages: messages || [],
+        attachments: attachmentsWithUrls
       }
     })
 
@@ -168,6 +191,13 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       )
     }
 
+    // Obtener ticket actual para saber el user_id (para notificaciones)
+    const { data: currentTicket } = await supabase
+      .from('support_tickets')
+      .select('user_id, subject')
+      .eq('id', id)
+      .single()
+
     const { data: ticket, error: updateError } = await supabase
       .from('support_tickets')
       .update(updateData)
@@ -184,6 +214,26 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         { success: false, error: 'Error al actualizar ticket' },
         { status: 500 }
       )
+    }
+
+    // Notificar al usuario cuando el ticket pasa a "waiting_user"
+    if (status === 'waiting_user' && currentTicket?.user_id) {
+      const notificationResult = await supabase
+        .from('notifications')
+        .insert({
+          user_id: currentTicket.user_id,
+          type: 'ticket_waiting',
+          title: 'Tu ticket necesita respuesta',
+          message: `El equipo de soporte espera tu respuesta en: "${currentTicket.subject}"`,
+          link: `/workspace/soporte/${id}`,
+          ticket_id: id
+        })
+
+      if (notificationResult.error) {
+        console.error('Error creating waiting notification:', notificationResult.error)
+      } else {
+        console.log(`[Notifications] Waiting notification created for ticket: ${id}`)
+      }
     }
 
     return NextResponse.json({

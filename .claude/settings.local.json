@@ -3,7 +3,13 @@
     "allow": [
       "Bash(head:*)",
       "Bash(cat:*)",
-      "Bash(npx supabase db push)"
+      "Bash(npx supabase db push)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: add type annotation to modules array to fix build\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push)",
+      "Bash(find:*)",
+      "Bash(xargs:*)",
+      "Bash(npm run test:run:*)"
     ]
   }
 }

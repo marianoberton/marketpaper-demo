@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Bell, Check, CheckCheck, X, Clock } from 'lucide-react'
+import { Bell, Check, CheckCheck, X, Clock, MessageSquare, Ticket } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
     Popover,
@@ -70,6 +70,10 @@ export function NotificationBell() {
                 return <Clock className="h-4 w-4 text-blue-500" />
             case 'task_completed':
                 return <Check className="h-4 w-4 text-green-500" />
+            case 'ticket_response':
+                return <MessageSquare className="h-4 w-4 text-purple-500" />
+            case 'ticket_waiting':
+                return <Ticket className="h-4 w-4 text-orange-500" />
             default:
                 return <Bell className="h-4 w-4 text-gray-500" />
         }

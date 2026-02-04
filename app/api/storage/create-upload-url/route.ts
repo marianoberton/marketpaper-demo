@@ -24,6 +24,10 @@ const BUCKET_CONFIG = {
   'docs': {
     maxSize: 25 * 1024 * 1024, // 25MB
     allowedTypes: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+  },
+  'ticket-attachments': {
+    maxSize: 25 * 1024 * 1024, // 25MB
+    allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']
   }
 } as const;
 
