@@ -9,16 +9,16 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { 
-  Building, 
-  Calendar, 
-  MapPin, 
-  User, 
+import {
+  Building,
+  Calendar,
+  MapPin,
+  User,
   Users,
   Mail,
-  FileText, 
-  Download, 
-  Eye, 
+  FileText,
+  Download,
+  Eye,
   TrendingUp,
   FileCheck,
   CheckCircle,
@@ -26,6 +26,7 @@ import {
   X,
   Search
 } from 'lucide-react'
+import Link from 'next/link'
 import Image from 'next/image'
 import DocumentExpirationSection from './components/DocumentExpirationSection'
 import ProjectEconomicInfo from './components/ProjectEconomicInfo'

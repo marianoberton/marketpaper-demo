@@ -29,6 +29,14 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Viewers no tienen acceso a tickets de soporte
+    if (profile.role === 'viewer') {
+      return NextResponse.json(
+        { success: false, error: 'Los clientes no tienen acceso a soporte' },
+        { status: 403 }
+      )
+    }
+
     // Obtener parámetros de búsqueda
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
@@ -49,8 +57,11 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
-    // Filtrar por empresa si no es super admin
-    if (profile.role !== 'super_admin') {
+    // Filtrar según el rol del usuario
+    if (profile.role === 'super_admin') {
+      // Super admin ve todos los tickets
+    } else {
+      // Otros roles ven tickets propios y de su empresa
       query = query.or(`user_id.eq.${user.id},company_id.eq.${profile.company_id}`)
     }
 
@@ -109,7 +120,7 @@ export async function POST(request: NextRequest) {
     // Obtener perfil del usuario
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('id, company_id, full_name, email')
+      .select('id, company_id, full_name, email, role')
       .eq('id', user.id)
       .single()
 
@@ -117,6 +128,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Perfil no encontrado' },
         { status: 404 }
+      )
+    }
+
+    // Viewers no tienen acceso a tickets de soporte
+    if (profile.role === 'viewer') {
+      return NextResponse.json(
+        { success: false, error: 'Los clientes no tienen acceso a soporte' },
+        { status: 403 }
       )
     }
 

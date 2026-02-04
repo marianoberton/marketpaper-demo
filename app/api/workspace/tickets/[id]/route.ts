@@ -27,6 +27,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .eq('id', user.id)
       .single()
 
+    // Viewers no tienen acceso a tickets de soporte
+    if (profile?.role === 'viewer') {
+      return NextResponse.json(
+        { success: false, error: 'Los clientes no tienen acceso a soporte' },
+        { status: 403 }
+      )
+    }
+
     // Obtener ticket con mensajes
     const { data: ticket, error: ticketError } = await supabase
       .from('support_tickets')
