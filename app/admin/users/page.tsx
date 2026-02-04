@@ -541,21 +541,21 @@ export default function UsersPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-green-100 text-green-800 border-green-200'
+        return 'bg-primary/10 text-primary border-primary/20'
       case 'inactive':
-        return 'bg-gray-100 text-gray-800 border-gray-200'
+        return 'bg-muted text-muted-foreground border-border'
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+        return 'bg-primary/10 text-primary border-primary/20'
       case 'suspended':
-        return 'bg-red-100 text-red-800 border-red-200'
+        return 'bg-destructive/10 text-destructive border-destructive/20'
       case 'approved':
-        return 'bg-green-100 text-green-800 border-green-300'
+        return 'bg-primary/10 text-primary border-primary/20'
       case 'rejected':
-        return 'bg-red-100 text-red-800 border-red-300'
+        return 'bg-destructive/10 text-destructive border-destructive/20'
       case 'processed':
-        return 'bg-blue-100 text-blue-800 border-blue-300'
+        return 'bg-muted text-muted-foreground border-border'
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200'
+        return 'bg-muted text-muted-foreground border-border'
     }
   }
 
@@ -563,19 +563,19 @@ export default function UsersPage() {
     switch (role) {
       case 'owner':
       case 'company_owner':
-        return 'bg-purple-50 text-purple-700 border-purple-200'
+        return 'bg-orange/10 text-orange border-orange/20'
       case 'admin':
       case 'company_admin':
-        return 'bg-blue-50 text-blue-700 border-blue-200'
+        return 'bg-primary/10 text-primary border-primary/20'
       case 'manager':
-        return 'bg-orange-50 text-orange-700 border-orange-200'
+        return 'bg-orange/10 text-orange border-orange/20'
       case 'member':
       case 'employee':
-        return 'bg-gray-50 text-gray-700 border-gray-200'
+        return 'bg-muted text-muted-foreground border-border'
       case 'super_admin':
-        return 'bg-red-50 text-red-700 border-red-200'
+        return 'bg-destructive/10 text-destructive border-destructive/20'
       default:
-        return 'bg-gray-50 text-gray-700 border-gray-200'
+        return 'bg-muted text-muted-foreground border-border'
     }
   }
 
@@ -638,13 +638,14 @@ export default function UsersPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Gestión de Usuarios</h1>
-            <p className="text-gray-600">Administra usuarios, súper admins y solicitudes de registro</p>
+            <h1 className="text-3xl font-bold tracking-tight">Gestión de Usuarios</h1>
+            <p className="text-muted-foreground">Administra usuarios, súper admins y solicitudes de registro</p>
+            <div className="h-1 w-24 bg-primary rounded-full mt-2" />
           </div>
         </div>
-        
+
         <div className="flex justify-center py-12">
-          <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
+          <RefreshCw className="h-8 w-8 animate-spin text-primary" />
         </div>
       </div>
     )
@@ -655,8 +656,9 @@ export default function UsersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestión de Usuarios</h1>
-          <p className="text-gray-600">Administra usuarios, súper admins y solicitudes de registro</p>
+          <h1 className="text-3xl font-bold tracking-tight">Gestión de Usuarios</h1>
+          <p className="text-muted-foreground">Administra usuarios, súper admins y solicitudes de registro</p>
+          <div className="h-1 w-24 gradient-cta rounded-full mt-2" />
         </div>
         <div className="flex gap-2">
           <Button onClick={loadData} variant="outline" size="sm">
@@ -671,50 +673,58 @@ export default function UsersPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg">
           {error}
         </div>
       )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="border-l-4 border-l-primary">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Usuarios</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Users className="h-4 w-4 text-primary" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{users.length}</div>
             <p className="text-xs text-muted-foreground">Usuarios activos</p>
           </CardContent>
         </Card>
-        
-        <Card>
+
+        <Card className="border-l-4 border-l-primary">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Súper Admins</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Shield className="h-4 w-4 text-primary" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{superAdmins.length}</div>
             <p className="text-xs text-muted-foreground">Administradores</p>
           </CardContent>
         </Card>
-        
-        <Card>
+
+        <Card className="border-l-4 border-l-primary">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Solicitudes Pendientes</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Clock className="h-4 w-4 text-primary" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{getRequestsCount()}</div>
             <p className="text-xs text-muted-foreground">Requieren atención</p>
           </CardContent>
         </Card>
-        
-        <Card>
+
+        <Card className="border-l-4 border-l-primary">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Solicitudes</CardTitle>
-            <UserPlus className="h-4 w-4 text-muted-foreground" />
+            <div className="p-2 rounded-lg bg-primary/10">
+              <UserPlus className="h-4 w-4 text-primary" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{registrationRequests.length}</div>
@@ -729,7 +739,7 @@ export default function UsersPage() {
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="Buscar por nombre, email o empresa..."
                   value={searchTerm}
@@ -819,9 +829,9 @@ export default function UsersPage() {
             <CardContent>
               {filteredUsers.length === 0 ? (
                 <div className="text-center py-8">
-                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No hay usuarios</h3>
-                  <p className="text-gray-600 mb-4">No se encontraron usuarios que coincidan con los filtros.</p>
+                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">No hay usuarios</h3>
+                  <p className="text-muted-foreground mb-4">No se encontraron usuarios que coincidan con los filtros.</p>
                   <Button onClick={openCreateModal}>
                     <Plus className="h-4 w-4 mr-2" />
                     Crear Primer Usuario
@@ -844,14 +854,14 @@ export default function UsersPage() {
                       <TableRow key={user.id}>
                         <TableCell>
                           <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                              <span className="text-xs font-medium text-blue-700">
+                            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                              <span className="text-xs font-medium text-primary">
                                 {getInitials(user.email, user.full_name)}
                               </span>
                             </div>
                             <div>
                               <div className="font-medium">{user.full_name || 'Sin nombre'}</div>
-                              <div className="text-sm text-gray-500">{user.email}</div>
+                              <div className="text-sm text-muted-foreground">{user.email}</div>
                             </div>
                           </div>
                         </TableCell>
@@ -864,7 +874,7 @@ export default function UsersPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>{getStatusBadge(user.status)}</TableCell>
-                        <TableCell className="text-sm text-gray-500">
+                        <TableCell className="text-sm text-muted-foreground">
                           {user.last_login ? formatDate(user.last_login) : 'Nunca'}
                         </TableCell>
                         <TableCell>
@@ -915,9 +925,9 @@ export default function UsersPage() {
             <CardContent>
               {filteredSuperAdmins.length === 0 ? (
                 <div className="text-center py-8">
-                  <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No hay súper admins</h3>
-                  <p className="text-gray-600 mb-4">No se encontraron súper administradores.</p>
+                  <Shield className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">No hay súper admins</h3>
+                  <p className="text-muted-foreground mb-4">No se encontraron súper administradores.</p>
                   <Button onClick={openCreateModal}>
                     <Plus className="h-4 w-4 mr-2" />
                     Crear Súper Admin
@@ -940,14 +950,14 @@ export default function UsersPage() {
                       <TableRow key={admin.id}>
                         <TableCell>
                           <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                              <span className="text-xs font-medium text-red-700">
+                            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                              <span className="text-xs font-medium text-primary-foreground">
                                 {getInitials(admin.email, admin.full_name)}
                               </span>
                             </div>
                             <div>
                               <div className="font-medium">{admin.full_name || 'Sin nombre'}</div>
-                              <div className="text-sm text-gray-500">{admin.email}</div>
+                              <div className="text-sm text-muted-foreground">{admin.email}</div>
                             </div>
                           </div>
                         </TableCell>
@@ -957,7 +967,7 @@ export default function UsersPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>{getStatusBadge(admin.status)}</TableCell>
-                        <TableCell className="text-sm text-gray-500">
+                        <TableCell className="text-sm text-muted-foreground">
                           {admin.last_login ? formatDate(admin.last_login) : 'Nunca'}
                         </TableCell>
                         <TableCell>
@@ -991,7 +1001,7 @@ export default function UsersPage() {
                                 Editar Permisos
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-red-600">
+                              <DropdownMenuItem className="text-destructive">
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Revocar Acceso
                               </DropdownMenuItem>
@@ -1019,9 +1029,9 @@ export default function UsersPage() {
             <CardContent>
               {filteredRequests.length === 0 ? (
                 <div className="text-center py-8">
-                  <UserPlus className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No hay solicitudes</h3>
-                  <p className="text-gray-600">No se encontraron solicitudes que coincidan con los filtros.</p>
+                  <UserPlus className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">No hay solicitudes</h3>
+                  <p className="text-muted-foreground">No se encontraron solicitudes que coincidan con los filtros.</p>
                 </div>
               ) : (
                 <Table>
@@ -1040,29 +1050,29 @@ export default function UsersPage() {
                       <TableRow key={request.id}>
                         <TableCell>
                           <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
-                              <User className="h-4 w-4 text-yellow-700" />
+                            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                              <User className="h-4 w-4 text-primary" />
                             </div>
                             <div>
                               <div className="font-medium">{request.full_name}</div>
-                              <div className="text-sm text-gray-500">{request.email}</div>
+                              <div className="text-sm text-muted-foreground">{request.email}</div>
                             </div>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <Building2 className="h-4 w-4 text-gray-400" />
+                            <Building2 className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm">{request.company_name}</span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4 text-gray-400" />
+                            <Phone className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm">{request.phone}</span>
                           </div>
                         </TableCell>
                         <TableCell>{getStatusBadge(request.status)}</TableCell>
-                        <TableCell className="text-sm text-gray-500">
+                        <TableCell className="text-sm text-muted-foreground">
                           {formatDate(request.requested_at)}
                         </TableCell>
                         <TableCell>
@@ -1188,7 +1198,7 @@ export default function UsersPage() {
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
                 placeholder="Dejar vacío para generar automáticamente"
               />
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Si no especificas una contraseña, se generará una temporal automáticamente
               </p>
             </div>
@@ -1238,9 +1248,9 @@ export default function UsersPage() {
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
                 disabled // No permitir cambiar email
-                className="bg-gray-50"
+                className="bg-muted"
               />
-              <p className="text-sm text-gray-500 mt-1">El email no se puede modificar</p>
+              <p className="text-sm text-muted-foreground mt-1">El email no se puede modificar</p>
             </div>
             
             <div>
@@ -1310,7 +1320,7 @@ export default function UsersPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Los usuarios visualizadores pueden ser asignados a un cliente específico
                 </p>
               </div>
@@ -1353,15 +1363,15 @@ export default function UsersPage() {
           </DialogHeader>
           
           <div className="space-y-4">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
               <div className="flex">
-                <XCircle className="h-5 w-5 text-red-400 mt-0.5 mr-3" />
+                <XCircle className="h-5 w-5 text-destructive mt-0.5 mr-3" />
                 <div>
-                  <h3 className="text-sm font-medium text-red-800 mb-1">
+                  <h3 className="text-sm font-medium text-destructive mb-1">
                     Esta acción no se puede deshacer
                   </h3>
-                  <p className="text-sm text-red-700">
-                    Se eliminará permanentemente el usuario {selectedUser?.email} y 
+                  <p className="text-sm text-destructive/80">
+                    Se eliminará permanentemente el usuario {selectedUser?.email} y
                     todos sus datos asociados.
                   </p>
                 </div>
@@ -1407,7 +1417,7 @@ export default function UsersPage() {
           
           <div className="space-y-4">
             {/* Request Info */}
-            <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="bg-muted p-3 rounded-lg">
               <div className="text-sm">
                 <div><strong>Nombre:</strong> {selectedRequest?.full_name}</div>
                 <div><strong>Email:</strong> {selectedRequest?.email}</div>
@@ -1547,7 +1557,7 @@ export default function UsersPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
+              <CheckCircle className="h-5 w-5 text-primary" />
               Usuario Creado Exitosamente
             </DialogTitle>
             <DialogDescription>
@@ -1556,32 +1566,32 @@ export default function UsersPage() {
           </DialogHeader>
           
           <div className="space-y-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
               <div className="text-sm">
-                <div className="font-medium text-green-800 mb-2">Información del usuario:</div>
+                <div className="font-medium text-foreground mb-2">Información del usuario:</div>
                 <div><strong>Email:</strong> {createdUserInfo?.email}</div>
                 <div><strong>Estado:</strong> Activo</div>
               </div>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="bg-muted border border-border rounded-lg p-4">
               <div className="text-sm">
-                <div className="font-medium text-blue-800 mb-2">Información de acceso:</div>
+                <div className="font-medium text-foreground mb-2">Información de acceso:</div>
                 {createdUserInfo?.tempPassword && createdUserInfo.tempPassword !== 'Contraseña personalizada asignada' ? (
                   <>
                     <div className="mb-2">
                       <strong>Contraseña temporal:</strong>
                     </div>
-                    <div className="bg-white p-3 rounded border font-mono text-sm break-all">
+                    <div className="bg-card p-3 rounded border border-border font-mono text-sm break-all">
                       {createdUserInfo.tempPassword}
                     </div>
-                    <p className="text-blue-700 mt-2 text-xs">
-                      ⚠️ Guarda esta contraseña temporal. El usuario debe cambiarla en su primer acceso.
+                    <p className="text-muted-foreground mt-2 text-xs">
+                      Guarda esta contraseña temporal. El usuario debe cambiarla en su primer acceso.
                     </p>
                   </>
                 ) : (
-                  <div className="text-blue-700">
-                    ✅ Se asignó la contraseña personalizada especificada.
+                  <div className="text-primary">
+                    Se asignó la contraseña personalizada especificada.
                   </div>
                 )}
               </div>

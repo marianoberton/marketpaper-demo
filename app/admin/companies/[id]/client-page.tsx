@@ -164,17 +164,10 @@ export default function CompanyDetailsClient({
   }
 
   const getPlanBadge = (plan: string) => {
-    const colors: Record<string, string> = {
-      starter: 'bg-green-100 text-green-800',
-      professional: 'bg-blue-100 text-blue-800',
-      enterprise: 'bg-purple-100 text-purple-800',
-      custom: 'bg-orange-100 text-orange-800'
-    }
-
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[plan] || 'bg-gray-100 text-gray-800'}`}>
+      <Badge variant="secondary">
         {plan.charAt(0).toUpperCase() + plan.slice(1)}
-      </span>
+      </Badge>
     )
   }
 
@@ -305,8 +298,8 @@ export default function CompanyDetailsClient({
   if (!company) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-xl font-semibold text-gray-900">Empresa no encontrada</h2>
-        <p className="text-gray-600 mt-2">La empresa que buscas no existe o no tienes permisos para verla.</p>
+        <h2 className="text-xl font-semibold text-foreground">Empresa no encontrada</h2>
+        <p className="text-muted-foreground mt-2">La empresa que buscas no existe o no tienes permisos para verla.</p>
         <Link href="/admin/companies">
           <Button className="mt-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -331,7 +324,7 @@ export default function CompanyDetailsClient({
       <div className="rounded-xl border bg-card overflow-hidden">
         <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-md text-white font-bold text-xl shrink-0">
+            <div className="h-14 w-14 rounded-xl bg-primary flex items-center justify-center shadow-md text-primary-foreground font-bold text-xl shrink-0">
               {company.logo_url ? (
                 <Image
                   src={company.logo_url}
@@ -376,10 +369,10 @@ export default function CompanyDetailsClient({
         </div>
 
         {/* Stat cards inline */}
-        <div className="grid grid-cols-2 md:grid-cols-4 border-t divide-x">
+        <div className="grid grid-cols-2 md:grid-cols-4 border-t border-border divide-x divide-border">
           <div className="p-4 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-              <Users className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Users className="h-4 w-4 text-primary" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Usuarios</p>
@@ -387,8 +380,8 @@ export default function CompanyDetailsClient({
             </div>
           </div>
           <div className="p-4 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-              <BarChart3 className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+              <BarChart3 className="h-4 w-4 text-primary" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Contactos</p>
@@ -396,8 +389,8 @@ export default function CompanyDetailsClient({
             </div>
           </div>
           <div className="p-4 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-              <Building2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Building2 className="h-4 w-4 text-primary" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Módulos</p>
@@ -405,8 +398,8 @@ export default function CompanyDetailsClient({
             </div>
           </div>
           <div className="p-4 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-              <Calendar className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Calendar className="h-4 w-4 text-primary" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Última Actividad</p>
@@ -439,17 +432,17 @@ export default function CompanyDetailsClient({
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Mail className="h-4 w-4 text-primary" />
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Email</p>
-                    <a href={`mailto:${company.contact_email}`} className="text-sm text-blue-600 hover:underline">{company.contact_email}</a>
+                    <a href={`mailto:${company.contact_email}`} className="text-sm text-primary hover:underline">{company.contact_email}</a>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <Phone className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Phone className="h-4 w-4 text-primary" />
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Teléfono</p>
@@ -457,13 +450,13 @@ export default function CompanyDetailsClient({
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                    <Globe className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Globe className="h-4 w-4 text-primary" />
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Dominio</p>
                     {company.domain ? (
-                      <a href={company.domain} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">{company.domain}</a>
+                      <a href={company.domain} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">{company.domain}</a>
                     ) : (
                       <p className="text-sm text-muted-foreground">No disponible</p>
                     )}
@@ -550,7 +543,7 @@ export default function CompanyDetailsClient({
                       <TableCell className="font-medium">
                         <div className="flex flex-col">
                           <span>{user.full_name}</span>
-                          <span className="text-sm text-gray-500">{user.email}</span>
+                          <span className="text-sm text-muted-foreground">{user.email}</span>
                         </div>
                       </TableCell>
                       <TableCell>{user.role}</TableCell>
@@ -614,7 +607,7 @@ export default function CompanyDetailsClient({
                 <div className="flex items-center gap-6">
                   <div className="flex-shrink-0">
                     <Label className="text-sm font-medium">Logo Actual:</Label>
-                    <div className="mt-2 w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50">
+                    <div className="mt-2 w-32 h-32 border-2 border-dashed border-border rounded-lg flex items-center justify-center bg-muted">
                       {company.logo_url ? (
                         <Image
                           src={company.logo_url}
@@ -625,8 +618,8 @@ export default function CompanyDetailsClient({
                         />
                       ) : (
                         <div className="text-center">
-                          <ImageIcon className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                          <p className="text-sm text-gray-500">Sin logo</p>
+                          <ImageIcon className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-sm text-muted-foreground">Sin logo</p>
                         </div>
                       )}
                     </div>
@@ -637,7 +630,7 @@ export default function CompanyDetailsClient({
                       <Label htmlFor="logo-upload" className="text-sm font-medium">
                         Subir Nuevo Logo
                       </Label>
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-sm text-muted-foreground mt-1">
                         Formatos: JPEG, PNG, SVG, WebP, GIF. Tamaño máximo: 50MB
                       </p>
                     </div>
@@ -649,7 +642,7 @@ export default function CompanyDetailsClient({
                         accept="image/jpeg,image/png,image/svg+xml,image/webp,image/gif"
                         onChange={handleFileChange}
                         disabled={isUploading}
-                        className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                        className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
                       />
                       {logoFile && (
                         <Button
@@ -659,7 +652,7 @@ export default function CompanyDetailsClient({
                         >
                           {isUploading ? (
                             <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground"></div>
                               Subiendo...
                             </>
                           ) : (
@@ -673,11 +666,11 @@ export default function CompanyDetailsClient({
                     </div>
 
                     {logoFile && (
-                      <div className="p-3 bg-blue-50 rounded-lg">
-                        <p className="text-sm font-medium text-blue-900">
+                      <div className="p-3 bg-primary/10 rounded-lg">
+                        <p className="text-sm font-medium text-foreground">
                           Archivo seleccionado: {logoFile.name}
                         </p>
-                        <p className="text-sm text-blue-700">
+                        <p className="text-sm text-muted-foreground">
                           Tamaño: {(logoFile.size / 1024 / 1024).toFixed(2)} MB
                         </p>
                       </div>
@@ -687,9 +680,9 @@ export default function CompanyDetailsClient({
 
                 {/* Preview in Workspace */}
                 {company.logo_url && (
-                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                  <div className="mt-6 p-4 bg-muted rounded-lg">
                     <Label className="text-sm font-medium">Vista Previa en Workspace:</Label>
-                    <div className="mt-2 flex items-center gap-3 p-3 bg-white rounded border">
+                    <div className="mt-2 flex items-center gap-3 p-3 bg-card rounded border border-border">
                       <Image
                         src={company.logo_url}
                         alt={`Logo de ${company.name}`}
@@ -697,7 +690,7 @@ export default function CompanyDetailsClient({
                         height={32}
                         className="object-contain"
                       />
-                      <span className="font-logo text-xl font-bold text-blue-600">{company.name}</span>
+                      <span className="font-logo text-xl font-bold text-primary">{company.name}</span>
                     </div>
                   </div>
                 )}
@@ -726,7 +719,7 @@ export default function CompanyDetailsClient({
               <CardDescription>Estadísticas de uso y costos</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-500 text-center py-8">Funcionalidad de facturación por implementar</p>
+              <p className="text-muted-foreground text-center py-8">Funcionalidad de facturación por implementar</p>
             </CardContent>
           </Card>
         </TabsContent>
@@ -741,9 +734,9 @@ export default function CompanyDetailsClient({
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center space-x-2">
-                  <Users className="h-4 w-4 text-gray-500" />
+                  <Users className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm font-medium">ID de Empresa:</span>
-                  <code className="text-sm bg-gray-100 px-2 py-1 rounded">{company.id}</code>
+                  <code className="text-sm bg-muted text-foreground px-2 py-1 rounded">{company.id}</code>
                 </div>
               </CardContent>
             </Card>
@@ -755,7 +748,7 @@ export default function CompanyDetailsClient({
                 <CardDescription>Configuraciones adicionales de la empresa</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-500 text-center py-8">Configuraciones adicionales por implementar</p>
+                <p className="text-muted-foreground text-center py-8">Configuraciones adicionales por implementar</p>
               </CardContent>
             </Card>
           </div>

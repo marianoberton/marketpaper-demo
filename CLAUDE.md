@@ -372,6 +372,153 @@ Esto actualiza `lib/database.types.ts` con los tipos de Supabase.
 
 ---
 
+## Sistema de diseño del Panel Admin
+
+El panel de administración (`/admin`) utiliza un sistema de diseño unificado basado en CSS variables para garantizar consistencia visual en ambos temas (claro/oscuro).
+
+### Paleta de colores
+
+#### Tema oscuro (`.dark`)
+| Variable | Color | Uso |
+|----------|-------|-----|
+| `--background` | `#1a1a1a` | Fondo principal del layout |
+| `--card` | `#272727` | Fondo de cards y superficies elevadas |
+| `--foreground` | `#fafafa` | Texto principal |
+| `--muted-foreground` | `#999999` | Texto secundario, descripciones |
+| `--primary` | `#ced600` | Acento lime (botones, bordes activos) |
+| `--primary-foreground` | `#1a1a1a` | Texto sobre fondos primary |
+| `--border` | `#3d3d3d` | Bordes de cards, divisores |
+| `--muted` | `#333333` | Fondos sutiles, hover states |
+| `--destructive` | `#dc2626` | Estados de error, acciones destructivas |
+
+#### Tema claro (`:root`)
+Los mismos tokens semánticos con valores apropiados para modo claro definidos en `globals.css`.
+
+### Patrones de componentes
+
+#### Stat Cards (tarjetas de métricas)
+Todas las stat cards del admin usan un estilo uniforme:
+
+```tsx
+<Card className="border-l-4 border-l-primary">
+  <CardContent className="p-4">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm text-muted-foreground">Label</p>
+        <p className="text-2xl font-bold">Value</p>
+      </div>
+      <div className="p-2 rounded-lg bg-primary/10">
+        <Icon className="h-8 w-8 text-primary" />
+      </div>
+    </div>
+  </CardContent>
+</Card>
+```
+
+Para estados urgentes/críticos, usar `border-l-destructive` en lugar de `border-l-primary`.
+
+#### Cards de contenido
+```tsx
+<div className="bg-card rounded-xl border border-border hover:border-primary transition-all">
+  {/* Header */}
+  <div className="p-5 border-b border-border">...</div>
+  {/* Body */}
+  <div className="p-5">...</div>
+  {/* Footer */}
+  <div className="p-4 bg-muted/50 rounded-b-xl border-t border-border">...</div>
+</div>
+```
+
+#### Badges
+| Tipo | Clases | Uso |
+|------|--------|-----|
+| Neutro | `variant="secondary"` | Estados por defecto |
+| Outline | `variant="outline"` | Información secundaria |
+| Destacado | `bg-primary/10 text-primary border-primary/20` | Estados activos, destacados |
+| Error | `bg-destructive/10 text-destructive border-destructive/20` | Errores, urgente |
+
+#### Botones
+| Tipo | Variante | Uso |
+|------|----------|-----|
+| Primario | `className="bg-primary text-primary-foreground hover:bg-primary/90"` | Acción principal |
+| Secundario | `variant="outline"` | Acciones secundarias |
+| Destructivo | `variant="ghost" className="text-destructive"` | Logout, eliminar |
+
+### Convenciones de texto
+
+| Elemento | Clase |
+|----------|-------|
+| Títulos principales | `text-foreground font-bold` |
+| Subtítulos | `text-foreground font-semibold` |
+| Texto de cuerpo | `text-foreground` |
+| Texto secundario | `text-muted-foreground` |
+| Labels pequeños | `text-xs text-muted-foreground uppercase tracking-wider` |
+
+### Convenciones de fondos
+
+| Elemento | Clase |
+|----------|-------|
+| Layout principal | `bg-background` |
+| Cards/superficies | `bg-card` |
+| Fondos sutiles | `bg-muted` o `bg-muted/50` |
+| Hover states | `hover:bg-muted` |
+| Fondos de acento | `bg-primary/10` |
+
+### Archivos del sistema de diseño
+
+| Archivo | Propósito |
+|---------|-----------|
+| `app/globals.css` | Variables CSS del tema (`:root`, `.dark`) |
+| `components/admin/AdminSidebar.tsx` | Navegación lateral |
+| `components/admin/AdminHeader.tsx` | Header con toggle de tema |
+| `app/admin/layout.tsx` | Layout principal del admin |
+
+### Páginas del admin
+
+| Página | Archivo | Componentes clave |
+|--------|---------|-------------------|
+| Dashboard | `app/admin/page.tsx` | Stat cards, lista de empresas |
+| Empresas | `app/admin/companies/` | Cards de empresa, filtros |
+| Plantillas | `app/admin/templates/page.tsx` | Acordeón de módulos, badges |
+| Módulos | `app/admin/modules/page.tsx` | Categorías, toggles |
+| Usuarios | `app/admin/users/page.tsx` | Tabla, badges de rol/estado |
+| Tickets | `app/admin/tickets/page.tsx` | Stat cards, tabla de tickets |
+
+### Patrón de hidratación para tema
+
+El toggle de tema requiere un patrón especial para evitar errores de hidratación (SSR mismatch):
+
+```tsx
+const [mounted, setMounted] = useState(false)
+const { theme, setTheme } = useTheme()
+
+useEffect(() => {
+  setMounted(true)
+}, [])
+
+// Renderizar placeholder hasta que el cliente esté montado
+{mounted ? (
+  theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />
+) : (
+  <div className="h-4 w-4" /> // Placeholder con mismo tamaño
+)}
+```
+
+### Reglas de estilo para el admin
+
+**NUNCA usar:**
+- Colores hardcodeados (`text-gray-500`, `bg-blue-600`, etc.)
+- Gradientes (`gradient-cta`, `bg-gradient-to-*`)
+- Clases de color específicas para estados que no sean destructive
+
+**SIEMPRE usar:**
+- Variables semánticas del tema (`text-foreground`, `bg-card`, etc.)
+- `bg-primary` para acentos (no gradientes)
+- `text-primary` para texto destacado
+- `border-border` para todos los bordes
+
+---
+
 ## Git y commits
 
 ### Formato de commits (Conventional Commits)

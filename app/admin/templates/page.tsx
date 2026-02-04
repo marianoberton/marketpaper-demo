@@ -48,7 +48,7 @@ interface Module {
   id: string;
   name: string;
   description?: string;
-  category: 'Dashboard' | 'Workspace';
+  category: 'Dashboard' | 'Workspace' | 'Analytics' | 'Tools' | 'Admin';
   route_path: string;
   icon: string;
 }
@@ -140,7 +140,7 @@ const MemoizedTemplateDialog = React.memo(({ isOpen, onClose, onSave, template, 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh]">
         <div className="max-h-[80vh] overflow-y-auto pr-2">
-          <DialogHeader className="sticky top-0 bg-white z-10 pb-4">
+          <DialogHeader className="sticky top-0 bg-card z-10 pb-4">
             <DialogTitle>{isEdit ? 'Editar Plantilla' : 'Nueva Plantilla'}</DialogTitle>
             <DialogDescription>
               Configura los módulos que estarán disponibles para las empresas con esta plantilla
@@ -236,7 +236,7 @@ const MemoizedTemplateDialog = React.memo(({ isOpen, onClose, onSave, template, 
               <CardContent className="space-y-6">
                 {/* Módulos Dashboard */}
                 <div>
-                  <h3 className="text-lg font-medium mb-3 text-blue-700">📊 Módulos Dashboard</h3>
+                  <h3 className="text-lg font-medium mb-3 text-foreground">📊 Módulos Dashboard</h3>
                   <ModuleSelector
                     title="Dashboard"
                     modules={availableModules.filter(m => m.category === 'Dashboard')}
@@ -247,7 +247,7 @@ const MemoizedTemplateDialog = React.memo(({ isOpen, onClose, onSave, template, 
 
                 {/* Módulos Workspace */}
                 <div>
-                  <h3 className="text-lg font-medium mb-3 text-green-700">🏢 Módulos Workspace</h3>
+                  <h3 className="text-lg font-medium mb-3 text-foreground">🏢 Módulos Workspace</h3>
                   <ModuleSelector
                     title="Workspace"
                     modules={availableModules.filter(m => m.category === 'Workspace')}
@@ -256,15 +256,31 @@ const MemoizedTemplateDialog = React.memo(({ isOpen, onClose, onSave, template, 
                   />
                 </div>
 
+                {/* Módulos Analytics */}
+                {availableModules.filter(m => m.category === 'Analytics').length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-medium mb-3 text-foreground">📈 Módulos Analytics</h3>
+                    <ModuleSelector
+                      title="Analytics"
+                      modules={availableModules.filter(m => m.category === 'Analytics')}
+                      selected={formData.modules}
+                      onChange={handleDynamicModuleChange}
+                    />
+                  </div>
+                )}
+
                 {/* Resumen de selección */}
-                <div className="pt-4 border-t">
-                  <h4 className="font-medium text-gray-700 mb-2">Resumen de Selección:</h4>
-                  <div className="flex gap-4 text-sm">
-                    <span className="text-blue-600">
-                      📊 Dashboard: {availableModules.filter(m => m.category === 'Dashboard' && formData.modules.includes(m.id)).length} módulos
+                <div className="pt-4 border-t border-border">
+                  <h4 className="font-medium text-muted-foreground mb-2">Resumen de Selección:</h4>
+                  <div className="flex gap-4 text-sm flex-wrap">
+                    <span className="text-foreground">
+                      📊 Dashboard: {availableModules.filter(m => m.category === 'Dashboard' && formData.modules.includes(m.id)).length}
                     </span>
-                    <span className="text-green-600">
-                      🏢 Workspace: {availableModules.filter(m => m.category === 'Workspace' && formData.modules.includes(m.id)).length} módulos
+                    <span className="text-foreground">
+                      🏢 Workspace: {availableModules.filter(m => m.category === 'Workspace' && formData.modules.includes(m.id)).length}
+                    </span>
+                    <span className="text-foreground">
+                      📈 Analytics: {availableModules.filter(m => m.category === 'Analytics' && formData.modules.includes(m.id)).length}
                     </span>
                   </div>
                 </div>
@@ -278,7 +294,7 @@ const MemoizedTemplateDialog = React.memo(({ isOpen, onClose, onSave, template, 
               />
               <Label htmlFor="is_active">Plantilla activa</Label>
             </div>
-            <DialogFooter className="mt-6 sticky bottom-0 bg-white pt-4">
+            <DialogFooter className="mt-6 sticky bottom-0 bg-card pt-4">
               <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>Cancelar</Button>
               <Button type="submit" disabled={isSaving}>
                 {isSaving ? 'Guardando...' : (isEdit ? 'Actualizar' : 'Crear')} Plantilla
@@ -458,7 +474,7 @@ export default function TemplatesPage() {
   }
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
+    return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
   }
 
   return (
@@ -466,24 +482,27 @@ export default function TemplatesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Plantillas de Cliente</h1>
-          <p className="text-gray-600">Gestiona plantillas predefinidas para nuevos clientes</p>
+          <h1 className="text-3xl font-bold tracking-tight">Plantillas de Cliente</h1>
+          <p className="text-muted-foreground">Gestiona plantillas predefinidas para nuevos clientes</p>
+          <div className="h-1 w-24 bg-primary rounded-full mt-2" />
         </div>
-        <Button onClick={() => handleOpenDialog()}>
+        <Button onClick={() => handleOpenDialog()} variant="outline">
           <Plus className="h-4 w-4 mr-2" />
           Nueva Plantilla
         </Button>
       </div>
 
       {/* Stats Card */}
-      <Card>
+      <Card className="border-l-4 border-l-primary">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Plantillas</p>
+              <p className="text-sm text-muted-foreground">Total Plantillas</p>
               <p className="text-2xl font-bold">{templates.length}</p>
             </div>
-            <Package className="h-8 w-8 text-blue-500" />
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Package className="h-8 w-8 text-primary" />
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -492,7 +511,7 @@ export default function TemplatesPage() {
       <Card>
         <CardContent className="p-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Buscar plantillas..."
               value={searchTerm}
@@ -504,10 +523,10 @@ export default function TemplatesPage() {
       </Card>
 
       {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+        <div className="bg-destructive/10 border-l-4 border-destructive p-4 mb-4">
           <div className="flex">
             <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
+              <p className="text-sm text-destructive">{error}</p>
             </div>
           </div>
         </div>
@@ -517,9 +536,9 @@ export default function TemplatesPage() {
       <div className="space-y-4">
         {filteredTemplates.length === 0 ? (
           <div className="text-center py-12">
-            <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay plantillas configuradas</h3>
-            <p className="text-gray-600 mb-4">Crea la primera plantilla para empezar a gestionar configuraciones de cliente</p>
+            <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">No hay plantillas configuradas</h3>
+            <p className="text-muted-foreground mb-4">Crea la primera plantilla para empezar a gestionar configuraciones de cliente</p>
             <Button onClick={() => handleOpenDialog()}>
               <Plus className="h-4 w-4 mr-2" />
               Crear Primera Plantilla
@@ -544,22 +563,22 @@ export default function TemplatesPage() {
                         <DropdownMenuItem onClick={() => handleOpenDialog(template)}><Edit className="mr-2 h-4 w-4" />Editar</DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleDuplicateTemplate(template)}><Copy className="mr-2 h-4 w-4" />Duplicar</DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(template.id)}><Trash2 className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(template.id)}><Trash2 className="mr-2 h-4 w-4" />Eliminar</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-gray-600 mb-4">{template.description}</p>
+                  <p className="text-sm text-muted-foreground mb-4">{template.description}</p>
                   <div className="space-y-3">
-                    <div className="flex justify-between text-sm"><span className="text-gray-600">Máx. usuarios:</span><span className="font-medium">{template.max_users}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-gray-600">Máx. contactos:</span><span className="font-medium">{template.max_contacts.toLocaleString()}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-gray-600">Llamadas API:</span><span className="font-medium">{template.max_api_calls.toLocaleString()}</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Máx. usuarios:</span><span className="font-medium">{template.max_users}</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Máx. contactos:</span><span className="font-medium">{template.max_contacts.toLocaleString()}</span></div>
+                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Llamadas API:</span><span className="font-medium">{template.max_api_calls.toLocaleString()}</span></div>
                   </div>
                   <div className="mt-4 space-y-3">
                     {/* Dashboard Modules */}
                     <div>
-                      <h4 className="text-sm font-medium text-blue-700 mb-1 flex items-center gap-1">
+                      <h4 className="text-sm font-medium text-foreground mb-1 flex items-center gap-1">
                         📊 Dashboard
                         ({availableModules.filter(m => m.category === 'Dashboard' && template.modules?.includes(m.id)).length})
                       </h4>
@@ -569,12 +588,12 @@ export default function TemplatesPage() {
                           return dashboardModules.length > 0 ? (
                             <>
                               {dashboardModules.slice(0, 2).map((module) => (
-                                <Badge key={module.id} variant="outline" className="text-xs text-blue-700 border-blue-200">
+                                <Badge key={module.id} variant="outline" className="text-xs">
                                   {module.name}
                                 </Badge>
                               ))}
                               {dashboardModules.length > 2 && (
-                                <Badge variant="outline" className="text-xs text-blue-700 border-blue-200">
+                                <Badge variant="outline" className="text-xs">
                                   +{dashboardModules.length - 2} más
                                 </Badge>
                               )}
@@ -588,7 +607,7 @@ export default function TemplatesPage() {
 
                     {/* Workspace Modules */}
                     <div>
-                      <h4 className="text-sm font-medium text-green-700 mb-1 flex items-center gap-1">
+                      <h4 className="text-sm font-medium text-foreground mb-1 flex items-center gap-1">
                         🏢 Workspace
                         ({availableModules.filter(m => m.category === 'Workspace' && template.modules?.includes(m.id)).length})
                       </h4>
@@ -598,12 +617,12 @@ export default function TemplatesPage() {
                           return workspaceModules.length > 0 ? (
                             <>
                               {workspaceModules.slice(0, 2).map((module) => (
-                                <Badge key={module.id} variant="secondary" className="text-xs text-green-700 bg-green-50 border-green-200">
+                                <Badge key={module.id} variant="secondary" className="text-xs">
                                   {module.name}
                                 </Badge>
                               ))}
                               {workspaceModules.length > 2 && (
-                                <Badge variant="secondary" className="text-xs text-green-700 bg-green-50 border-green-200">
+                                <Badge variant="secondary" className="text-xs">
                                   +{workspaceModules.length - 2} más
                                 </Badge>
                               )}
@@ -614,10 +633,35 @@ export default function TemplatesPage() {
                         })()}
                       </div>
                     </div>
+
+                    {/* Analytics Modules */}
+                    {(() => {
+                      const analyticsModules = availableModules.filter(m => m.category === 'Analytics' && template.modules?.includes(m.id));
+                      if (analyticsModules.length === 0) return null;
+                      return (
+                        <div>
+                          <h4 className="text-sm font-medium text-foreground mb-1 flex items-center gap-1">
+                            📈 Analytics ({analyticsModules.length})
+                          </h4>
+                          <div className="flex flex-wrap gap-1">
+                            {analyticsModules.slice(0, 2).map((module) => (
+                              <Badge key={module.id} variant="secondary" className="text-xs">
+                                {module.name}
+                              </Badge>
+                            ))}
+                            {analyticsModules.length > 2 && (
+                              <Badge variant="secondary" className="text-xs">
+                                +{analyticsModules.length - 2} más
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
-                  <div className="mt-4 pt-3 border-t flex items-center justify-between">
+                  <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
                     <Badge variant={template.is_active ? "default" : "secondary"}>{template.is_active ? 'Activa' : 'Inactiva'}</Badge>
-                    <span className="text-xs text-gray-500">{new Date(template.created_at).toLocaleDateString('es-ES')}</span>
+                    <span className="text-xs text-muted-foreground">{new Date(template.created_at).toLocaleDateString('es-ES')}</span>
                   </div>
                 </CardContent>
               </Card>
