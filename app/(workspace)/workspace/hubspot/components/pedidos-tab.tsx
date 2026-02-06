@@ -125,7 +125,7 @@ export function PedidosTab({ companyId, pipelineId, refreshKey, dateRange }: Ped
         </div>
       )}
 
-      <DealDetailSheet deal={selectedDeal} open={sheetOpen} onOpenChange={setSheetOpen} />
+      <DealDetailSheet companyId={companyId} deal={selectedDeal} open={sheetOpen} onOpenChange={setSheetOpen} />
     </div>
   )
 }

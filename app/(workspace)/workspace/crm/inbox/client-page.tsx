@@ -33,7 +33,7 @@ export default function InboxClientPage() {
           <Card className="hover:shadow-lg transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Mensajes Pendientes</CardTitle>
-              <AlertCircle className="h-5 w-5 text-red-600" />
+              <AlertCircle className="h-5 w-5 text-state-error" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-foreground">47</div>
@@ -44,7 +44,7 @@ export default function InboxClientPage() {
           <Card className="hover:shadow-lg transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">WhatsApp Activos</CardTitle>
-              <MessageCircle className="h-5 w-5 text-green-600" />
+              <MessageCircle className="h-5 w-5 text-state-success" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-foreground">12</div>
@@ -55,7 +55,7 @@ export default function InboxClientPage() {
           <Card className="hover:shadow-lg transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Tiempo Respuesta</CardTitle>
-              <Clock className="h-5 w-5 text-orange-600" />
+              <Clock className="h-5 w-5 text-accent-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-foreground">2.5h</div>
@@ -66,7 +66,7 @@ export default function InboxClientPage() {
           <Card className="hover:shadow-lg transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Resueltos Hoy</CardTitle>
-              <CheckCircle className="h-5 w-5 text-green-600" />
+              <CheckCircle className="h-5 w-5 text-state-success" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-foreground">23</div>

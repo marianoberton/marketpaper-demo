@@ -127,20 +127,20 @@ interface Tema {
 // =========================
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-    nuevo_expediente: { label: 'Nuevo Expediente', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-    caratulado: { label: 'Caratulado', color: 'bg-purple-100 text-purple-800 border-purple-200' },
-    seguimiento: { label: 'En Seguimiento', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-    subsanacion: { label: 'Subsanación', color: 'bg-orange-100 text-orange-800 border-orange-200' },
-    observado: { label: 'Observado', color: 'bg-red-100 text-red-800 border-red-200' },
-    subsanacion_cerrada: { label: 'Subsanación Cerrada', color: 'bg-teal-100 text-teal-800 border-teal-200' },
-    completado: { label: 'Completado', color: 'bg-green-100 text-green-800 border-green-200' },
-    finalizado: { label: 'Finalizado', color: 'bg-gray-100 text-gray-800 border-gray-200' },
+    nuevo_expediente: { label: 'Nuevo Expediente', color: 'bg-primary/20 text-primary border-primary/30' },
+    caratulado: { label: 'Caratulado', color: 'bg-primary/10 text-primary border-primary/20' },
+    seguimiento: { label: 'En Seguimiento', color: 'bg-accent-foreground/10 text-accent-foreground border-accent-foreground/20' },
+    subsanacion: { label: 'Subsanación', color: 'bg-accent-foreground/20 text-accent-foreground border-accent-foreground/30' },
+    observado: { label: 'Observado', color: 'bg-destructive/10 text-destructive border-destructive/20' },
+    subsanacion_cerrada: { label: 'Subsanación Cerrada', color: 'bg-muted text-foreground/70 border-border' },
+    completado: { label: 'Completado', color: 'bg-foreground/10 text-foreground/70 border-foreground/20' },
+    finalizado: { label: 'Finalizado', color: 'bg-muted text-muted-foreground border-border' },
 }
 
 const PRIORITY_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
-    baja: { label: 'Baja', color: 'bg-green-50 text-green-700 border-green-200', icon: '🟢' },
-    media: { label: 'Media', color: 'bg-yellow-50 text-yellow-700 border-yellow-200', icon: '🟡' },
-    alta: { label: 'Alta', color: 'bg-red-50 text-red-700 border-red-200', icon: '🔴' },
+    baja: { label: 'Baja', color: 'bg-muted text-muted-foreground border-border', icon: '○' },
+    media: { label: 'Media', color: 'bg-foreground/10 text-foreground border-foreground/20', icon: '◐' },
+    alta: { label: 'Alta', color: 'bg-accent-foreground/15 text-accent-foreground border-accent-foreground/30', icon: '●' },
 }
 
 const ACTION_LABELS: Record<string, string> = {
@@ -167,10 +167,10 @@ const getDueDateStatus = (dueDate: string | null) => {
     const now = new Date()
     const diffDays = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
-    if (diffDays < 0) return { status: 'overdue', label: 'Vencido', color: 'text-red-600' }
-    if (diffDays === 0) return { status: 'today', label: 'Hoy', color: 'text-orange-600' }
-    if (diffDays <= 3) return { status: 'soon', label: `${diffDays} días`, color: 'text-yellow-600' }
-    return { status: 'ok', label: `${diffDays} días`, color: 'text-gray-500' }
+    if (diffDays < 0) return { status: 'overdue', label: 'Vencido', color: 'text-destructive' }
+    if (diffDays === 0) return { status: 'today', label: 'Hoy', color: 'text-primary' }
+    if (diffDays <= 3) return { status: 'soon', label: `${diffDays} días`, color: 'text-accent-foreground' }
+    return { status: 'ok', label: `${diffDays} días`, color: 'text-muted-foreground' }
 }
 
 // =========================
@@ -382,7 +382,7 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
-                <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+                <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
         )
     }
@@ -390,7 +390,7 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
     if (!tema) {
         return (
             <div className="p-6 text-center">
-                <p className="text-gray-500">Tema no encontrado</p>
+                <p className="text-muted-foreground">Tema no encontrado</p>
                 <Button
                     variant="link"
                     onClick={() => router.push(`/workspace/temas${companyId ? `?company_id=${companyId}` : ''}`)}
@@ -446,17 +446,17 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                             )}
                             {/* Reference */}
                             {tema.reference_code && (
-                                <span className="text-gray-500 text-sm font-mono">
+                                <span className="text-muted-foreground text-sm font-mono">
                                     #{tema.reference_code}
                                 </span>
                             )}
                         </div>
 
-                        <h1 className="text-2xl font-bold text-gray-900 mt-2">{tema.title}</h1>
+                        <h1 className="text-2xl font-bold text-foreground mt-2">{tema.title}</h1>
 
                         {/* Expediente info */}
                         {(tema.expediente_number || tema.organismo) && (
-                            <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                                 {tema.expediente_number && (
                                     <span className="flex items-center gap-1">
                                         <FileText className="h-4 w-4" />
@@ -475,7 +475,7 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
 
                     {/* Saving indicator */}
                     {saving && (
-                        <div className="flex items-center gap-2 text-gray-500 text-sm">
+                        <div className="flex items-center gap-2 text-muted-foreground text-sm">
                             <RefreshCw className="h-4 w-4 animate-spin" />
                             Guardando...
                         </div>
@@ -524,13 +524,13 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                             {dueDateStatus.status === 'overdue' && <AlertTriangle className="h-4 w-4" />}
                             <Calendar className="h-4 w-4" />
                             <span>{format(new Date(tema.due_date!), 'dd MMM yyyy', { locale: es })}</span>
-                            <span className="text-gray-400">({dueDateStatus.label})</span>
+                            <span className="text-muted-foreground">({dueDateStatus.label})</span>
                         </div>
                     )}
 
                     {/* Task progress */}
                     {totalTasks > 0 && (
-                        <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                             <CheckCircle2 className="h-4 w-4" />
                             <span>{completedTasks}/{totalTasks} tareas</span>
                         </div>
@@ -548,12 +548,12 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                             <CardTitle className="text-base">Descripción</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-gray-700 whitespace-pre-wrap">
+                            <p className="text-foreground whitespace-pre-wrap">
                                 {tema.description || 'Sin descripción'}
                             </p>
                             {tema.notes && (
-                                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                    <p className="text-sm text-yellow-800">
+                                <div className="mt-4 p-3 bg-accent-foreground/10 border border-accent-foreground/20 rounded-lg">
+                                    <p className="text-sm text-accent-foreground">
                                         <strong>Notas:</strong> {tema.notes}
                                     </p>
                                 </div>
@@ -583,7 +583,7 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                             <Card>
                                 <CardContent className="pt-6">
                                     {/* Add task form - expanded */}
-                                    <div className="space-y-3 mb-6 p-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                                    <div className="space-y-3 mb-6 p-4 bg-muted/50 rounded-lg border border-dashed border-border">
                                         <div className="flex gap-2">
                                             <Input
                                                 placeholder="Título de la nueva tarea..."
@@ -600,7 +600,7 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                                                 onValueChange={setNewTaskAssignee}
                                             >
                                                 <SelectTrigger className="w-[200px]">
-                                                    <Users className="h-4 w-4 mr-2 text-gray-400" />
+                                                    <Users className="h-4 w-4 mr-2 text-muted-foreground" />
                                                     <SelectValue placeholder="Asignar a..." />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -654,8 +654,8 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                                                         <div
                                                             key={task.id}
                                                             className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${task.status === 'completada'
-                                                                ? 'bg-green-50 border-green-200'
-                                                                : 'bg-white border-gray-200 hover:bg-gray-50'
+                                                                ? 'bg-muted/50 border-border opacity-70'
+                                                                : 'bg-card border-border hover:border-primary/50 hover:bg-primary/5'
                                                                 }`}
                                                         >
                                                             <Checkbox
@@ -667,8 +667,8 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                                                             />
                                                             <div className="flex-1 min-w-0">
                                                                 <p className={`text-sm font-medium ${task.status === 'completada'
-                                                                    ? 'text-gray-500 line-through'
-                                                                    : 'text-gray-900'
+                                                                    ? 'text-muted-foreground line-through'
+                                                                    : 'text-foreground'
                                                                     }`}>
                                                                     {task.title}
                                                                 </p>
@@ -690,7 +690,7 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                                                                                     <span className="truncate">{task.assigned_user.full_name.split(' ')[0]}</span>
                                                                                 </div>
                                                                             ) : (
-                                                                                <span className="text-gray-400">Asignar...</span>
+                                                                                <span className="text-muted-foreground">Asignar...</span>
                                                                             )}
                                                                         </SelectTrigger>
                                                                         <SelectContent>
@@ -709,7 +709,7 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                                                                             type="date"
                                                                             value={task.due_date ? task.due_date.split('T')[0] : ''}
                                                                             onChange={(e) => updateTask(task.id, 'due_date', e.target.value || null)}
-                                                                            className={`h-7 w-[130px] text-xs border-dashed ${taskDueStatus?.status === 'overdue' ? 'border-red-300 bg-red-50' : ''
+                                                                            className={`h-7 w-[130px] text-xs border-dashed ${taskDueStatus?.status === 'overdue' ? 'border-destructive/50 bg-destructive/5' : ''
                                                                                 }`}
                                                                         />
                                                                         {taskDueStatus && taskDueStatus.status !== 'ok' && (
@@ -725,7 +725,7 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                                                 })}
                                         </div>
                                     ) : (
-                                        <p className="text-center text-gray-500 py-8">
+                                        <p className="text-center text-muted-foreground py-8">
                                             No hay tareas. Agregá una arriba.
                                         </p>
                                     )}
@@ -768,7 +768,7 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                                                 <div key={comment.id} className="flex gap-3">
                                                     <Avatar className="h-8 w-8">
                                                         <AvatarImage src={comment.created_by?.avatar_url} />
-                                                        <AvatarFallback className="text-xs bg-gray-200">
+                                                        <AvatarFallback className="text-xs bg-muted">
                                                             {comment.created_by
                                                                 ? getInitials(comment.created_by.full_name)
                                                                 : '?'}
@@ -776,17 +776,17 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                                                     </Avatar>
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-2">
-                                                            <span className="font-medium text-sm">
+                                                            <span className="font-medium text-sm text-foreground">
                                                                 {comment.created_by?.full_name || 'Usuario'}
                                                             </span>
-                                                            <span className="text-xs text-gray-400">
+                                                            <span className="text-xs text-muted-foreground">
                                                                 {formatDistanceToNow(new Date(comment.created_at), {
                                                                     addSuffix: true,
                                                                     locale: es
                                                                 })}
                                                             </span>
                                                         </div>
-                                                        <p className="text-sm text-gray-700 mt-1 whitespace-pre-wrap">
+                                                        <p className="text-sm text-foreground/80 mt-1 whitespace-pre-wrap">
                                                             {comment.content}
                                                         </p>
                                                     </div>
@@ -794,7 +794,7 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                                             ))}
                                         </div>
                                     ) : (
-                                        <p className="text-center text-gray-500 py-8">
+                                        <p className="text-center text-muted-foreground py-8">
                                             No hay comentarios. Sé el primero en comentar.
                                         </p>
                                     )}
@@ -814,16 +814,16 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                                                     <div key={activity.id} className="flex gap-3">
                                                         <Avatar className="h-8 w-8">
                                                             <AvatarImage src={activity.user?.avatar_url} />
-                                                            <AvatarFallback className="text-xs bg-gray-200">
+                                                            <AvatarFallback className="text-xs bg-muted">
                                                                 {activity.user ? getInitials(activity.user.full_name) : '?'}
                                                             </AvatarFallback>
                                                         </Avatar>
                                                         <div className="flex-1">
                                                             <div className="flex items-center gap-2 flex-wrap">
-                                                                <span className="font-medium text-sm">
+                                                                <span className="font-medium text-sm text-foreground">
                                                                     {activity.user?.full_name || 'Sistema'}
                                                                 </span>
-                                                                <span className="text-gray-500 text-sm">
+                                                                <span className="text-muted-foreground text-sm">
                                                                     {ACTION_LABELS[activity.action] || activity.action}
                                                                 </span>
                                                                 {activity.action === 'status_changed' && activity.new_value && (
@@ -832,14 +832,14 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                                                                     </Badge>
                                                                 )}
                                                             </div>
-                                                            <p className="text-xs text-gray-400 mt-1">
+                                                            <p className="text-xs text-muted-foreground mt-1">
                                                                 {formatDistanceToNow(new Date(activity.created_at), {
                                                                     addSuffix: true,
                                                                     locale: es
                                                                 })}
                                                             </p>
                                                             {activity.comment && (
-                                                                <p className="text-sm text-gray-600 mt-2 bg-gray-50 p-2 rounded">
+                                                                <p className="text-sm text-foreground/80 mt-2 bg-muted/50 p-2 rounded">
                                                                     {activity.comment}
                                                                 </p>
                                                             )}
@@ -848,7 +848,7 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                                                 ))}
                                         </div>
                                     ) : (
-                                        <p className="text-center text-gray-500 py-8">
+                                        <p className="text-center text-muted-foreground py-8">
                                             Sin actividad registrada
                                         </p>
                                     )}
@@ -862,7 +862,7 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                 <div className="space-y-6">
                     {/* Client Card */}
                     {tema.client && (
-                        <Card className="border-l-4 border-l-blue-500">
+                        <Card className="border-l-4 border-l-primary">
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-sm flex items-center gap-2">
                                     <Building2 className="h-4 w-4" />
@@ -870,15 +870,15 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-2">
-                                <p className="font-semibold text-gray-900">{tema.client.name}</p>
+                                <p className="font-semibold text-foreground">{tema.client.name}</p>
                                 {tema.client.cuit && (
-                                    <p className="text-sm text-gray-500">CUIT: {tema.client.cuit}</p>
+                                    <p className="text-sm text-muted-foreground">CUIT: {tema.client.cuit}</p>
                                 )}
                                 {tema.client.email && (
-                                    <p className="text-sm text-gray-500">{tema.client.email}</p>
+                                    <p className="text-sm text-muted-foreground">{tema.client.email}</p>
                                 )}
                                 {tema.client.phone && (
-                                    <p className="text-sm text-gray-500">{tema.client.phone}</p>
+                                    <p className="text-sm text-muted-foreground">{tema.client.phone}</p>
                                 )}
                             </CardContent>
                         </Card>
@@ -901,20 +901,20 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                                             <div key={assignee.id} className="flex items-center gap-3">
                                                 <Avatar className="h-8 w-8">
                                                     <AvatarImage src={assignee.user.avatar_url} />
-                                                    <AvatarFallback className="text-xs bg-gray-200">
+                                                    <AvatarFallback className="text-xs bg-muted">
                                                         {getInitials(assignee.user.full_name || assignee.user.email)}
                                                     </AvatarFallback>
                                                 </Avatar>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-1">
-                                                        <p className="font-medium text-sm truncate">
+                                                        <p className="font-medium text-sm truncate text-foreground">
                                                             {assignee.user.full_name || assignee.user.email}
                                                         </p>
                                                         {assignee.is_lead && (
-                                                            <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                                                            <Star className="h-4 w-4 text-primary fill-primary" />
                                                         )}
                                                     </div>
-                                                    <p className="text-xs text-gray-500 capitalize">
+                                                    <p className="text-xs text-muted-foreground capitalize">
                                                         {assignee.is_lead ? 'Líder' : assignee.role}
                                                     </p>
                                                 </div>
@@ -922,7 +922,7 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                                         ))}
                                 </div>
                             ) : (
-                                <p className="text-gray-500 text-sm text-center py-2">
+                                <p className="text-muted-foreground text-sm text-center py-2">
                                     Sin responsables asignados
                                 </p>
                             )}
@@ -936,28 +936,28 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                         </CardHeader>
                         <CardContent className="space-y-3 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Creado</span>
-                                <span>{format(new Date(tema.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}</span>
+                                <span className="text-muted-foreground">Creado</span>
+                                <span className="text-foreground">{format(new Date(tema.created_at), 'dd/MM/yyyy HH:mm', { locale: es })}</span>
                             </div>
                             <Separator />
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Actualizado</span>
-                                <span>{formatDistanceToNow(new Date(tema.updated_at), { addSuffix: true, locale: es })}</span>
+                                <span className="text-muted-foreground">Actualizado</span>
+                                <span className="text-foreground">{formatDistanceToNow(new Date(tema.updated_at), { addSuffix: true, locale: es })}</span>
                             </div>
                             <Separator />
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Creado por</span>
-                                <span>{tema.created_by_user?.full_name || '-'}</span>
+                                <span className="text-muted-foreground">Creado por</span>
+                                <span className="text-foreground">{tema.created_by_user?.full_name || '-'}</span>
                             </div>
                             {tema.due_date && (
                                 <>
                                     <Separator />
                                     <div className="flex justify-between items-center">
-                                        <span className="text-gray-500 flex items-center gap-1">
+                                        <span className="text-muted-foreground flex items-center gap-1">
                                             <Calendar className="h-4 w-4" />
                                             Vencimiento
                                         </span>
-                                        <span className={dueDateStatus?.status === 'overdue' ? 'text-red-600 font-medium' : ''}>
+                                        <span className={dueDateStatus?.status === 'overdue' ? 'text-destructive font-medium' : 'text-foreground'}>
                                             {format(new Date(tema.due_date), 'dd/MM/yyyy', { locale: es })}
                                         </span>
                                     </div>

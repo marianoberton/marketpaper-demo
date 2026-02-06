@@ -54,6 +54,22 @@
   --color-plum: #8B5CF6;
   --color-signal-yellow: #FACC15;
 
+  /* Semantic State Colors - Tailwind mappings */
+  --color-state-success: var(--state-success);
+  --color-state-success-muted: var(--state-success-muted);
+  --color-state-warning: var(--state-warning);
+  --color-state-warning-muted: var(--state-warning-muted);
+  --color-state-error: var(--state-error);
+  --color-state-error-muted: var(--state-error-muted);
+  --color-state-info: var(--state-info);
+  --color-state-info-muted: var(--state-info-muted);
+  --color-state-neutral: var(--state-neutral);
+  --color-state-neutral-muted: var(--state-neutral-muted);
+  --color-state-pending: var(--state-pending);
+  --color-state-pending-muted: var(--state-pending-muted);
+  --color-state-in-progress: var(--state-in-progress);
+  --color-state-in-progress-muted: var(--state-in-progress-muted);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -109,6 +125,22 @@
   --sidebar-accent-foreground: #272727;
   --sidebar-border: #E5E5E5;
   --sidebar-ring: #CED600;
+
+  /* Semantic State Colors - Light Mode */
+  --state-success: #16a34a;
+  --state-success-muted: #dcfce7;
+  --state-warning: #d97706;
+  --state-warning-muted: #fef3c7;
+  --state-error: #dc2626;
+  --state-error-muted: #fee2e2;
+  --state-info: #2563eb;
+  --state-info-muted: #dbeafe;
+  --state-neutral: #525252;
+  --state-neutral-muted: #f5f5f5;
+  --state-pending: #7c3aed;
+  --state-pending-muted: #ede9fe;
+  --state-in-progress: #0891b2;
+  --state-in-progress-muted: #cffafe;
 }
 
 .dark {
@@ -167,6 +199,22 @@
   --sidebar-accent-foreground: #FAFAFA;
   --sidebar-border: #3d3d3d;
   --sidebar-ring: #CED600;
+
+  /* Semantic State Colors - Dark Mode */
+  --state-success: #22c55e;
+  --state-success-muted: rgba(34, 197, 94, 0.2);
+  --state-warning: #f59e0b;
+  --state-warning-muted: rgba(245, 158, 11, 0.2);
+  --state-error: #ef4444;
+  --state-error-muted: rgba(239, 68, 68, 0.2);
+  --state-info: #3b82f6;
+  --state-info-muted: rgba(59, 130, 246, 0.2);
+  --state-neutral: #a3a3a3;
+  --state-neutral-muted: rgba(163, 163, 163, 0.15);
+  --state-pending: #a78bfa;
+  --state-pending-muted: rgba(167, 139, 250, 0.2);
+  --state-in-progress: #22d3ee;
+  --state-in-progress-muted: rgba(34, 211, 238, 0.2);
 }
 
 @layer base {

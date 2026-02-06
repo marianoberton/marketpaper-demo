@@ -78,7 +78,7 @@ export function CrmDashboard({ companyId }: CrmDashboardProps) {
       description: 'Gestiona leads capturados desde formularios web',
       icon: UserPlus,
       href: '/workspace/crm/leads',
-      color: 'bg-blue-500',
+      color: 'bg-state-info',
       featured: true
     },
     {
@@ -86,63 +86,63 @@ export function CrmDashboard({ companyId }: CrmDashboardProps) {
       description: 'Base de datos de clientes y prospectos',
       icon: Users,
       href: '/workspace/crm/contacts',
-      color: 'bg-green-500'
+      color: 'bg-state-success'
     },
     {
       title: 'Pipeline',
       description: 'Gestión del embudo de ventas',
       icon: Target,
       href: '/workspace/crm/pipeline',
-      color: 'bg-purple-500'
+      color: 'bg-state-pending'
     },
     {
       title: 'Actividades',
       description: 'Seguimiento de interacciones',
       icon: Activity,
       href: '/workspace/crm/activities',
-      color: 'bg-orange-500'
+      color: 'bg-accent-foreground'
     },
     {
       title: 'Campañas',
       description: 'Marketing y promociones',
       icon: Mail,
       href: '/workspace/crm/campaigns',
-      color: 'bg-pink-500'
+      color: 'bg-state-error'
     },
     {
       title: 'Inbox',
       description: 'Comunicaciones centralizadas',
       icon: Inbox,
       href: '/workspace/crm/inbox',
-      color: 'bg-indigo-500'
+      color: 'bg-state-in-progress'
     },
     {
       title: 'Automatización',
       description: 'Flujos de trabajo automáticos',
       icon: Zap,
       href: '/workspace/crm/automation',
-      color: 'bg-yellow-500'
+      color: 'bg-state-warning'
     },
     {
       title: 'Reportes',
       description: 'Análisis y métricas de ventas',
       icon: BarChart3,
       href: '/workspace/crm/reports',
-      color: 'bg-red-500'
+      color: 'bg-primary'
     },
     {
       title: 'Documentación',
       description: 'Guías y ejemplos de integración',
       icon: BookOpen,
       href: '/workspace/crm/documentation',
-      color: 'bg-gray-500'
+      color: 'bg-state-neutral'
     },
     {
       title: 'Configuración',
       description: 'Ajustes del módulo CRM',
       icon: Settings,
       href: '/workspace/crm/settings',
-      color: 'bg-slate-500'
+      color: 'bg-muted-foreground'
     }
   ];
   return (
@@ -227,10 +227,10 @@ export function CrmDashboard({ companyId }: CrmDashboardProps) {
       {/* Featured Module */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">⭐ Módulo Destacado</h2>
-        <Card className="border-blue-200 bg-blue-50">
+        <Card className="border-state-info bg-state-info-muted">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500 text-white rounded-lg">
+              <div className="p-2 bg-state-info text-white rounded-lg">
                 <UserPlus className="h-5 w-5" />
               </div>
               <div>

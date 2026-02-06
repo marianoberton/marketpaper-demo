@@ -46,29 +46,29 @@ const COLUMNS: Column[] = [
     {
         id: 'prospecto',
         title: 'Prospecto de Cliente',
-        color: 'text-blue-600',
-        bgColor: 'bg-blue-50 border-blue-200',
+        color: 'text-state-info',
+        bgColor: 'bg-state-info-muted border-state-info',
         icon: UserPlus
     },
     {
         id: 'presupuesto_enviado',
         title: 'Presupuesto Enviado',
-        color: 'text-amber-600',
-        bgColor: 'bg-amber-50 border-amber-200',
+        color: 'text-state-warning',
+        bgColor: 'bg-state-warning-muted border-state-warning',
         icon: FileText
     },
     {
         id: 'ganado',
         title: 'Ganado',
-        color: 'text-green-600',
-        bgColor: 'bg-green-50 border-green-200',
+        color: 'text-state-success',
+        bgColor: 'bg-state-success-muted border-state-success',
         icon: Trophy
     },
     {
         id: 'perdido',
         title: 'Perdido',
-        color: 'text-red-600',
-        bgColor: 'bg-red-50 border-red-200',
+        color: 'text-state-error',
+        bgColor: 'bg-state-error-muted border-state-error',
         icon: XCircle
     }
 ]
@@ -229,14 +229,14 @@ export default function VentasClientPage() {
         .reduce((sum, d) => sum + d.value, 0)
 
     return (
-        <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+        <div className="p-6 space-y-6 bg-background min-h-screen">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <TrendingUp className="h-8 w-8 text-indigo-600" />
+                    <TrendingUp className="h-8 w-8 text-primary" />
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Pipeline de Ventas</h1>
-                        <p className="text-gray-500">Gestiona tus oportunidades de negocio</p>
+                        <h1 className="text-2xl font-bold text-foreground">Pipeline de Ventas</h1>
+                        <p className="text-muted-foreground">Gestiona tus oportunidades de negocio</p>
                     </div>
                 </div>
                 <Button className="gap-2">
@@ -251,24 +251,11 @@ export default function VentasClientPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-gray-500">Pipeline Activo</p>
-                                <p className="text-2xl font-bold text-indigo-600">{formatCurrency(pipelineValue)}</p>
+                                <p className="text-sm text-muted-foreground">Pipeline Activo</p>
+                                <p className="text-2xl font-bold text-primary">{formatCurrency(pipelineValue)}</p>
                             </div>
-                            <div className="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
-                                <DollarSign className="h-6 w-6 text-indigo-600" />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-500">Ventas Ganadas</p>
-                                <p className="text-2xl font-bold text-green-600">{formatCurrency(wonValue)}</p>
-                            </div>
-                            <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-                                <Trophy className="h-6 w-6 text-green-600" />
+                            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                                <DollarSign className="h-6 w-6 text-primary" />
                             </div>
                         </div>
                     </CardContent>
@@ -277,11 +264,24 @@ export default function VentasClientPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-gray-500">Oportunidades</p>
-                                <p className="text-2xl font-bold text-gray-900">{deals.length}</p>
+                                <p className="text-sm text-muted-foreground">Ventas Ganadas</p>
+                                <p className="text-2xl font-bold text-state-success">{formatCurrency(wonValue)}</p>
                             </div>
-                            <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center">
-                                <Building2 className="h-6 w-6 text-gray-600" />
+                            <div className="h-12 w-12 rounded-full bg-state-success-muted flex items-center justify-center">
+                                <Trophy className="h-6 w-6 text-state-success" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-muted-foreground">Oportunidades</p>
+                                <p className="text-2xl font-bold text-foreground">{deals.length}</p>
+                            </div>
+                            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                                <Building2 className="h-6 w-6 text-muted-foreground" />
                             </div>
                         </div>
                     </CardContent>
@@ -299,8 +299,8 @@ export default function VentasClientPage() {
                         <div
                             key={column.id}
                             className={`rounded-xl border-2 transition-all duration-200 ${isOver
-                                ? 'border-indigo-400 bg-indigo-50 scale-[1.02]'
-                                : `border-gray-200 bg-white`
+                                ? 'border-primary bg-primary/10 scale-[1.02]'
+                                : `border-border bg-card`
                                 }`}
                             onDragOver={(e) => handleDragOver(e, column.id)}
                             onDragLeave={handleDragLeave}
@@ -317,7 +317,7 @@ export default function VentasClientPage() {
                                         {stats.count}
                                     </Badge>
                                 </div>
-                                <p className="text-sm text-gray-500 mt-1">
+                                <p className="text-sm text-muted-foreground mt-1">
                                     {formatCurrency(stats.total)}
                                 </p>
                             </div>
@@ -333,45 +333,45 @@ export default function VentasClientPage() {
                                             onDragStart={(e) => handleDragStart(e, deal)}
                                             onDragEnd={handleDragEnd}
                                             onClick={() => router.push(`/workspace/ventas/${deal.id}${companyId ? `?company_id=${companyId}` : ''}`)}
-                                            className={`bg-white rounded-lg border border-gray-200 p-4 cursor-pointer shadow-sm hover:shadow-md hover:border-indigo-300 transition-all duration-200 ${draggedDeal?.id === deal.id ? 'opacity-50 rotate-2' : ''
+                                            className={`bg-card rounded-lg border border-border p-4 cursor-pointer shadow-sm hover:shadow-md hover:border-primary transition-all duration-200 ${draggedDeal?.id === deal.id ? 'opacity-50 rotate-2' : ''
                                                 }`}
                                         >
                                             <div className="flex items-start justify-between mb-2">
                                                 <div className="flex items-center gap-2">
-                                                    <GripVertical className="h-4 w-4 text-gray-300 cursor-grab" />
-                                                    <h4 className="font-medium text-gray-900 text-sm">{deal.title}</h4>
+                                                    <GripVertical className="h-4 w-4 text-muted-foreground/50 cursor-grab" />
+                                                    <h4 className="font-medium text-foreground text-sm">{deal.title}</h4>
                                                 </div>
                                                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => e.stopPropagation()}>
-                                                    <MoreHorizontal className="h-4 w-4 text-gray-400" />
+                                                    <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                                                 </Button>
                                             </div>
 
                                             <div className="flex items-center gap-2 mb-3">
-                                                <Building2 className="h-3 w-3 text-gray-400" />
-                                                <span className="text-xs text-gray-600">{deal.company}</span>
+                                                <Building2 className="h-3 w-3 text-muted-foreground" />
+                                                <span className="text-xs text-muted-foreground">{deal.company}</span>
                                             </div>
 
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center gap-2">
                                                     <Avatar className="h-6 w-6">
                                                         <AvatarImage src={deal.contactAvatar} />
-                                                        <AvatarFallback className="text-[10px] bg-gray-100">
+                                                        <AvatarFallback className="text-[10px] bg-muted">
                                                             {getInitials(deal.contact)}
                                                         </AvatarFallback>
                                                     </Avatar>
-                                                    <span className="text-xs text-gray-500">{deal.contact}</span>
+                                                    <span className="text-xs text-muted-foreground">{deal.contact}</span>
                                                 </div>
                                             </div>
 
-                                            <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-                                                <span className="text-sm font-bold text-gray-900">
+                                            <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
+                                                <span className="text-sm font-bold text-foreground">
                                                     {formatCurrency(deal.value)}
                                                 </span>
                                                 <Badge
                                                     variant="outline"
-                                                    className={`text-xs ${deal.probability >= 75 ? 'border-green-300 text-green-600' :
-                                                        deal.probability >= 50 ? 'border-amber-300 text-amber-600' :
-                                                            'border-gray-300 text-gray-600'
+                                                    className={`text-xs ${deal.probability >= 75 ? 'border-state-success text-state-success' :
+                                                        deal.probability >= 50 ? 'border-state-warning text-state-warning' :
+                                                            'border-state-neutral text-state-neutral'
                                                         }`}
                                                 >
                                                     {deal.probability}%
@@ -382,7 +382,7 @@ export default function VentasClientPage() {
 
                                 {/* Empty state */}
                                 {deals.filter(d => d.stage === column.id).length === 0 && (
-                                    <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                                    <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
                                         <Icon className="h-8 w-8 mb-2 opacity-50" />
                                         <p className="text-sm">Sin oportunidades</p>
                                         <p className="text-xs">Arrastrá aquí para mover</p>

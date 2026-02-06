@@ -251,7 +251,7 @@ export function PipelineTab({ companyId, pipelineId, stages, refreshKey }: Pipel
       </Card>
 
       {/* Deal Detail Sheet */}
-      <DealDetailSheet deal={selectedDeal} open={sheetOpen} onOpenChange={setSheetOpen} />
+      <DealDetailSheet companyId={companyId} deal={selectedDeal} open={sheetOpen} onOpenChange={setSheetOpen} />
     </div>
   )
 }

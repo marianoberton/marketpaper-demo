@@ -43,8 +43,8 @@ const pipelineStages = [
     id: 'leads',
     name: 'Leads',
     description: 'Nuevos contactos sin calificar',
-    color: 'bg-blue-100 border-blue-200',
-    headerColor: 'bg-blue-500',
+    color: 'bg-state-info-muted border-state-info',
+    headerColor: 'bg-state-info',
     count: 23,
     value: 0
   },
@@ -52,8 +52,8 @@ const pipelineStages = [
     id: 'qualified',
     name: 'Calificados',
     description: 'Leads validados con presupuesto',
-    color: 'bg-orange-100 border-orange-200',
-    headerColor: 'bg-orange-500',
+    color: 'bg-state-warning-muted border-state-warning',
+    headerColor: 'bg-state-warning',
     count: 15,
     value: 285000
   },
@@ -61,8 +61,8 @@ const pipelineStages = [
     id: 'proposal',
     name: 'Propuesta',
     description: 'Propuesta comercial enviada',
-    color: 'bg-purple-100 border-purple-200',
-    headerColor: 'bg-purple-500',
+    color: 'bg-state-pending-muted border-state-pending',
+    headerColor: 'bg-state-pending',
     count: 8,
     value: 420000
   },
@@ -70,8 +70,8 @@ const pipelineStages = [
     id: 'negotiation',
     name: 'Negociación',
     description: 'En proceso de negociación',
-    color: 'bg-yellow-100 border-yellow-200',
-    headerColor: 'bg-yellow-500',
+    color: 'bg-accent-foreground/20 border-accent-foreground',
+    headerColor: 'bg-accent-foreground',
     count: 5,
     value: 180000
   },
@@ -79,8 +79,8 @@ const pipelineStages = [
     id: 'closed-won',
     name: 'Cerrado Ganado',
     description: 'Oportunidades ganadas',
-    color: 'bg-green-100 border-green-200',
-    headerColor: 'bg-green-500',
+    color: 'bg-state-success-muted border-state-success',
+    headerColor: 'bg-state-success',
     count: 12,
     value: 340000
   },
@@ -88,8 +88,8 @@ const pipelineStages = [
     id: 'closed-lost',
     name: 'Cerrado Perdido',
     description: 'Oportunidades perdidas',
-    color: 'bg-red-100 border-red-200',
-    headerColor: 'bg-red-500',
+    color: 'bg-state-error-muted border-state-error',
+    headerColor: 'bg-state-error',
     count: 7,
     value: 0
   }
@@ -213,13 +213,13 @@ export default function PipelineClientPage() {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-state-error-muted text-state-error border-state-error';
       case 'medium':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
+        return 'bg-state-warning-muted text-state-warning border-state-warning';
       case 'low':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+        return 'bg-state-info-muted text-state-info border-state-info';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-state-neutral-muted text-state-neutral border-state-neutral';
     }
   };
 
@@ -403,8 +403,8 @@ export default function PipelineClientPage() {
                   {stageOpportunities.map((opportunity) => (
                     <div
                       key={opportunity.id}
-                      className={`bg-white rounded-lg p-3 shadow-sm border cursor-pointer hover:shadow-md transition-all ${
-                        selectedOpportunity === opportunity.id ? 'border-blue-500 shadow-md' : ''
+                      className={`bg-white dark:bg-card rounded-lg p-3 shadow-sm border cursor-pointer hover:shadow-md transition-all ${
+                        selectedOpportunity === opportunity.id ? 'border-primary shadow-md' : ''
                       }`}
                       onClick={() => setSelectedOpportunity(
                         selectedOpportunity === opportunity.id ? null : opportunity.id
@@ -443,7 +443,7 @@ export default function PipelineClientPage() {
 
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm font-semibold text-green-600">
+                          <span className="text-sm font-semibold text-state-success">
                             {formatCurrency(opportunity.value)}
                           </span>
                           <Badge variant="outline" className="text-xs">
@@ -476,8 +476,8 @@ export default function PipelineClientPage() {
                         </div>
 
                         <div className="text-xs">
-                          <p className="font-medium text-blue-600">Próxima acción:</p>
-                          <p className="text-blue-600">{opportunity.nextAction}</p>
+                          <p className="font-medium text-primary">Próxima acción:</p>
+                          <p className="text-primary">{opportunity.nextAction}</p>
                         </div>
 
                         <div className="flex flex-wrap gap-1 mt-2">

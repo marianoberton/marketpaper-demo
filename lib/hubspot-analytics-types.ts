@@ -67,6 +67,21 @@ export interface HubSpotDeal {
   archived?: boolean
 }
 
+export interface HubSpotLineItem {
+  id: string
+  properties: {
+    name: string
+    price: string
+    quantity: string
+    hs_sku: string
+    amount: string
+    [key: string]: string | null | undefined
+  }
+  createdAt: string
+  updatedAt: string
+  archived?: boolean
+}
+
 export interface EnrichedDeal extends HubSpotDeal {
   stageLabel: string
   daysSinceCreation: number
@@ -178,6 +193,35 @@ export interface ReportData {
 }
 
 // ---------------------
+// Items Report Types
+// ---------------------
+
+export interface ReportLineItem {
+  dealId: string
+  dealName: string
+  createDate: string
+  clienteName: string
+  condicionesPago: string | null
+  stageLabel: string
+  cantidad: number
+  largoMm: number
+  anchoMm: number
+  altoMm: number
+  m2PorUnidad: number
+  m2Totales: number
+  calidad: string
+  precioUnitario: number
+  subtotalSinIva: number
+}
+
+export interface ItemsReportData {
+  lineItems: ReportLineItem[]
+  totalM2: number
+  totalSubtotal: number
+  totalDeals: number
+}
+
+// ---------------------
 // Helpers
 // ---------------------
 
@@ -200,7 +244,8 @@ export function enrichDeal(
   let itemsJson: unknown[] | null = null
   if (props.mp_items_json) {
     try {
-      itemsJson = JSON.parse(props.mp_items_json)
+      const parsed = JSON.parse(props.mp_items_json)
+      itemsJson = Array.isArray(parsed) ? parsed : null
     } catch {
       itemsJson = null
     }

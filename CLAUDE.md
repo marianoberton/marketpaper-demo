@@ -8,7 +8,7 @@ FOMO Platform es una plataforma empresarial B2B SaaS multi-tenant. Cada tenant e
 - **Super Admin** (equipo FOMO): administra toda la plataforma, empresas, módulos y plantillas
 - **Empresa (tenant)**: cada empresa tiene su workspace aislado con módulos habilitados
 - **Usuarios de empresa**: roles internos (owner, admin, manager, employee)
-- **Viewer**: acceso de solo lectura para clientes finales de las empresas
+- **Viewer**: acceso de solo lectura para clientes finales de las empresas + tickets de soporte propios
 
 **Nombre del repo**: `marketpaper-demo`
 **Nombre comercial**: FOMO Platform
@@ -101,6 +101,7 @@ npm run gen:types    # Regenerar tipos TypeScript desde Supabase
 │   ├── login/                  # Página de login
 │   ├── register/               # Registro empresarial
 │   ├── client-view/            # Portal de cliente (viewer)
+│   │   └── tickets/            # Tickets de soporte del cliente
 │   └── layout.tsx              # Layout raíz (ThemeProvider, LayoutProvider, Toaster)
 ├── components/                 # Componentes React
 │   ├── ui/                     # Componentes base shadcn/ui
@@ -161,7 +162,7 @@ super_admin > company_owner > company_admin > manager > employee > viewer
 | `company_admin` | Su empresa, gestión de usuarios |
 | `manager` | Lectura/escritura en su empresa |
 | `employee` | Lectura/escritura limitada |
-| `viewer` | Solo lectura, portal /client-view |
+| `viewer` | Solo lectura + tickets propios, portal /client-view |
 
 ### RLS (Row Level Security) - Patrón de 3 capas
 
@@ -646,6 +647,71 @@ app/api/workspace/nuevo-modulo/
 └── [id]/
     └── route.ts        # GET (detalle), PUT (actualizar), DELETE (eliminar)
 ```
+
+---
+
+## Sistema de Tickets de Soporte
+
+El sistema de tickets permite a usuarios de la plataforma y clientes finales (viewers) crear y gestionar solicitudes de soporte.
+
+### Accesos por rol
+
+| Rol | Ruta | Permisos |
+|-----|------|----------|
+| Super Admin | `/admin/tickets` | Ver/gestionar todos los tickets, notas internas |
+| Company Admin/Manager/Employee | `/workspace/soporte` | Ver tickets propios y de su empresa |
+| Viewer (cliente final) | `/client-view/tickets` | Solo sus propios tickets (los que creó) |
+
+### Rutas del Portal de Cliente (Viewer)
+
+| Ruta | Archivo | Descripción |
+|------|---------|-------------|
+| `/client-view/tickets` | `app/client-view/tickets/` | Lista de tickets del cliente |
+| `/client-view/tickets/nuevo` | `app/client-view/tickets/nuevo/` | Crear nuevo ticket |
+| `/client-view/tickets/[id]` | `app/client-view/tickets/[id]/` | Ver detalle y responder |
+
+### Lógica de filtrado en API
+
+La API `/api/workspace/tickets` filtra según el rol del usuario:
+
+```typescript
+if (profile.role === 'super_admin') {
+  // Super admin ve todos los tickets
+} else if (profile.role === 'viewer') {
+  // Viewers solo ven sus propios tickets
+  query = query.eq('user_id', user.id)
+} else {
+  // Otros roles ven tickets propios y de su empresa
+  query = query.or(`user_id.eq.${user.id},company_id.eq.${profile.company_id}`)
+}
+```
+
+### Funcionalidades por rol
+
+**Viewers (clientes finales):**
+- Crear tickets con asunto, descripción y categoría
+- Ver historial de sus tickets
+- Responder a mensajes del equipo de soporte
+- Ver estado del ticket (abierto, en progreso, esperando respuesta, resuelto)
+- No pueden ver notas internas ni tickets de otros usuarios
+
+**Usuarios de empresa:**
+- Mismas funcionalidades que viewers
+- Además ven tickets creados por otros usuarios de su empresa
+- Acceso a adjuntos
+
+**Super Admin:**
+- Ver todos los tickets de todas las empresas
+- Crear notas internas (solo visibles para admins)
+- Cambiar estado y prioridad
+- Gestionar categorías de tickets
+
+### Tablas relacionadas
+
+- `support_tickets`: Tickets principales
+- `ticket_messages`: Mensajes/respuestas en cada ticket
+- `ticket_attachments`: Archivos adjuntos
+- `ticket_categories`: Categorías configurables
 
 ---
 

@@ -71,20 +71,20 @@ interface TemaArea {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-  nuevo_expediente: { label: 'Nuevo Expediente', color: 'bg-blue-100 text-blue-800', icon: FolderOpen },
-  caratulado: { label: 'Caratulado', color: 'bg-indigo-100 text-indigo-800', icon: FileCheck },
-  seguimiento: { label: 'Seguimiento', color: 'bg-yellow-100 text-yellow-800', icon: Clock },
-  subsanacion: { label: 'Subsanación', color: 'bg-orange-100 text-orange-800', icon: AlertCircle },
-  observado: { label: 'Observado', color: 'bg-red-100 text-red-800', icon: AlertCircle },
-  subsanacion_cerrada: { label: 'Subsanación Cerrada', color: 'bg-purple-100 text-purple-800', icon: CheckCircle2 },
-  completado: { label: 'Completado', color: 'bg-green-100 text-green-800', icon: CheckCircle2 },
-  finalizado: { label: 'Finalizado', color: 'bg-gray-100 text-gray-800', icon: CheckCircle2 },
+  nuevo_expediente: { label: 'Nuevo Expediente', color: 'bg-primary/20 text-primary border border-primary/30', icon: FolderOpen },
+  caratulado: { label: 'Caratulado', color: 'bg-primary/10 text-primary', icon: FileCheck },
+  seguimiento: { label: 'Seguimiento', color: 'bg-accent-foreground/10 text-accent-foreground border border-accent-foreground/20', icon: Clock },
+  subsanacion: { label: 'Subsanación', color: 'bg-accent-foreground/20 text-accent-foreground', icon: AlertCircle },
+  observado: { label: 'Observado', color: 'bg-destructive/10 text-destructive border border-destructive/20', icon: AlertCircle },
+  subsanacion_cerrada: { label: 'Subsanación Cerrada', color: 'bg-muted text-foreground/70', icon: CheckCircle2 },
+  completado: { label: 'Completado', color: 'bg-foreground/10 text-foreground/70', icon: CheckCircle2 },
+  finalizado: { label: 'Finalizado', color: 'bg-muted text-muted-foreground', icon: CheckCircle2 },
 }
 
 const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
-  baja: { label: 'Baja', color: 'bg-gray-100 text-gray-600' },
-  media: { label: 'Media', color: 'bg-blue-100 text-blue-600' },
-  alta: { label: 'Alta', color: 'bg-red-100 text-red-600' },
+  baja: { label: 'Baja', color: 'bg-muted text-muted-foreground' },
+  media: { label: 'Media', color: 'bg-foreground/10 text-foreground' },
+  alta: { label: 'Alta', color: 'bg-accent-foreground/15 text-accent-foreground border border-accent-foreground/30' },
 }
 
 export default function TemasClientPage() {
@@ -170,7 +170,7 @@ export default function TemasClientPage() {
 
   // Traffic light for last activity
   const getActivityStatus = (updatedAt: string) => {
-    if (!updatedAt) return { color: 'bg-gray-400', label: 'Sin actividad', textColor: 'text-gray-500' }
+    if (!updatedAt) return { color: 'bg-muted-foreground', label: 'Sin actividad', textColor: 'text-muted-foreground' }
 
     const updated = new Date(updatedAt)
     const now = new Date()
@@ -178,13 +178,13 @@ export default function TemasClientPage() {
     const diffDays = diffHours / 24
 
     if (diffHours < 24) {
-      return { color: 'bg-green-500', label: 'Hoy', textColor: 'text-green-700' }
+      return { color: 'bg-primary', label: 'Hoy', textColor: 'text-primary' }
     } else if (diffDays <= 3) {
-      return { color: 'bg-yellow-500', label: `${Math.floor(diffDays)}d`, textColor: 'text-yellow-700' }
+      return { color: 'bg-primary/60', label: `${Math.floor(diffDays)}d`, textColor: 'text-primary' }
     } else if (diffDays <= 7) {
-      return { color: 'bg-orange-500', label: `${Math.floor(diffDays)}d`, textColor: 'text-orange-700' }
+      return { color: 'bg-accent-foreground', label: `${Math.floor(diffDays)}d`, textColor: 'text-accent-foreground' }
     } else {
-      return { color: 'bg-red-500', label: `${Math.floor(diffDays)}d`, textColor: 'text-red-700' }
+      return { color: 'bg-destructive', label: `${Math.floor(diffDays)}d`, textColor: 'text-destructive' }
     }
   }
 
@@ -208,10 +208,10 @@ export default function TemasClientPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <FolderOpen className="h-8 w-8 text-indigo-600" />
+          <FolderOpen className="h-8 w-8 text-primary" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Temas</h1>
-            <p className="text-gray-500">Gestión de expedientes y trabajos</p>
+            <h1 className="text-2xl font-bold text-foreground">Temas</h1>
+            <p className="text-muted-foreground">Gestión de expedientes y trabajos</p>
           </div>
         </div>
         <Button asChild className="gap-2">
@@ -224,14 +224,16 @@ export default function TemasClientPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="border-l-4 border-l-primary">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Total</p>
-                <p className="text-3xl font-bold">{stats.total}</p>
+                <p className="text-sm text-muted-foreground">Total</p>
+                <p className="text-3xl font-bold text-foreground">{stats.total}</p>
               </div>
-              <FolderOpen className="h-10 w-10 text-gray-300" />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <FolderOpen className="h-8 w-8 text-primary" />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -239,10 +241,12 @@ export default function TemasClientPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Nuevos</p>
-                <p className="text-3xl font-bold text-blue-600">{stats.nuevos}</p>
+                <p className="text-sm text-muted-foreground">Nuevos</p>
+                <p className="text-3xl font-bold text-primary">{stats.nuevos}</p>
               </div>
-              <FileCheck className="h-10 w-10 text-blue-200" />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <FileCheck className="h-8 w-8 text-primary" />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -250,10 +254,12 @@ export default function TemasClientPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">En Curso</p>
-                <p className="text-3xl font-bold text-yellow-600">{stats.enCurso}</p>
+                <p className="text-sm text-muted-foreground">En Curso</p>
+                <p className="text-3xl font-bold text-accent-foreground">{stats.enCurso}</p>
               </div>
-              <Clock className="h-10 w-10 text-yellow-200" />
+              <div className="p-2 rounded-lg bg-accent-foreground/10">
+                <Clock className="h-8 w-8 text-accent-foreground" />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -261,10 +267,12 @@ export default function TemasClientPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Completados</p>
-                <p className="text-3xl font-bold text-green-600">{stats.completados}</p>
+                <p className="text-sm text-muted-foreground">Completados</p>
+                <p className="text-3xl font-bold text-foreground/70">{stats.completados}</p>
               </div>
-              <CheckCircle2 className="h-10 w-10 text-green-200" />
+              <div className="p-2 rounded-lg bg-foreground/5">
+                <CheckCircle2 className="h-8 w-8 text-foreground/50" />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -276,7 +284,7 @@ export default function TemasClientPage() {
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar por título, referencia o expediente..."
                   value={searchQuery}
@@ -335,11 +343,11 @@ export default function TemasClientPage() {
         <CardContent className="p-0">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+              <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : filteredTemas.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-              <FolderOpen className="h-12 w-12 mb-4 text-gray-300" />
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <FolderOpen className="h-12 w-12 mb-4 text-muted-foreground/50" />
               <p className="text-lg font-medium">No hay temas</p>
               <p className="text-sm">Crea tu primer tema para comenzar</p>
               <Button asChild className="mt-4">
@@ -369,13 +377,13 @@ export default function TemasClientPage() {
                   return (
                     <TableRow
                       key={tema.id}
-                      className="cursor-pointer hover:bg-gray-50"
+                      className="cursor-pointer hover:bg-muted"
                       onClick={() => router.push(`/workspace/temas/${tema.id}${companyId ? `?company_id=${companyId}` : ''}`)}
                     >
                       <TableCell>
                         <div>
                           <p className="font-medium">{tema.title}</p>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             {tema.expediente_number && (
                               <span>Exp: {tema.expediente_number}</span>
                             )}
@@ -404,7 +412,7 @@ export default function TemasClientPage() {
                         {tema.organismo ? (
                           <span className="text-sm font-medium">{tema.organismo}</span>
                         ) : (
-                          <span className="text-gray-400">-</span>
+                          <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -423,7 +431,7 @@ export default function TemasClientPage() {
                             </div>
                           ))}
                           {(tema.assignees?.length || 0) > 3 && (
-                            <div className="flex items-center justify-center h-8 w-8 rounded-full bg-gray-200 border-2 border-white text-xs font-medium">
+                            <div className="flex items-center justify-center h-8 w-8 rounded-full bg-muted border-2 border-background text-xs font-medium">
                               +{tema.assignees.length - 3}
                             </div>
                           )}
@@ -444,7 +452,7 @@ export default function TemasClientPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1 text-sm">
-                          <Calendar className="h-4 w-4 text-gray-400" />
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
                           {formatDate(tema.due_date)}
                         </div>
                       </TableCell>

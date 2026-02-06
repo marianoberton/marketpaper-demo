@@ -87,10 +87,10 @@ const PROCEDURE_TYPES = [
 ]
 
 const STAGE_CONFIG: Record<string, { label: string; color: string }> = {
-    prospecto: { label: 'Prospecto', color: 'bg-blue-100 text-blue-700' },
-    presupuesto_enviado: { label: 'Presupuesto Enviado', color: 'bg-amber-100 text-amber-700' },
-    ganado: { label: 'Ganado', color: 'bg-green-100 text-green-700' },
-    perdido: { label: 'Perdido', color: 'bg-red-100 text-red-700' },
+    prospecto: { label: 'Prospecto', color: 'bg-state-info-muted text-state-info' },
+    presupuesto_enviado: { label: 'Presupuesto Enviado', color: 'bg-state-warning-muted text-state-warning' },
+    ganado: { label: 'Ganado', color: 'bg-state-success-muted text-state-success' },
+    perdido: { label: 'Perdido', color: 'bg-state-error-muted text-state-error' },
 }
 
 export default function DealDetailClientPage() {
@@ -165,7 +165,7 @@ export default function DealDetailClientPage() {
     const stageConfig = STAGE_CONFIG[deal.stage] || STAGE_CONFIG.prospecto
 
     return (
-        <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+        <div className="p-6 space-y-6 bg-background min-h-screen">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -174,16 +174,16 @@ export default function DealDetailClientPage() {
                     </Button>
                     <div>
                         <div className="flex items-center gap-3">
-                            <h1 className="text-2xl font-bold text-gray-900">{deal.title}</h1>
+                            <h1 className="text-2xl font-bold text-foreground">{deal.title}</h1>
                             <Badge className={stageConfig.color}>{stageConfig.label}</Badge>
                         </div>
-                        <p className="text-gray-500">ID: {dealId}</p>
+                        <p className="text-muted-foreground">ID: {dealId}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
                     {/* Quote Button */}
                     <Button
-                        className="gap-2 bg-indigo-600 hover:bg-indigo-700"
+                        className="gap-2"
                         onClick={() => window.open('https://inted-tools.vercel.app/presupuestador', '_blank')}
                     >
                         <FileText className="h-4 w-4" />
@@ -200,30 +200,30 @@ export default function DealDetailClientPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <TrendingUp className="h-5 w-5 text-indigo-600" />
+                                <TrendingUp className="h-5 w-5 text-primary" />
                                 Información del Deal
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
-                                <div className="p-4 bg-gray-50 rounded-lg">
-                                    <p className="text-sm text-gray-500">Valor Estimado</p>
-                                    <p className="text-2xl font-bold text-gray-900">{formatCurrency(deal.value)}</p>
+                                <div className="p-4 bg-muted rounded-lg">
+                                    <p className="text-sm text-muted-foreground">Valor Estimado</p>
+                                    <p className="text-2xl font-bold text-foreground">{formatCurrency(deal.value)}</p>
                                 </div>
-                                <div className="p-4 bg-gray-50 rounded-lg">
-                                    <p className="text-sm text-gray-500">Probabilidad</p>
-                                    <p className="text-2xl font-bold text-gray-900">{deal.probability}%</p>
+                                <div className="p-4 bg-muted rounded-lg">
+                                    <p className="text-sm text-muted-foreground">Probabilidad</p>
+                                    <p className="text-2xl font-bold text-foreground">{deal.probability}%</p>
                                 </div>
                             </div>
 
                             <div>
-                                <Label className="text-gray-500">Descripción</Label>
-                                <p className="mt-1 text-gray-700">{deal.description}</p>
+                                <Label className="text-muted-foreground">Descripción</Label>
+                                <p className="mt-1 text-foreground">{deal.description}</p>
                             </div>
 
                             <div>
-                                <Label className="text-gray-500">Notas</Label>
-                                <p className="mt-1 text-gray-700">{deal.notes || 'Sin notas'}</p>
+                                <Label className="text-muted-foreground">Notas</Label>
+                                <p className="mt-1 text-foreground">{deal.notes || 'Sin notas'}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -232,7 +232,7 @@ export default function DealDetailClientPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <Briefcase className="h-5 w-5 text-indigo-600" />
+                                <Briefcase className="h-5 w-5 text-primary" />
                                 Tipo de Trámite a Cotizar
                             </CardTitle>
                             <CardDescription>Seleccioná el tipo de trámite para generar la cotización</CardDescription>
@@ -244,20 +244,20 @@ export default function DealDetailClientPage() {
                                         key={type.id}
                                         onClick={() => handleSelectProcedureType(type.id)}
                                         className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${deal.procedureType === type.id
-                                            ? 'border-indigo-500 bg-indigo-50'
-                                            : 'border-gray-200 hover:border-gray-300 bg-white'
+                                            ? 'border-primary bg-primary/10'
+                                            : 'border-border hover:border-muted-foreground bg-card'
                                             }`}
                                     >
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <p className={`font-medium ${deal.procedureType === type.id ? 'text-indigo-700' : 'text-gray-900'}`}>
+                                                <p className={`font-medium ${deal.procedureType === type.id ? 'text-primary' : 'text-foreground'}`}>
                                                     {type.name}
                                                 </p>
-                                                <p className="text-sm text-gray-500">{type.description}</p>
+                                                <p className="text-sm text-muted-foreground">{type.description}</p>
                                             </div>
                                             {deal.procedureType === type.id && (
-                                                <div className="h-5 w-5 rounded-full bg-indigo-600 flex items-center justify-center">
-                                                    <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                                                    <svg className="h-3 w-3 text-primary-foreground" fill="currentColor" viewBox="0 0 20 20">
                                                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                                     </svg>
                                                 </div>
@@ -270,7 +270,7 @@ export default function DealDetailClientPage() {
                             {deal.procedureType && (
                                 <div className="mt-4 pt-4 border-t">
                                     <Button
-                                        className="w-full gap-2 bg-indigo-600 hover:bg-indigo-700"
+                                        className="w-full gap-2"
                                         onClick={() => window.open('https://inted-tools.vercel.app/presupuestador', '_blank')}
                                     >
                                         <FileText className="h-4 w-4" />
@@ -287,7 +287,7 @@ export default function DealDetailClientPage() {
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <CardTitle className="flex items-center gap-2">
-                                    <Building2 className="h-5 w-5 text-indigo-600" />
+                                    <Building2 className="h-5 w-5 text-primary" />
                                     Empresa y Contactos
                                 </CardTitle>
                                 {!deal.company && (
@@ -381,15 +381,15 @@ export default function DealDetailClientPage() {
                             {deal.company ? (
                                 <div className="space-y-6">
                                     {/* Company Info */}
-                                    <div className="p-4 bg-gray-50 rounded-lg">
+                                    <div className="p-4 bg-muted rounded-lg">
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="flex items-center gap-3">
-                                                <div className="h-12 w-12 rounded-lg bg-indigo-100 flex items-center justify-center">
-                                                    <Building2 className="h-6 w-6 text-indigo-600" />
+                                                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                                                    <Building2 className="h-6 w-6 text-primary" />
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-semibold text-gray-900">{deal.company.name}</h4>
-                                                    <p className="text-sm text-gray-500">{deal.company.industry}</p>
+                                                    <h4 className="font-semibold text-foreground">{deal.company.name}</h4>
+                                                    <p className="text-sm text-muted-foreground">{deal.company.industry}</p>
                                                 </div>
                                             </div>
                                             <Button variant="ghost" size="icon">
@@ -398,25 +398,25 @@ export default function DealDetailClientPage() {
                                         </div>
                                         <div className="grid grid-cols-2 gap-3 text-sm">
                                             {deal.company.cuit && (
-                                                <div className="flex items-center gap-2 text-gray-600">
+                                                <div className="flex items-center gap-2 text-muted-foreground">
                                                     <Briefcase className="h-4 w-4" />
                                                     <span>{deal.company.cuit}</span>
                                                 </div>
                                             )}
                                             {deal.company.email && (
-                                                <div className="flex items-center gap-2 text-gray-600">
+                                                <div className="flex items-center gap-2 text-muted-foreground">
                                                     <Mail className="h-4 w-4" />
                                                     <span>{deal.company.email}</span>
                                                 </div>
                                             )}
                                             {deal.company.phone && (
-                                                <div className="flex items-center gap-2 text-gray-600">
+                                                <div className="flex items-center gap-2 text-muted-foreground">
                                                     <Phone className="h-4 w-4" />
                                                     <span>{deal.company.phone}</span>
                                                 </div>
                                             )}
                                             {deal.company.address && (
-                                                <div className="flex items-center gap-2 text-gray-600">
+                                                <div className="flex items-center gap-2 text-muted-foreground">
                                                     <MapPin className="h-4 w-4" />
                                                     <span>{deal.company.address}</span>
                                                 </div>
@@ -427,7 +427,7 @@ export default function DealDetailClientPage() {
                                     {/* Contacts Section */}
                                     <div>
                                         <div className="flex items-center justify-between mb-3">
-                                            <h4 className="font-medium text-gray-900 flex items-center gap-2">
+                                            <h4 className="font-medium text-foreground flex items-center gap-2">
                                                 <Users className="h-4 w-4" />
                                                 Contactos ({deal.contacts.length})
                                             </h4>
@@ -499,19 +499,19 @@ export default function DealDetailClientPage() {
                                         {deal.contacts.length > 0 ? (
                                             <div className="space-y-2">
                                                 {deal.contacts.map((contact) => (
-                                                    <div key={contact.id} className="flex items-center justify-between p-3 bg-white border rounded-lg">
+                                                    <div key={contact.id} className="flex items-center justify-between p-3 bg-card border rounded-lg">
                                                         <div className="flex items-center gap-3">
                                                             <Avatar className="h-10 w-10">
-                                                                <AvatarFallback className="bg-gray-100 text-gray-600">
+                                                                <AvatarFallback className="bg-muted text-muted-foreground">
                                                                     {getInitials(contact.name)}
                                                                 </AvatarFallback>
                                                             </Avatar>
                                                             <div>
-                                                                <p className="font-medium text-gray-900">{contact.name}</p>
-                                                                <p className="text-sm text-gray-500">{contact.role || 'Sin cargo'}</p>
+                                                                <p className="font-medium text-foreground">{contact.name}</p>
+                                                                <p className="text-sm text-muted-foreground">{contact.role || 'Sin cargo'}</p>
                                                             </div>
                                                         </div>
-                                                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                                             {contact.email && (
                                                                 <Button variant="ghost" size="icon" className="h-8 w-8">
                                                                     <Mail className="h-4 w-4" />
@@ -527,7 +527,7 @@ export default function DealDetailClientPage() {
                                                 ))}
                                             </div>
                                         ) : (
-                                            <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg">
+                                            <div className="text-center py-6 text-muted-foreground bg-muted rounded-lg">
                                                 <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
                                                 <p className="text-sm">Sin contactos agregados</p>
                                                 <p className="text-xs">Agregá personas de contacto para esta empresa</p>
@@ -536,7 +536,7 @@ export default function DealDetailClientPage() {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="text-center py-12 text-gray-500">
+                                <div className="text-center py-12 text-muted-foreground">
                                     <Building2 className="h-12 w-12 mx-auto mb-4 opacity-30" />
                                     <p className="text-lg font-medium">Sin empresa asociada</p>
                                     <p className="text-sm mb-4">Creá una empresa para asociar este deal</p>
@@ -585,16 +585,16 @@ export default function DealDetailClientPage() {
                         <CardContent>
                             <div className="space-y-4">
                                 <div className="flex gap-3">
-                                    <div className="h-2 w-2 mt-2 rounded-full bg-indigo-500" />
+                                    <div className="h-2 w-2 mt-2 rounded-full bg-primary" />
                                     <div>
                                         <p className="text-sm font-medium">Deal creado</p>
-                                        <p className="text-xs text-gray-500">{deal.createdAt}</p>
+                                        <p className="text-xs text-muted-foreground">{deal.createdAt}</p>
                                     </div>
                                 </div>
                                 <div className="flex gap-3">
-                                    <div className="h-2 w-2 mt-2 rounded-full bg-gray-300" />
+                                    <div className="h-2 w-2 mt-2 rounded-full bg-muted-foreground/30" />
                                     <div>
-                                        <p className="text-sm text-gray-500">Sin más actividad</p>
+                                        <p className="text-sm text-muted-foreground">Sin más actividad</p>
                                     </div>
                                 </div>
                             </div>
@@ -608,24 +608,24 @@ export default function DealDetailClientPage() {
                         </CardHeader>
                         <CardContent className="space-y-3 text-sm">
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Estado</span>
+                                <span className="text-muted-foreground">Estado</span>
                                 <Badge className={stageConfig.color}>{stageConfig.label}</Badge>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Valor</span>
+                                <span className="text-muted-foreground">Valor</span>
                                 <span className="font-medium">{formatCurrency(deal.value)}</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Probabilidad</span>
+                                <span className="text-muted-foreground">Probabilidad</span>
                                 <span className="font-medium">{deal.probability}%</span>
                             </div>
                             <div className="flex justify-between">
-                                <span className="text-gray-500">Creado</span>
+                                <span className="text-muted-foreground">Creado</span>
                                 <span className="font-medium">{deal.createdAt}</span>
                             </div>
                             {deal.procedureType && (
                                 <div className="flex justify-between">
-                                    <span className="text-gray-500">Trámite</span>
+                                    <span className="text-muted-foreground">Trámite</span>
                                     <span className="font-medium">{PROCEDURE_TYPES.find(t => t.id === deal.procedureType)?.name}</span>
                                 </div>
                             )}

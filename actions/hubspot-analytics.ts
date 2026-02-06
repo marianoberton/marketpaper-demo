@@ -8,6 +8,7 @@ import {
   type HubSpotDeal,
   type HubSpotPipeline,
   type HubSpotStage,
+  type HubSpotLineItem,
   type PipelineMetrics,
   type FullPipelineMetrics,
   type StageMetric,
@@ -18,6 +19,8 @@ import {
   type PedidosData,
   type ReportData,
   type DateRange,
+  type ReportLineItem,
+  type ItemsReportData,
 } from "@/lib/hubspot-analytics-types"
 
 // Re-export types for consumers
@@ -25,6 +28,7 @@ export type {
   HubSpotDeal,
   HubSpotPipeline,
   HubSpotStage,
+  HubSpotLineItem,
   PipelineMetrics,
   FullPipelineMetrics,
   StageMetric,
@@ -35,6 +39,8 @@ export type {
   PedidosData,
   ReportData,
   DateRange,
+  ReportLineItem,
+  ItemsReportData,
 }
 
 // ---------------------
@@ -530,5 +536,135 @@ export async function getReportData(
     monthlyData,
     topClients,
     stageDistribution,
+  }
+}
+
+// Helper: extract ReportLineItem from a raw item object (works for both itemsJson and native line items)
+function itemToReportLine(
+  deal: EnrichedDeal,
+  item: Record<string, any>
+): ReportLineItem {
+  const cantidad = parseNum(item.quantity)
+  const m2PorUnidad = parseNum(item.mp_metros_cuadrados_item)
+  const precioM2Unitario = parseNum(item.mp_precio_m2_unitario)
+  const m2Totales = cantidad * m2PorUnidad
+  const precioUnitario = precioM2Unitario * m2PorUnidad
+  const subtotalSinIva = cantidad * precioUnitario
+
+  return {
+    dealId: deal.id,
+    dealName: deal.properties.dealname,
+    createDate: deal.properties.createdate || '',
+    clienteName: deal.clienteEmpresa || deal.clienteNombre || 'Sin cliente',
+    condicionesPago: deal.condicionesPago,
+    stageLabel: deal.stageLabel,
+    cantidad,
+    largoMm: parseNum(item.mp_largo_mm),
+    anchoMm: parseNum(item.mp_ancho_mm),
+    altoMm: parseNum(item.mp_alto_mm),
+    m2PorUnidad,
+    m2Totales,
+    calidad: item.mp_tipo_caja || '-',
+    precioUnitario,
+    subtotalSinIva,
+  }
+}
+
+export async function getItemsReport(
+  companyId: string,
+  pipelineId: string,
+  dateRange?: { from?: string; to?: string }
+): Promise<ItemsReportData> {
+  const { map: stagesMap, stages } = await buildStagesMap(companyId, pipelineId)
+
+  const confirmadoStageId = stages.find(s =>
+    s.label.toLowerCase().includes('confirmado') || s.label.toLowerCase().includes('orden recibida')
+  )?.id
+
+  const ganadoStageId = stages.find(s =>
+    s.label.toLowerCase().includes('cierre ganado') || s.label.toLowerCase().includes('closedwon')
+  )?.id
+
+  const targetStageIds = [confirmadoStageId, ganadoStageId].filter(Boolean) as string[]
+
+  if (targetStageIds.length === 0) {
+    return { lineItems: [], totalM2: 0, totalSubtotal: 0, totalDeals: 0 }
+  }
+
+  const allDeals = await fetchAllDeals(companyId, pipelineId, stagesMap, targetStageIds, dateRange)
+
+  const lineItems: ReportLineItem[] = []
+
+  for (const deal of allDeals) {
+    try {
+      const nativeItems = await getDealLineItems(companyId, deal.id)
+      for (const nativeItem of nativeItems) {
+        lineItems.push(itemToReportLine(deal, nativeItem.properties))
+      }
+    } catch (err) {
+      console.error('[getItemsReport] Error fetching line items for deal', deal.id, err)
+    }
+  }
+
+  const totalM2 = lineItems.reduce((s, li) => s + li.m2Totales, 0)
+  const totalSubtotal = lineItems.reduce((s, li) => s + li.subtotalSinIva, 0)
+
+  return {
+    lineItems,
+    totalM2,
+    totalSubtotal,
+    totalDeals: allDeals.length,
+  }
+}
+
+export async function getDealLineItems(companyId: string, dealId: string): Promise<HubSpotLineItem[]> {
+  const hubspot = await getHubSpotClient(companyId)
+
+  try {
+    // 1. Get Deal with Line Item associations
+    // We request 'line_items' association. 
+    // Note: The actual association type name might vary but 'line_items' is standard for v3.
+    const deal = await hubspot.crm.deals.basicApi.getById(dealId, undefined, undefined, ['line_items'])
+
+    // @ts-ignore - HubSpot returns association keys with spaces (e.g. 'line items')
+    const lineItemAssociations = deal.associations?.['line items']?.results
+
+    if (!lineItemAssociations || lineItemAssociations.length === 0) {
+      return []
+    }
+
+    const lineItemIds = lineItemAssociations.map((a: any) => a.id)
+
+    // 2. Batch read line items (basic + MarketPaper custom properties)
+    const properties = [
+      'name', 'price', 'quantity', 'amount', 'hs_sku', 'description',
+      'mp_tipo_caja', 'mp_metros_cuadrados_item', 'mp_precio_m2_unitario',
+      'mp_largo_mm', 'mp_ancho_mm', 'mp_alto_mm',
+    ]
+
+    const lineItemsResult = await hubspot.crm.lineItems.batchApi.read({
+      inputs: lineItemIds.map(id => ({ id })),
+      properties,
+      propertiesWithHistory: [],
+    })
+
+    return lineItemsResult.results.map(item => ({
+      id: item.id,
+      properties: {
+        name: item.properties.name || '',
+        price: item.properties.price || '0',
+        quantity: item.properties.quantity || '0',
+        hs_sku: item.properties.hs_sku || '',
+        amount: item.properties.amount || '0',
+        description: item.properties.description,
+        ...item.properties
+      },
+      createdAt: item.createdAt.toISOString(),
+      updatedAt: item.updatedAt.toISOString(),
+      archived: item.archived
+    }))
+  } catch (e) {
+    console.error('Error fetching deal line items:', e)
+    return []
   }
 }

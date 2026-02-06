@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import {
   Sheet,
   SheetContent,
@@ -10,16 +11,32 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { StageBadge } from './stage-badge'
 import { formatCurrency, formatM2, formatCurrencyPerM2 } from '@/lib/formatters'
-import { ExternalLink, Mail, Phone, Building2, User, FileText, Clock, Package } from 'lucide-react'
-import type { EnrichedDeal } from '@/actions/hubspot-analytics'
+import { ExternalLink, Mail, Phone, Building2, User, FileText, Clock, Package, Loader2 } from 'lucide-react'
+import { getDealLineItems, type EnrichedDeal, type HubSpotLineItem } from '@/actions/hubspot-analytics'
 
 interface DealDetailSheetProps {
+  companyId: string
   deal: EnrichedDeal | null
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-export function DealDetailSheet({ deal, open, onOpenChange }: DealDetailSheetProps) {
+export function DealDetailSheet({ companyId, deal, open, onOpenChange }: DealDetailSheetProps) {
+  const [lineItems, setLineItems] = useState<HubSpotLineItem[]>([])
+  const [loadingItems, setLoadingItems] = useState(false)
+
+  useEffect(() => {
+    if (open && deal && companyId) {
+      setLoadingItems(true)
+      getDealLineItems(companyId, deal.id)
+        .then(setLineItems)
+        .catch(console.error)
+        .finally(() => setLoadingItems(false))
+    } else {
+      setLineItems([])
+    }
+  }, [open, deal, companyId])
+
   if (!deal) return null
 
   const amount = parseFloat(deal.properties.amount || '0') || 0
@@ -107,40 +124,88 @@ export function DealDetailSheet({ deal, open, onOpenChange }: DealDetailSheetPro
             </Section>
           )}
 
-          {/* Line Items */}
-          {deal.itemsJson && Array.isArray(deal.itemsJson) && deal.itemsJson.length > 0 && (
+          {/* Line Items (Native) */}
+          {loadingItems ? (
             <Section title="Items">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Cargando items...
+              </div>
+            </Section>
+          ) : lineItems.length > 0 ? (
+            <Section title={`Items (${lineItems.length})`}>
               <div className="space-y-2">
-                {deal.itemsJson.map((item: any, i: number) => (
-                  <div key={i} className="p-3 rounded-lg bg-muted/50 text-sm space-y-1">
-                    <div className="flex items-center gap-2 font-medium">
-                      <Package className="h-3.5 w-3.5 text-muted-foreground" />
-                      {item.mp_tipo_caja || item.name || `Item ${i + 1}`}
+                {lineItems.map((item, i) => (
+                  <div key={item.id} className="p-3 rounded-lg bg-muted/50 text-sm space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-medium">
+                        <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                        {item.properties.mp_tipo_caja || item.properties.name || `Item ${i + 1}`}
+                      </div>
+                      <div className="font-semibold">{formatCurrency(parseFloat(item.properties.amount || '0'))}</div>
                     </div>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-muted-foreground text-xs">
-                      {item.mp_metros_cuadrados_item && (
-                        <span>m2: {item.mp_metros_cuadrados_item}</span>
+                      {item.properties.quantity && (
+                        <span>Cant: {item.properties.quantity}</span>
                       )}
-                      {item.mp_precio_m2_unitario && (
-                        <span>$/m2: {item.mp_precio_m2_unitario}</span>
+                      {item.properties.mp_metros_cuadrados_item && (
+                        <span>m2: {item.properties.mp_metros_cuadrados_item}</span>
                       )}
-                      {item.mp_largo_mm && (
-                        <span>Largo: {item.mp_largo_mm}mm</span>
+                      {item.properties.mp_precio_m2_unitario && (
+                        <span>$/m2: {formatCurrency(parseFloat(item.properties.mp_precio_m2_unitario))}</span>
                       )}
-                      {item.mp_ancho_mm && (
-                        <span>Ancho: {item.mp_ancho_mm}mm</span>
+                      {item.properties.price && (
+                        <span>Precio: {formatCurrency(parseFloat(item.properties.price))}</span>
                       )}
-                      {item.mp_alto_mm && (
-                        <span>Alto: {item.mp_alto_mm}mm</span>
+                      {(item.properties.mp_largo_mm || item.properties.mp_ancho_mm || item.properties.mp_alto_mm) && (
+                        <span>
+                          Medidas: {item.properties.mp_largo_mm || '-'}x{item.properties.mp_ancho_mm || '-'}x{item.properties.mp_alto_mm || '-'} mm
+                        </span>
                       )}
-                      {item.quantity && (
-                        <span>Cantidad: {item.quantity}</span>
+                      {item.properties.hs_sku && (
+                        <span>SKU: {item.properties.hs_sku}</span>
                       )}
                     </div>
                   </div>
                 ))}
               </div>
             </Section>
+          ) : (
+            /* Fallback to JSON items if no native items found */
+            deal.itemsJson && Array.isArray(deal.itemsJson) && deal.itemsJson.length > 0 && (
+              <Section title="Items (JSON)">
+                <div className="space-y-2">
+                  {deal.itemsJson.map((item: any, i: number) => (
+                    <div key={i} className="p-3 rounded-lg bg-muted/50 text-sm space-y-1">
+                      <div className="flex items-center gap-2 font-medium">
+                        <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                        {item.mp_tipo_caja || item.name || `Item ${i + 1}`}
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-muted-foreground text-xs">
+                        {item.mp_metros_cuadrados_item && (
+                          <span>m2: {item.mp_metros_cuadrados_item}</span>
+                        )}
+                        {item.mp_precio_m2_unitario && (
+                          <span>$/m2: {item.mp_precio_m2_unitario}</span>
+                        )}
+                        {item.mp_largo_mm && (
+                          <span>Largo: {item.mp_largo_mm}mm</span>
+                        )}
+                        {item.mp_ancho_mm && (
+                          <span>Ancho: {item.mp_ancho_mm}mm</span>
+                        )}
+                        {item.mp_alto_mm && (
+                          <span>Alto: {item.mp_alto_mm}mm</span>
+                        )}
+                        {item.quantity && (
+                          <span>Cantidad: {item.quantity}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )
           )}
 
           {/* Notes */}

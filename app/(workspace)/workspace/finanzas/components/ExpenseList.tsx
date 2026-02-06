@@ -100,9 +100,9 @@ export default function ExpenseList({ expenses, categories, onEdit, onDelete }: 
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
-          <DollarSign className="h-12 w-12 text-gray-400 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay gastos registrados</h3>
-          <p className="text-gray-600 text-center">
+          <DollarSign className="h-12 w-12 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">No hay gastos registrados</h3>
+          <p className="text-muted-foreground text-center">
             Comienza agregando tu primer gasto para ver el análisis de tus finanzas.
           </p>
         </CardContent>
@@ -139,10 +139,10 @@ export default function ExpenseList({ expenses, categories, onEdit, onDelete }: 
                   const paymentMethod = PAYMENT_METHOD_LABELS[expense.payment_method]
                   
                   return (
-                    <TableRow key={expense.id} className="hover:bg-gray-50">
+                    <TableRow key={expense.id} className="hover:bg-muted">
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-gray-400" />
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
                           {formatDate(expense.date)}
                         </div>
                       </TableCell>
@@ -226,7 +226,7 @@ export default function ExpenseList({ expenses, categories, onEdit, onDelete }: 
                             variant="ghost"
                             size="sm"
                             onClick={() => onDelete(expense.id)}
-                            className="text-red-600 hover:text-red-800"
+                            className="text-destructive hover:text-destructive/80"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -253,12 +253,12 @@ export default function ExpenseList({ expenses, categories, onEdit, onDelete }: 
               {/* Información principal */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h4 className="font-medium text-gray-700 mb-1">Descripción</h4>
+                  <h4 className="font-medium text-muted-foreground mb-1">Descripción</h4>
                   <p className="text-lg font-semibold">{selectedExpense.description}</p>
                 </div>
                 <div>
-                  <h4 className="font-medium text-gray-700 mb-1">Monto</h4>
-                  <p className="text-2xl font-bold text-green-600">
+                  <h4 className="font-medium text-muted-foreground mb-1">Monto</h4>
+                  <p className="text-2xl font-bold text-state-success">
                     {formatAmount(selectedExpense.amount)}
                   </p>
                 </div>
@@ -266,14 +266,14 @@ export default function ExpenseList({ expenses, categories, onEdit, onDelete }: 
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h4 className="font-medium text-gray-700 mb-1">Fecha</h4>
+                  <h4 className="font-medium text-muted-foreground mb-1">Fecha</h4>
                   <p className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
                     {formatDate(selectedExpense.date)}
                   </p>
                 </div>
                 <div>
-                  <h4 className="font-medium text-gray-700 mb-1">Método de Pago</h4>
+                  <h4 className="font-medium text-muted-foreground mb-1">Método de Pago</h4>
                   <p className="flex items-center gap-2">
                     <span>{PAYMENT_METHOD_LABELS[selectedExpense.payment_method].icon}</span>
                     {PAYMENT_METHOD_LABELS[selectedExpense.payment_method].label}
@@ -283,22 +283,22 @@ export default function ExpenseList({ expenses, categories, onEdit, onDelete }: 
 
               {/* Categoría */}
               <div>
-                <h4 className="font-medium text-gray-700 mb-2">Categoría</h4>
+                <h4 className="font-medium text-muted-foreground mb-2">Categoría</h4>
                 {(() => {
                   const category = getCategoryById(selectedExpense.category_id)
                   return category ? (
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
                       <span style={{ color: category.color }}>●</span>
                       <span className="text-lg">{category.icon}</span>
                       <div>
                         <p className="font-medium">{category.name}</p>
                         {category.description && (
-                          <p className="text-sm text-gray-600">{category.description}</p>
+                          <p className="text-sm text-muted-foreground">{category.description}</p>
                         )}
                       </div>
                     </div>
                   ) : (
-                    <p className="text-gray-500">Categoría no encontrada</p>
+                    <p className="text-muted-foreground">Categoría no encontrada</p>
                   )
                 })()}
               </div>
@@ -306,7 +306,7 @@ export default function ExpenseList({ expenses, categories, onEdit, onDelete }: 
               {/* Etiquetas */}
               {selectedExpense.tags && selectedExpense.tags.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-gray-700 mb-2">Etiquetas</h4>
+                  <h4 className="font-medium text-muted-foreground mb-2">Etiquetas</h4>
                   <div className="flex flex-wrap gap-2">
                     {selectedExpense.tags.map(tag => (
                       <Badge key={tag} variant="secondary">
@@ -321,10 +321,10 @@ export default function ExpenseList({ expenses, categories, onEdit, onDelete }: 
               {/* Gasto recurrente */}
               {selectedExpense.is_recurring && (
                 <div>
-                  <h4 className="font-medium text-gray-700 mb-2">Gasto Recurrente</h4>
-                  <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-                    <Repeat className="h-4 w-4 text-blue-600" />
-                    <span className="text-blue-800">
+                  <h4 className="font-medium text-muted-foreground mb-2">Gasto Recurrente</h4>
+                  <div className="flex items-center gap-2 p-3 bg-state-info-muted rounded-lg">
+                    <Repeat className="h-4 w-4 text-state-info" />
+                    <span className="text-state-info">
                       Se repite {RECURRING_LABELS[selectedExpense.recurring_frequency || 'monthly'].toLowerCase()}
                     </span>
                   </div>
@@ -334,12 +334,12 @@ export default function ExpenseList({ expenses, categories, onEdit, onDelete }: 
               {/* Recibo */}
               {selectedExpense.receipt_url && (
                 <div>
-                  <h4 className="font-medium text-gray-700 mb-2">Recibo</h4>
+                  <h4 className="font-medium text-muted-foreground mb-2">Recibo</h4>
                   <a
                     href={selectedExpense.receipt_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-blue-600 hover:underline"
+                    className="flex items-center gap-2 text-primary hover:underline"
                   >
                     <Receipt className="h-4 w-4" />
                     Ver recibo/comprobante
@@ -350,8 +350,8 @@ export default function ExpenseList({ expenses, categories, onEdit, onDelete }: 
               {/* Notas */}
               {selectedExpense.notes && (
                 <div>
-                  <h4 className="font-medium text-gray-700 mb-2">Notas</h4>
-                  <p className="text-gray-600 bg-gray-50 p-3 rounded-lg">
+                  <h4 className="font-medium text-muted-foreground mb-2">Notas</h4>
+                  <p className="text-muted-foreground bg-muted p-3 rounded-lg">
                     {selectedExpense.notes}
                   </p>
                 </div>
@@ -359,7 +359,7 @@ export default function ExpenseList({ expenses, categories, onEdit, onDelete }: 
 
               {/* Metadatos */}
               <div className="pt-4 border-t">
-                <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
+                <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
                   <div>
                     <span className="font-medium">Creado:</span>{' '}
                     {new Date(selectedExpense.created_at).toLocaleDateString('es-ES', {

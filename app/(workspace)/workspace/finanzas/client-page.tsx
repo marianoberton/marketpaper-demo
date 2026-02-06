@@ -316,7 +316,7 @@ export default function FinanzasClientPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
     )
   }
@@ -329,8 +329,8 @@ export default function FinanzasClientPage() {
       />
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-700">{error}</p>
+        <div className="bg-state-error-muted border border-state-error rounded-lg p-4">
+          <p className="text-state-error">{error}</p>
         </div>
       )}
 
@@ -340,10 +340,10 @@ export default function FinanzasClientPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Gastos</p>
+                <p className="text-sm text-muted-foreground">Total Gastos</p>
                 <p className="text-2xl font-bold">${totalExpenses.toLocaleString()}</p>
               </div>
-              <DollarSign className="h-8 w-8 text-green-600" />
+              <DollarSign className="h-8 w-8 text-primary" />
             </div>
           </CardContent>
         </Card>
@@ -352,10 +352,10 @@ export default function FinanzasClientPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Promedio por Gasto</p>
+                <p className="text-sm text-muted-foreground">Promedio por Gasto</p>
                 <p className="text-2xl font-bold">${averageExpense.toLocaleString()}</p>
               </div>
-              <TrendingUp className="h-8 w-8 text-blue-600" />
+              <TrendingUp className="h-8 w-8 text-state-info" />
             </div>
           </CardContent>
         </Card>
@@ -364,10 +364,10 @@ export default function FinanzasClientPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Presupuesto Total</p>
+                <p className="text-sm text-muted-foreground">Presupuesto Total</p>
                 <p className="text-2xl font-bold">${monthlyBudget.toLocaleString()}</p>
               </div>
-              <Target className="h-8 w-8 text-purple-600" />
+              <Target className="h-8 w-8 text-state-pending" />
             </div>
           </CardContent>
         </Card>
@@ -376,10 +376,10 @@ export default function FinanzasClientPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Categorías Activas</p>
+                <p className="text-sm text-muted-foreground">Categorías Activas</p>
                 <p className="text-2xl font-bold">{categoriesWithExpenses}</p>
               </div>
-              <PieChart className="h-8 w-8 text-orange-600" />
+              <PieChart className="h-8 w-8 text-accent-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -389,7 +389,7 @@ export default function FinanzasClientPage() {
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="flex gap-2 flex-wrap">
           <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar gastos..."
               value={searchTerm}
@@ -489,10 +489,10 @@ export default function FinanzasClientPage() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <FileText className="h-8 w-8 text-blue-600" />
+                        <FileText className="h-8 w-8 text-primary" />
                         <div>
                           <p className="font-medium">{file.filename}</p>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-muted-foreground">
                             {file.extracted_expenses} gastos extraídos
                           </p>
                         </div>
@@ -507,7 +507,7 @@ export default function FinanzasClientPage() {
                            file.processing_status === 'failed' ? 'Error' :
                            file.processing_status === 'processing' ? 'Procesando' : 'Pendiente'}
                         </Badge>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-muted-foreground">
                           {new Date(file.created_at).toLocaleDateString()}
                         </p>
                       </div>

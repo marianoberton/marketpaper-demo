@@ -26,7 +26,7 @@ export default function AutomationClientPage() {
           <Card className="hover:shadow-lg transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Workflows Activos</CardTitle>
-              <Zap className="h-5 w-5 text-green-600" />
+              <Zap className="h-5 w-5 text-state-success" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-foreground">8</div>
@@ -37,7 +37,7 @@ export default function AutomationClientPage() {
           <Card className="hover:shadow-lg transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Tareas Automatizadas</CardTitle>
-              <Bot className="h-5 w-5 text-brilliant-blue" />
+              <Bot className="h-5 w-5 text-state-info" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-foreground">156</div>
@@ -48,7 +48,7 @@ export default function AutomationClientPage() {
           <Card className="hover:shadow-lg transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Tiempo Ahorrado</CardTitle>
-              <Clock className="h-5 w-5 text-orange-600" />
+              <Clock className="h-5 w-5 text-accent-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-foreground">24h</div>
@@ -59,7 +59,7 @@ export default function AutomationClientPage() {
           <Card className="hover:shadow-lg transition-all duration-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">Tasa Éxito</CardTitle>
-              <CheckCircle className="h-5 w-5 text-green-600" />
+              <CheckCircle className="h-5 w-5 text-state-success" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-foreground">94.2%</div>
@@ -77,7 +77,7 @@ export default function AutomationClientPage() {
                   Sistema de automatización con IA en desarrollo...
                 </CardDescription>
               </div>
-              <Button className="bg-brilliant-blue hover:bg-brilliant-blue/90">
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
                 <Plus className="mr-2 h-4 w-4" />
                 Nuevo Workflow
               </Button>

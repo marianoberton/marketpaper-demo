@@ -53,49 +53,49 @@ const CATEGORY_STYLES: Record<string, {
   badgeText: string
 }> = {
   'Dashboard': {
-    cardBg: 'bg-white dark:bg-gray-900',
-    cardBorder: 'border-[#CED600]',
-    iconBg: 'bg-[#CED600]',
-    iconColor: 'text-[#1C1C1C]',
-    titleColor: 'text-[#272727] dark:text-white',
-    badge: 'bg-[#CED600]',
-    badgeText: 'text-[#1C1C1C]'
+    cardBg: 'bg-card',
+    cardBorder: 'border-primary',
+    iconBg: 'bg-primary',
+    iconColor: 'text-primary-foreground',
+    titleColor: 'text-foreground',
+    badge: 'bg-primary',
+    badgeText: 'text-primary-foreground'
   },
   'Workspace': {
-    cardBg: 'bg-white dark:bg-gray-900',
-    cardBorder: 'border-[#272727] dark:border-gray-600',
-    iconBg: 'bg-[#272727] dark:bg-gray-700',
-    iconColor: 'text-white',
-    titleColor: 'text-[#272727] dark:text-white',
-    badge: 'bg-[#E5E5E5] dark:bg-gray-700',
-    badgeText: 'text-[#272727] dark:text-gray-200'
+    cardBg: 'bg-card',
+    cardBorder: 'border-border',
+    iconBg: 'bg-muted',
+    iconColor: 'text-foreground',
+    titleColor: 'text-foreground',
+    badge: 'bg-muted',
+    badgeText: 'text-muted-foreground'
   },
   'Analytics': {
-    cardBg: 'bg-white dark:bg-gray-900',
+    cardBg: 'bg-card',
     cardBorder: 'border-[#EE9B00]',
     iconBg: 'bg-[#EE9B00]',
     iconColor: 'text-white',
-    titleColor: 'text-[#272727] dark:text-white',
+    titleColor: 'text-foreground',
     badge: 'bg-[#EE9B00]',
     badgeText: 'text-white'
   },
   'Tools': {
-    cardBg: 'bg-white dark:bg-gray-900',
-    cardBorder: 'border-[#666666]',
-    iconBg: 'bg-[#666666]',
-    iconColor: 'text-white',
-    titleColor: 'text-[#272727] dark:text-white',
-    badge: 'bg-[#666666]',
-    badgeText: 'text-white'
+    cardBg: 'bg-card',
+    cardBorder: 'border-muted-foreground',
+    iconBg: 'bg-muted-foreground',
+    iconColor: 'text-card',
+    titleColor: 'text-foreground',
+    badge: 'bg-muted-foreground',
+    badgeText: 'text-card'
   },
   'Admin': {
-    cardBg: 'bg-white dark:bg-gray-900',
-    cardBorder: 'border-[#E5E5E5] dark:border-gray-700',
-    iconBg: 'bg-[#F2F2F2] dark:bg-gray-800',
-    iconColor: 'text-[#666666] dark:text-gray-300',
-    titleColor: 'text-[#272727] dark:text-white',
-    badge: 'bg-[#F2F2F2] dark:bg-gray-800',
-    badgeText: 'text-[#666666] dark:text-gray-300'
+    cardBg: 'bg-card',
+    cardBorder: 'border-border',
+    iconBg: 'bg-muted',
+    iconColor: 'text-muted-foreground',
+    titleColor: 'text-foreground',
+    badge: 'bg-muted',
+    badgeText: 'text-muted-foreground'
   },
 }
 
@@ -112,18 +112,18 @@ export function WorkspaceDashboard() {
       {isLoading ? (
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#CED600] mx-auto mb-4"></div>
-            <p className="text-[#666666]">Cargando workspace...</p>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Cargando workspace...</p>
           </div>
         </div>
       ) : companyName ? (
         <>
           {/* Header con bienvenida */}
           <div className="space-y-2">
-            <h1 className="text-3xl font-bold text-[#272727] dark:text-white">
+            <h1 className="text-3xl font-bold text-foreground">
               Bienvenido{userName ? `, ${userName.split(' ')[0]}` : ''}
             </h1>
-            <p className="text-[#666666] dark:text-gray-400 text-lg">
+            <p className="text-muted-foreground text-lg">
               {companyName} · {modulesToShow.length} módulos disponibles
             </p>
           </div>
@@ -156,10 +156,10 @@ export function WorkspaceDashboard() {
                         <h3 className={`font-semibold text-lg mb-2 ${styles.titleColor}`}>
                           {module.name}
                         </h3>
-                        <p className="text-sm text-[#666666] dark:text-gray-400 line-clamp-2 mb-4">
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
                           {module.description || `Accede al módulo de ${module.name.toLowerCase()}`}
                         </p>
-                        <div className="flex items-center text-sm font-medium text-[#CED600] group-hover:translate-x-1 transition-transform">
+                        <div className="flex items-center text-sm font-medium text-primary group-hover:translate-x-1 transition-transform">
                           Abrir <ArrowRight className="h-4 w-4 ml-1" />
                         </div>
                       </CardContent>
@@ -169,9 +169,9 @@ export function WorkspaceDashboard() {
               })}
             </div>
           ) : (
-            <Card className="bg-[#F2F2F2] dark:bg-gray-800 border-[#E5E5E5] dark:border-gray-700">
+            <Card className="bg-muted border-border">
               <CardContent className="p-8 text-center">
-                <p className="text-[#666666] dark:text-gray-400">
+                <p className="text-muted-foreground">
                   No hay módulos configurados para esta empresa. Contacta al administrador.
                 </p>
               </CardContent>
@@ -186,15 +186,15 @@ export function WorkspaceDashboard() {
             accentColor="orange"
           />
 
-          <Card className="bg-[#F2F2F2] dark:bg-gray-800 border-[#EE9B00]">
+          <Card className="bg-muted border-[#EE9B00]">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-[#EE9B00] rounded-xl flex items-center justify-center">
                   <WifiOff className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-[#272727] dark:text-white">Sin empresa asignada</h3>
-                  <p className="text-sm text-[#666666] dark:text-gray-400">
+                  <h3 className="font-semibold text-foreground">Sin empresa asignada</h3>
+                  <p className="text-sm text-muted-foreground">
                     Navega desde el panel de administración para seleccionar una empresa.
                   </p>
                 </div>

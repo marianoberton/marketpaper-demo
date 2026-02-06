@@ -56,7 +56,7 @@ export default function LeadsClientPage() {
                     {/* Contact Leads Integration */}
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
-                        <Globe className="h-5 w-5 text-blue-600" />
+                        <Globe className="h-5 w-5 text-state-info" />
                         <h3 className="text-lg font-semibold">Contact Leads API</h3>
                       </div>
                       <p className="text-sm text-muted-foreground">
@@ -77,7 +77,7 @@ export default function LeadsClientPage() {
                     {/* PYME Leads Integration */}
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
-                        <Target className="h-5 w-5 text-green-600" />
+                        <Target className="h-5 w-5 text-state-success" />
                         <h3 className="text-lg font-semibold">PYME Leads API</h3>
                       </div>
                       <p className="text-sm text-muted-foreground">
@@ -120,7 +120,7 @@ export default function LeadsClientPage() {
                         <a 
                           href="/contact-lead-form-example.html" 
                           target="_blank"
-                          className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                          className="text-sm text-primary hover:underline flex items-center gap-1"
                         >
                           <ExternalLink className="h-3 w-3" />
                           Ver Ejemplo HTML
@@ -140,7 +140,7 @@ export default function LeadsClientPage() {
                         <a 
                           href="/pyme-lead-form-example.html" 
                           target="_blank"
-                          className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                          className="text-sm text-primary hover:underline flex items-center gap-1"
                         >
                           <ExternalLink className="h-3 w-3" />
                           Ver Ejemplo HTML

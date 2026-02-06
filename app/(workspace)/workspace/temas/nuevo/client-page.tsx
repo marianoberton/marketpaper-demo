@@ -227,8 +227,8 @@ export default function NuevoTemaClientPage() {
                     <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Nuevo Tema</h1>
-                    <p className="text-gray-500">Crear un nuevo expediente o tema de seguimiento</p>
+                    <h1 className="text-2xl font-bold text-foreground">Nuevo Tema</h1>
+                    <p className="text-muted-foreground">Crear un nuevo expediente o tema de seguimiento</p>
                 </div>
             </div>
 
@@ -344,7 +344,7 @@ export default function NuevoTemaClientPage() {
                                                     <div className="flex flex-col">
                                                         <span>{client.name}</span>
                                                         {client.cuit && (
-                                                            <span className="text-xs text-gray-500">CUIT: {client.cuit}</span>
+                                                            <span className="text-xs text-muted-foreground">CUIT: {client.cuit}</span>
                                                         )}
                                                     </div>
                                                 </SelectItem>
@@ -447,18 +447,18 @@ export default function NuevoTemaClientPage() {
                         <CardContent>
                             {loadingData ? (
                                 <div className="flex items-center justify-center py-8">
-                                    <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+                                    <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
                                 </div>
                             ) : users.length === 0 ? (
-                                <p className="text-gray-500 text-sm">No hay usuarios disponibles</p>
+                                <p className="text-muted-foreground text-sm">No hay usuarios disponibles</p>
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                     {users.map((user) => (
                                         <div
                                             key={user.id}
                                             className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${selectedAssignees.includes(user.id)
-                                                ? 'bg-blue-50 border-blue-300'
-                                                : 'hover:bg-gray-50'
+                                                ? 'bg-primary/10 border-primary/30'
+                                                : 'hover:bg-muted'
                                                 }`}
                                             onClick={() => toggleAssignee(user.id)}
                                         >
@@ -467,19 +467,19 @@ export default function NuevoTemaClientPage() {
                                                 onCheckedChange={() => toggleAssignee(user.id)}
                                             />
                                             <div className="flex-1 min-w-0">
-                                                <p className="font-medium text-sm truncate">
+                                                <p className="font-medium text-sm truncate text-foreground">
                                                     {user.full_name || user.email}
                                                 </p>
                                                 {user.full_name && (
-                                                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                                                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                                                 )}
                                             </div>
                                             {selectedAssignees.includes(user.id) && (
                                                 <button
                                                     type="button"
                                                     className={`p-1 rounded-full transition-colors ${leadAssignee === user.id
-                                                        ? 'text-yellow-500 bg-yellow-100'
-                                                        : 'text-gray-300 hover:text-yellow-400'
+                                                        ? 'text-primary bg-primary/20'
+                                                        : 'text-muted-foreground hover:text-primary'
                                                         }`}
                                                     onClick={(e) => {
                                                         e.stopPropagation()

@@ -230,7 +230,7 @@ export function SeguimientoTab({ companyId, pipelineId, refreshKey, dateRange }:
         </div>
       )}
 
-      <DealDetailSheet deal={selectedDeal} open={sheetOpen} onOpenChange={setSheetOpen} />
+      <DealDetailSheet companyId={companyId} deal={selectedDeal} open={sheetOpen} onOpenChange={setSheetOpen} />
     </div>
   )
 }

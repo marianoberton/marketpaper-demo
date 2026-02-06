@@ -44,7 +44,16 @@ interface FinanzasDashboardProps {
   categories: Category[]
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff7c7c']
+const COLORS = [
+  'hsl(var(--chart-1))',
+  'hsl(var(--chart-2))',
+  'hsl(var(--state-info))',
+  'hsl(var(--state-success))',
+  'hsl(var(--state-warning))',
+  'hsl(var(--state-pending))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--state-error))'
+]
 
 export default function FinanzasDashboard({ expenses, categories }: FinanzasDashboardProps) {
   
@@ -172,9 +181,9 @@ export default function FinanzasDashboard({ expenses, categories }: FinanzasDash
     <div className="space-y-6">
       {/* Alertas de presupuesto */}
       {overBudgetCategories.length > 0 && (
-        <Card className="border-red-200 bg-red-50">
+        <Card className="border-state-error bg-state-error-muted">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-red-700">
+            <CardTitle className="flex items-center gap-2 text-state-error">
               <AlertTriangle className="h-5 w-5" />
               Presupuesto Excedido
             </CardTitle>
@@ -186,7 +195,7 @@ export default function FinanzasDashboard({ expenses, categories }: FinanzasDash
                   <span className="text-sm font-medium">
                     {category.icon} {category.name}
                   </span>
-                  <span className="text-sm text-red-600">
+                  <span className="text-sm text-state-error">
                     ${category.total.toLocaleString()} / ${category.budget.toLocaleString()}
                     ({Math.round(category.percentage)}%)
                   </span>
@@ -203,20 +212,20 @@ export default function FinanzasDashboard({ expenses, categories }: FinanzasDash
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Gastos del Mes</p>
+                <p className="text-sm text-muted-foreground">Gastos del Mes</p>
                 <p className="text-2xl font-bold">${currentMonthTotal.toLocaleString()}</p>
                 <div className="flex items-center gap-1 mt-1">
                   {monthlyTrend > 0 ? (
-                    <TrendingUp className="h-4 w-4 text-red-500" />
+                    <TrendingUp className="h-4 w-4 text-state-error" />
                   ) : (
-                    <TrendingDown className="h-4 w-4 text-green-500" />
+                    <TrendingDown className="h-4 w-4 text-state-success" />
                   )}
-                  <span className={`text-xs ${monthlyTrend > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                  <span className={`text-xs ${monthlyTrend > 0 ? 'text-state-error' : 'text-state-success'}`}>
                     {Math.abs(monthlyTrend).toFixed(1)}%
                   </span>
                 </div>
               </div>
-              <DollarSign className="h-8 w-8 text-blue-600" />
+              <DollarSign className="h-8 w-8 text-primary" />
             </div>
           </CardContent>
         </Card>
@@ -225,11 +234,11 @@ export default function FinanzasDashboard({ expenses, categories }: FinanzasDash
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Uso del Presupuesto</p>
+                <p className="text-sm text-muted-foreground">Uso del Presupuesto</p>
                 <p className="text-2xl font-bold">{budgetUsage.toFixed(1)}%</p>
                 <Progress value={budgetUsage} className="w-full h-2 mt-2" />
               </div>
-              <Target className="h-8 w-8 text-purple-600" />
+              <Target className="h-8 w-8 text-state-pending" />
             </div>
           </CardContent>
         </Card>
@@ -238,13 +247,13 @@ export default function FinanzasDashboard({ expenses, categories }: FinanzasDash
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Promedio por Gasto</p>
+                <p className="text-sm text-muted-foreground">Promedio por Gasto</p>
                 <p className="text-2xl font-bold">${averageExpense.toLocaleString()}</p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   {expenses.length} gastos totales
                 </p>
               </div>
-              <BarChart3 className="h-8 w-8 text-green-600" />
+              <BarChart3 className="h-8 w-8 text-state-success" />
             </div>
           </CardContent>
         </Card>
@@ -253,13 +262,13 @@ export default function FinanzasDashboard({ expenses, categories }: FinanzasDash
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Categorías Activas</p>
+                <p className="text-sm text-muted-foreground">Categorías Activas</p>
                 <p className="text-2xl font-bold">{chartData.expensesByCategory.length}</p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   de {categories.length} totales
                 </p>
               </div>
-              <PieChart className="h-8 w-8 text-orange-600" />
+              <PieChart className="h-8 w-8 text-accent-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -282,7 +291,7 @@ export default function FinanzasDashboard({ expenses, categories }: FinanzasDash
                   labelLine={false}
                   label={({ name, percentage }) => `${name} (${percentage.toFixed(1)}%)`}
                   outerRadius={80}
-                  fill="#8884d8"
+                  fill="hsl(var(--chart-1))"
                   dataKey="total"
                 >
                   {chartData.expensesByCategory.map((entry, index) => (
@@ -310,8 +319,8 @@ export default function FinanzasDashboard({ expenses, categories }: FinanzasDash
                 <Area
                   type="monotone"
                   dataKey="total"
-                  stroke="#8884d8"
-                  fill="#8884d8"
+                  stroke="hsl(var(--chart-1))"
+                  fill="hsl(var(--chart-1))"
                   fillOpacity={0.6}
                 />
               </AreaChart>
@@ -336,7 +345,7 @@ export default function FinanzasDashboard({ expenses, categories }: FinanzasDash
                     <span className="font-medium">{method.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-muted-foreground">
                       {method.expenses} gastos
                     </span>
                     <span className="font-bold">
@@ -361,7 +370,7 @@ export default function FinanzasDashboard({ expenses, categories }: FinanzasDash
                 <XAxis dataKey="day" />
                 <YAxis />
                 <Tooltip formatter={(value) => `$${value.toLocaleString()}`} />
-                <Bar dataKey="total" fill="#8884d8" />
+                <Bar dataKey="total" fill="hsl(var(--chart-1))" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -383,11 +392,11 @@ export default function FinanzasDashboard({ expenses, categories }: FinanzasDash
                     <span className="font-medium">{category.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-muted-foreground">
                       ${category.total.toLocaleString()}
                     </span>
                     {category.budget > 0 && (
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-muted-foreground">
                         / ${category.budget.toLocaleString()}
                       </span>
                     )}

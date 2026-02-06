@@ -115,7 +115,7 @@ export function WorkspaceNav() {
     return (
       <div className="flex flex-col gap-2 p-2">
         {[...Array(8)].map((_, i) => (
-          <div key={i} className="h-8 w-full animate-pulse rounded-lg bg-gray-200 dark:bg-gray-800" />
+          <div key={i} className="h-8 w-full animate-pulse rounded-lg bg-muted" />
         ))}
       </div>
     );
@@ -126,7 +126,7 @@ export function WorkspaceNav() {
       {navigationModel.map(category => (
         <div key={category.name}>
           {!isCollapsed && (
-            <h3 className="px-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <h3 className="px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {category.name}
             </h3>
           )}
@@ -139,9 +139,9 @@ export function WorkspaceNav() {
                   key={item.id}
                   href={getHrefWithParams(item.route_path)}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-gray-500 transition-all hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-50",
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-foreground",
                     isCollapsed && "justify-center",
-                    isActive && "bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-50"
+                    isActive && "bg-accent text-foreground"
                   )}
                   title={isCollapsed ? item.name : undefined}
                 >

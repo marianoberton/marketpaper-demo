@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
 import {
     Card,
     CardContent,
@@ -57,9 +56,9 @@ interface Stats {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-    pendiente: { label: 'Pendiente', color: 'bg-gray-100 text-gray-700' },
-    en_progreso: { label: 'En Progreso', color: 'bg-blue-100 text-blue-700' },
-    completada: { label: 'Completada', color: 'bg-green-100 text-green-700' },
+    pendiente: { label: 'Pendiente', color: 'bg-muted text-muted-foreground' },
+    en_progreso: { label: 'En Progreso', color: 'bg-primary/20 text-primary border border-primary/30' },
+    completada: { label: 'Completada', color: 'bg-foreground/10 text-foreground/70' },
 }
 
 export default function TareasClientPage() {
@@ -126,10 +125,10 @@ export default function TareasClientPage() {
         const now = new Date()
         const diffDays = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
-        if (diffDays < 0) return { status: 'overdue', label: 'Vencida', color: 'text-red-600' }
-        if (diffDays === 0) return { status: 'today', label: 'Hoy', color: 'text-orange-600' }
-        if (diffDays <= 2) return { status: 'soon', label: `${diffDays}d`, color: 'text-yellow-600' }
-        return { status: 'ok', label: `${diffDays}d`, color: 'text-gray-500' }
+        if (diffDays < 0) return { status: 'overdue', label: 'Vencida', color: 'text-destructive' }
+        if (diffDays === 0) return { status: 'today', label: 'Hoy', color: 'text-primary' }
+        if (diffDays <= 2) return { status: 'soon', label: `${diffDays}d`, color: 'text-accent-foreground' }
+        return { status: 'ok', label: `${diffDays}d`, color: 'text-muted-foreground' }
     }
 
     const formatDate = (dateStr: string | null) => {
@@ -160,24 +159,26 @@ export default function TareasClientPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <ListTodo className="h-8 w-8 text-indigo-600" />
+                    <ListTodo className="h-8 w-8 text-primary" />
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Mis Tareas</h1>
-                        <p className="text-gray-500">Tareas asignadas a ti en todos los temas</p>
+                        <h1 className="text-2xl font-bold text-foreground">Mis Tareas</h1>
+                        <p className="text-muted-foreground">Tareas asignadas a ti en todos los temas</p>
                     </div>
                 </div>
             </div>
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card>
+                <Card className="border-l-4 border-l-primary">
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-gray-500">Total</p>
-                                <p className="text-3xl font-bold">{stats.total}</p>
+                                <p className="text-sm text-muted-foreground">Total</p>
+                                <p className="text-3xl font-bold text-foreground">{stats.total}</p>
                             </div>
-                            <ListTodo className="h-10 w-10 text-gray-300" />
+                            <div className="p-2 rounded-lg bg-primary/10">
+                                <ListTodo className="h-8 w-8 text-primary" />
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -185,10 +186,12 @@ export default function TareasClientPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-gray-500">Pendientes</p>
-                                <p className="text-3xl font-bold text-gray-600">{stats.pendientes}</p>
+                                <p className="text-sm text-muted-foreground">Pendientes</p>
+                                <p className="text-3xl font-bold text-foreground">{stats.pendientes}</p>
                             </div>
-                            <CircleDot className="h-10 w-10 text-gray-200" />
+                            <div className="p-2 rounded-lg bg-muted">
+                                <CircleDot className="h-8 w-8 text-muted-foreground" />
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -196,10 +199,12 @@ export default function TareasClientPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-gray-500">En Progreso</p>
-                                <p className="text-3xl font-bold text-blue-600">{stats.enProgreso}</p>
+                                <p className="text-sm text-muted-foreground">En Progreso</p>
+                                <p className="text-3xl font-bold text-primary">{stats.enProgreso}</p>
                             </div>
-                            <Clock className="h-10 w-10 text-blue-200" />
+                            <div className="p-2 rounded-lg bg-primary/10">
+                                <Clock className="h-8 w-8 text-primary" />
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -207,10 +212,12 @@ export default function TareasClientPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-gray-500">Completadas</p>
-                                <p className="text-3xl font-bold text-green-600">{stats.completadas}</p>
+                                <p className="text-sm text-muted-foreground">Completadas</p>
+                                <p className="text-3xl font-bold text-foreground/70">{stats.completadas}</p>
                             </div>
-                            <CheckCircle2 className="h-10 w-10 text-green-200" />
+                            <div className="p-2 rounded-lg bg-foreground/5">
+                                <CheckCircle2 className="h-8 w-8 text-foreground/50" />
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -237,7 +244,7 @@ export default function TareasClientPage() {
                                 checked={showCompleted}
                                 onCheckedChange={(checked) => setShowCompleted(checked as boolean)}
                             />
-                            <label htmlFor="show-completed" className="text-sm text-gray-600 cursor-pointer">
+                            <label htmlFor="show-completed" className="text-sm text-muted-foreground cursor-pointer">
                                 Mostrar completadas
                             </label>
                         </div>
@@ -251,13 +258,13 @@ export default function TareasClientPage() {
             {/* Task List */}
             {loading ? (
                 <div className="flex items-center justify-center py-12">
-                    <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+                    <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
             ) : tasks.length === 0 ? (
                 <Card>
-                    <CardContent className="flex flex-col items-center justify-center py-12 text-gray-500">
-                        <CheckCircle2 className="h-12 w-12 mb-4 text-green-300" />
-                        <p className="text-lg font-medium">¡Sin tareas pendientes!</p>
+                    <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                        <CheckCircle2 className="h-12 w-12 mb-4 text-primary/50" />
+                        <p className="text-lg font-medium text-foreground">¡Sin tareas pendientes!</p>
                         <p className="text-sm">No tenés tareas asignadas en este momento</p>
                     </CardContent>
                 </Card>
@@ -301,8 +308,8 @@ export default function TareasClientPage() {
                                             <div
                                                 key={task.id}
                                                 className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${isCompleted
-                                                        ? 'bg-green-50 border-green-200'
-                                                        : 'bg-white border-gray-200 hover:bg-gray-50'
+                                                        ? 'bg-muted/50 border-border opacity-70'
+                                                        : 'bg-card border-border hover:border-primary/50 hover:bg-primary/5'
                                                     }`}
                                             >
                                                 <Checkbox
@@ -312,23 +319,23 @@ export default function TareasClientPage() {
                                                     className={isUpdating ? 'opacity-50' : ''}
                                                 />
                                                 <div className="flex-1 min-w-0">
-                                                    <p className={`text-sm font-medium ${isCompleted ? 'text-gray-500 line-through' : 'text-gray-900'}`}>
+                                                    <p className={`text-sm font-medium ${isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
                                                         {task.title}
                                                     </p>
                                                     {task.description && (
-                                                        <p className="text-xs text-gray-500 truncate mt-0.5">
+                                                        <p className="text-xs text-muted-foreground truncate mt-0.5">
                                                             {task.description}
                                                         </p>
                                                     )}
                                                 </div>
                                                 {task.due_date && (
-                                                    <div className={`flex items-center gap-1 text-xs ${dueDateStatus?.color || 'text-gray-500'}`}>
+                                                    <div className={`flex items-center gap-1 text-xs ${dueDateStatus?.color || 'text-muted-foreground'}`}>
                                                         {dueDateStatus?.status === 'overdue' && <AlertTriangle className="h-3 w-3" />}
                                                         <Calendar className="h-3 w-3" />
                                                         <span>{formatDate(task.due_date)}</span>
                                                     </div>
                                                 )}
-                                                <Badge className={STATUS_CONFIG[task.status]?.color || 'bg-gray-100'}>
+                                                <Badge className={STATUS_CONFIG[task.status]?.color || 'bg-muted text-muted-foreground'}>
                                                     {STATUS_CONFIG[task.status]?.label || task.status}
                                                 </Badge>
                                             </div>

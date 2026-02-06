@@ -36,18 +36,18 @@ interface TicketData {
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
-    open: { label: 'Abierto', color: 'bg-blue-100 text-blue-700', icon: <AlertCircle className="h-3 w-3" /> },
-    in_progress: { label: 'En Progreso', color: 'bg-yellow-100 text-yellow-700', icon: <Clock className="h-3 w-3" /> },
-    waiting_user: { label: 'Esperando Respuesta', color: 'bg-purple-100 text-purple-700', icon: <MessageSquare className="h-3 w-3" /> },
-    resolved: { label: 'Resuelto', color: 'bg-green-100 text-green-700', icon: <CheckCircle2 className="h-3 w-3" /> },
-    closed: { label: 'Cerrado', color: 'bg-gray-100 text-gray-700', icon: <XCircle className="h-3 w-3" /> },
+    open: { label: 'Abierto', color: 'bg-state-info-muted text-state-info', icon: <AlertCircle className="h-3 w-3" /> },
+    in_progress: { label: 'En Progreso', color: 'bg-state-warning-muted text-state-warning', icon: <Clock className="h-3 w-3" /> },
+    waiting_user: { label: 'Esperando Respuesta', color: 'bg-state-pending-muted text-state-pending', icon: <MessageSquare className="h-3 w-3" /> },
+    resolved: { label: 'Resuelto', color: 'bg-state-success-muted text-state-success', icon: <CheckCircle2 className="h-3 w-3" /> },
+    closed: { label: 'Cerrado', color: 'bg-state-neutral-muted text-state-neutral', icon: <XCircle className="h-3 w-3" /> },
 }
 
 const priorityConfig: Record<string, { label: string; color: string }> = {
-    urgent: { label: 'Urgente', color: 'text-red-600' },
-    high: { label: 'Alta', color: 'text-orange-600' },
-    medium: { label: 'Media', color: 'text-yellow-600' },
-    low: { label: 'Baja', color: 'text-green-600' },
+    urgent: { label: 'Urgente', color: 'text-destructive' },
+    high: { label: 'Alta', color: 'text-state-error' },
+    medium: { label: 'Media', color: 'text-state-warning' },
+    low: { label: 'Baja', color: 'text-state-success' },
 }
 
 export default function SoporteClientPage() {
@@ -104,11 +104,11 @@ export default function SoporteClientPage() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                        <Ticket className="h-6 w-6 text-blue-600" />
+                    <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                        <Ticket className="h-6 w-6 text-primary" />
                         Soporte
                     </h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">
+                    <p className="text-muted-foreground mt-1">
                         Crea y gestiona tus tickets de soporte
                     </p>
                 </div>
@@ -124,28 +124,28 @@ export default function SoporteClientPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <Card>
                     <CardContent className="pt-4 pb-3">
-                        <div className="text-3xl font-bold text-blue-600">{openTickets.length}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">Tickets Abiertos</div>
+                        <div className="text-3xl font-bold text-state-info">{openTickets.length}</div>
+                        <div className="text-sm text-muted-foreground">Tickets Abiertos</div>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardContent className="pt-4 pb-3">
-                        <div className="text-3xl font-bold text-purple-600">
+                        <div className="text-3xl font-bold text-state-pending">
                             {tickets.filter(t => t.status === 'waiting_user').length}
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">Esperando Respuesta</div>
+                        <div className="text-sm text-muted-foreground">Esperando Respuesta</div>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardContent className="pt-4 pb-3">
-                        <div className="text-3xl font-bold text-green-600">{closedTickets.length}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">Resueltos</div>
+                        <div className="text-3xl font-bold text-state-success">{closedTickets.length}</div>
+                        <div className="text-sm text-muted-foreground">Resueltos</div>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardContent className="pt-4 pb-3">
-                        <div className="text-3xl font-bold text-gray-600">{tickets.length}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">Total</div>
+                        <div className="text-3xl font-bold text-muted-foreground">{tickets.length}</div>
+                        <div className="text-sm text-muted-foreground">Total</div>
                     </CardContent>
                 </Card>
             </div>
@@ -163,10 +163,10 @@ export default function SoporteClientPage() {
                 <CardContent>
                     {loading ? (
                         <div className="flex items-center justify-center py-12">
-                            <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+                            <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
                         </div>
                     ) : error ? (
-                        <div className="flex flex-col items-center justify-center py-12 text-red-500">
+                        <div className="flex flex-col items-center justify-center py-12 text-destructive">
                             <AlertCircle className="h-8 w-8 mb-2" />
                             <p>{error}</p>
                             <Button onClick={fetchTickets} variant="outline" size="sm" className="mt-4">
@@ -174,8 +174,8 @@ export default function SoporteClientPage() {
                             </Button>
                         </div>
                     ) : openTickets.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-                            <CheckCircle2 className="h-12 w-12 mb-4 text-green-400" />
+                        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                            <CheckCircle2 className="h-12 w-12 mb-4 text-state-success" />
                             <p className="text-lg font-medium">No tienes tickets abiertos</p>
                             <p className="text-sm mt-1">
                                 Si tienes algun problema, crea un nuevo ticket
@@ -198,23 +198,23 @@ export default function SoporteClientPage() {
                                 return (
                                     <div
                                         key={ticket.id}
-                                        className={`border rounded-lg p-4 hover:border-blue-200 hover:bg-blue-50/30 dark:hover:bg-blue-950/30 transition-colors cursor-pointer ${needsResponse ? 'border-purple-200 bg-purple-50/30 dark:bg-purple-950/30' : ''
+                                        className={`border rounded-lg p-4 hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer ${needsResponse ? 'border-state-pending bg-state-pending-muted' : ''
                                             }`}
                                         onClick={() => router.push(`/workspace/soporte/${ticket.id}`)}
                                     >
                                         <div className="flex items-start justify-between">
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center gap-2 mb-1">
-                                                    <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                                                    <h3 className="font-medium text-foreground truncate">
                                                         {ticket.subject}
                                                     </h3>
                                                     {needsResponse && (
-                                                        <Badge className="bg-purple-100 text-purple-700 text-xs">
+                                                        <Badge className="bg-state-pending-muted text-state-pending text-xs">
                                                             Responde
                                                         </Badge>
                                                     )}
                                                 </div>
-                                                <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
+                                                <p className="text-sm text-muted-foreground line-clamp-1">
                                                     {ticket.description}
                                                 </p>
                                                 <div className="flex items-center gap-3 mt-2">
@@ -234,7 +234,7 @@ export default function SoporteClientPage() {
                                                         </span>
                                                     )}
                                                     {messageCount > 0 && (
-                                                        <span className="text-xs text-gray-400 flex items-center gap-1">
+                                                        <span className="text-xs text-muted-foreground flex items-center gap-1">
                                                             <MessageSquare className="h-3 w-3" />
                                                             {messageCount}
                                                         </span>
@@ -242,10 +242,10 @@ export default function SoporteClientPage() {
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2 ml-4">
-                                                <span className="text-xs text-gray-400">
+                                                <span className="text-xs text-muted-foreground">
                                                     {formatDate(ticket.updated_at)}
                                                 </span>
-                                                <ChevronRight className="h-4 w-4 text-gray-400" />
+                                                <ChevronRight className="h-4 w-4 text-muted-foreground" />
                                             </div>
                                         </div>
                                     </div>
@@ -260,7 +260,7 @@ export default function SoporteClientPage() {
             {closedTickets.length > 0 && (
                 <Card>
                     <CardHeader>
-                        <CardTitle className="text-gray-600 dark:text-gray-400">Tickets Resueltos</CardTitle>
+                        <CardTitle className="text-muted-foreground">Tickets Resueltos</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-2">
@@ -268,15 +268,15 @@ export default function SoporteClientPage() {
                                 return (
                                     <div
                                         key={ticket.id}
-                                        className="border rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                                        className="border rounded-lg p-3 hover:bg-muted transition-colors cursor-pointer"
                                         onClick={() => router.push(`/workspace/soporte/${ticket.id}`)}
                                     >
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                                <span className="text-sm text-gray-700 dark:text-gray-300">{ticket.subject}</span>
+                                                <CheckCircle2 className="h-4 w-4 text-state-success" />
+                                                <span className="text-sm text-foreground">{ticket.subject}</span>
                                             </div>
-                                            <span className="text-xs text-gray-400">
+                                            <span className="text-xs text-muted-foreground">
                                                 {formatDate(ticket.updated_at)}
                                             </span>
                                         </div>
@@ -284,7 +284,7 @@ export default function SoporteClientPage() {
                                 )
                             })}
                             {closedTickets.length > 5 && (
-                                <p className="text-sm text-gray-400 text-center pt-2">
+                                <p className="text-sm text-muted-foreground text-center pt-2">
                                     Y {closedTickets.length - 5} tickets mas...
                                 </p>
                             )}
