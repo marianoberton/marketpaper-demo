@@ -596,11 +596,83 @@ export async function getModulesForCompany(companyId: string) {
   return modulesList;
 }
 
+// Get effective modules for a specific user, considering:
+// 1. Company modules (from template or features)
+// 2. Per-company role-level filtering (company_role_modules)
+// 3. Per-user overrides (user_module_overrides)
+export async function getEffectiveModulesForUser(
+  companyId: string,
+  userId: string,
+  userRole: string
+): Promise<any[]> {
+  const supabase = await createServerClient();
+
+  // Super admins always see everything
+  if (userRole === 'super_admin') {
+    return getModulesForCompany(companyId);
+  }
+
+  // 1. Get base company modules
+  const baseModules = await getModulesForCompany(companyId);
+  if (baseModules.length === 0) return [];
+
+  // 2. Check for per-company role-level configuration
+  const { data: roleModules, error: roleError } = await supabase
+    .from('company_role_modules')
+    .select('module_id')
+    .eq('company_id', companyId)
+    .eq('role', userRole);
+
+  let filteredModules: any[];
+
+  if (!roleError && roleModules && roleModules.length > 0) {
+    // Company has custom role-module configuration — filter by it
+    const allowedModuleIds = new Set(roleModules.map(rm => rm.module_id));
+    filteredModules = baseModules.filter(m => allowedModuleIds.has(m.id));
+  } else {
+    // No custom config — use global allowed_roles from modules table (current behavior)
+    filteredModules = baseModules.filter(m => {
+      if (!m.allowed_roles || m.allowed_roles.length === 0) return true;
+      return m.allowed_roles.includes(userRole);
+    });
+  }
+
+  // 3. Apply per-user overrides
+  const { data: overrides, error: overrideError } = await supabase
+    .from('user_module_overrides')
+    .select('module_id, override_type')
+    .eq('user_id', userId);
+
+  if (!overrideError && overrides && overrides.length > 0) {
+    const grants = new Set(
+      overrides.filter(o => o.override_type === 'grant').map(o => o.module_id)
+    );
+    const revokes = new Set(
+      overrides.filter(o => o.override_type === 'revoke').map(o => o.module_id)
+    );
+
+    // Remove revoked modules
+    filteredModules = filteredModules.filter(m => !revokes.has(m.id));
+
+    // Add granted modules (only if they exist in the base company modules)
+    if (grants.size > 0) {
+      const currentIds = new Set(filteredModules.map(m => m.id));
+      const grantedModules = baseModules.filter(
+        m => grants.has(m.id) && !currentIds.has(m.id)
+      );
+      filteredModules = [...filteredModules, ...grantedModules];
+    }
+  }
+
+  return filteredModules;
+}
+
 // Helper functions to map features to module properties
 function getFeatureDisplayName(feature: string): string {
   const featureNames: Record<string, string> = {
     'construccion': 'Construcción',
     'crm': 'CRM',
+    'crm-fomo': 'CRM-FOMO',
     'projects': 'Proyectos', 
     'calendar': 'Calendario',
     'documents': 'Documentos',
@@ -620,6 +692,7 @@ function getFeatureRoutePath(feature: string): string {
   const featurePaths: Record<string, string> = {
     'construccion': '/workspace/construccion',
     'crm': '/workspace/crm',
+    'crm-fomo': '/workspace/crm-fomo',
     'projects': '/workspace/projects',
     'calendar': '/workspace/calendar', 
     'documents': '/workspace/documents',
@@ -638,7 +711,8 @@ function getFeatureRoutePath(feature: string): string {
 function getFeatureIcon(feature: string): string {
   const featureIcons: Record<string, string> = {
     'construccion': 'Hammer',
-    'crm': 'Users',
+    'crm': 'Briefcase',
+    'crm-fomo': 'Users',
     'projects': 'Briefcase',
     'calendar': 'Calendar',
     'documents': 'FileText',

@@ -34,7 +34,9 @@ import {
   Clock,
   XCircle,
   Info,
-  Edit
+  Edit,
+  Trash2,
+  Loader2
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -111,6 +113,9 @@ export function CompaniesClientPage({ companies: initialCompanies, templates: in
   const [templates, setTemplates] = useState<Template[]>(initialTemplates)
   const [isUpdating, setIsUpdating] = useState<string | null>(null)
   const [editingCompany, setEditingCompany] = useState<Company | null>(null)
+  const [deletingCompany, setDeletingCompany] = useState<Company | null>(null)
+  const [deleteConfirmName, setDeleteConfirmName] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     setCompanies(initialCompanies);
@@ -188,6 +193,31 @@ export function CompaniesClientPage({ companies: initialCompanies, templates: in
       toast.error((error as Error).message)
     } finally {
       setIsUpdating(null)
+    }
+  }
+
+  const handleDeleteCompany = async () => {
+    if (!deletingCompany) return
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/admin/companies?id=${deletingCompany.id}`, {
+        method: 'DELETE',
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'No se pudo eliminar la empresa')
+      }
+
+      setCompanies(prev => prev.filter(c => c.id !== deletingCompany.id))
+      toast.success(result.message || `Empresa "${deletingCompany.name}" eliminada`)
+      setDeletingCompany(null)
+      setDeleteConfirmName('')
+    } catch (error) {
+      toast.error((error as Error).message)
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -350,7 +380,20 @@ export function CompaniesClientPage({ companies: initialCompanies, templates: in
                       <p className="text-sm text-muted-foreground font-mono">/{company.slug}</p>
                     </div>
                   </div>
-                  <StatusEditDialog company={company} />
+                  <div className="flex items-center gap-1">
+                    <StatusEditDialog company={company} />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground hover:text-destructive"
+                      onClick={() => {
+                        setDeletingCompany(company)
+                        setDeleteConfirmName('')
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Card Body: Details */}
@@ -416,6 +459,72 @@ export function CompaniesClientPage({ companies: initialCompanies, templates: in
           </div>
         )}
       </CardContent>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={!!deletingCompany}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeletingCompany(null)
+            setDeleteConfirmName('')
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Eliminar empresa</DialogTitle>
+            <DialogDescription>
+              Esta acción es irreversible. Se eliminarán todos los datos de la empresa,
+              incluyendo usuarios, proyectos, documentos y configuración.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-sm">
+              Empresa: <span className="font-semibold">{deletingCompany?.name}</span>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-name">
+                Escribe <span className="font-semibold">{deletingCompany?.name}</span> para confirmar
+              </Label>
+              <Input
+                id="confirm-name"
+                value={deleteConfirmName}
+                onChange={(e) => setDeleteConfirmName(e.target.value)}
+                placeholder={deletingCompany?.name}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeletingCompany(null)
+                setDeleteConfirmName('')
+              }}
+              disabled={isDeleting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteCompany}
+              disabled={deleteConfirmName !== deletingCompany?.name || isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Eliminar empresa
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }

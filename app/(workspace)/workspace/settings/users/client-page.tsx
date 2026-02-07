@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { useWorkspace } from '@/components/workspace-context'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -24,7 +25,8 @@ import {
     Link as LinkIcon,
     ExternalLink,
     Building,
-    Info
+    Info,
+    Box
 } from 'lucide-react'
 import {
     DropdownMenu,
@@ -44,6 +46,8 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { RoleModulesMatrix } from './components/RoleModulesMatrix'
+import { UserModuleOverrides } from './components/UserModuleOverrides'
 
 interface ClientInfo {
     id: string
@@ -113,6 +117,7 @@ const statusLabels: Record<string, string> = {
 }
 
 export default function CompanyUsersClientPage() {
+    const { companyId } = useWorkspace()
     const [users, setUsers] = useState<UserProfile[]>([])
     const [invitations, setInvitations] = useState<Invitation[]>([])
     const [clients, setClients] = useState<ClientInfo[]>([])
@@ -127,6 +132,7 @@ export default function CompanyUsersClientPage() {
     const [inviteClientId, setInviteClientId] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [activeTab, setActiveTab] = useState('team')
+    const [moduleOverrideUser, setModuleOverrideUser] = useState<UserProfile | null>(null)
 
     const teamUsers = useMemo(() => users.filter(u => u.role !== 'viewer'), [users])
     const viewerUsers = useMemo(() => users.filter(u => u.role === 'viewer'), [users])
@@ -149,7 +155,8 @@ export default function CompanyUsersClientPage() {
 
     const fetchUsers = async () => {
         try {
-            const response = await fetch('/api/company/users')
+            const params = companyId ? `?company_id=${companyId}` : ''
+            const response = await fetch(`/api/company/users${params}`)
             if (!response.ok) throw new Error('Error al cargar usuarios')
             const data = await response.json()
             setUsers(data.users || [])
@@ -418,6 +425,10 @@ export default function CompanyUsersClientPage() {
                                     <Shield className="mr-2 h-4 w-4" />
                                     Cambiar Rol
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setModuleOverrideUser(user)}>
+                                    <Box className="mr-2 h-4 w-4" />
+                                    Configurar Modulos
+                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 {user.status === 'active' ? (
                                     <DropdownMenuItem
@@ -531,6 +542,10 @@ export default function CompanyUsersClientPage() {
                     <TabsTrigger value="invitations" className="flex items-center gap-2">
                         <Mail className="h-4 w-4" />
                         Invitaciones ({pendingInvitations.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="modules" className="flex items-center gap-2">
+                        <Box className="h-4 w-4" />
+                        Modulos
                     </TabsTrigger>
                 </TabsList>
 
@@ -651,7 +666,21 @@ export default function CompanyUsersClientPage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
+
+                {/* ==================== TAB: MODULOS ==================== */}
+                <TabsContent value="modules">
+                    <RoleModulesMatrix />
+                </TabsContent>
             </Tabs>
+
+            {/* ==================== DIALOG: MODULOS POR USUARIO ==================== */}
+            {moduleOverrideUser && (
+                <UserModuleOverrides
+                    user={moduleOverrideUser}
+                    isOpen={!!moduleOverrideUser}
+                    onClose={() => setModuleOverrideUser(null)}
+                />
+            )}
 
             {/* ==================== DIALOG: CAMBIAR ROL ==================== */}
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>

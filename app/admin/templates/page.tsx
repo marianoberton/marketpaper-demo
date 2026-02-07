@@ -134,8 +134,6 @@ const MemoizedTemplateDialog = React.memo(({ isOpen, onClose, onSave, template, 
     onSave(formData)
   }
 
-  if (!isOpen) return null
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh]">

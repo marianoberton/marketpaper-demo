@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card } from '@/components/ui/card'
+import { AuthLayout } from '@/components/auth-layout'
 import { useState } from 'react'
 
 export default function RegisterPage() {
@@ -36,9 +36,8 @@ export default function RegisterPage() {
       if (response.ok) {
         setSubmitResult({
           success: true,
-          message: '¡Gracias por tu interés! Procesaremos tu solicitud en las próximas 24 horas y te contactaremos.'
+          message: '¡Gracias por tu interes! Procesaremos tu solicitud en las proximas 24 horas y te contactaremos.'
         })
-        // Limpiar formulario
         setFormData({
           name: '',
           email: '',
@@ -48,13 +47,13 @@ export default function RegisterPage() {
       } else {
         setSubmitResult({
           success: false,
-          message: result.error || 'Error procesando la solicitud. Inténtalo de nuevo.'
+          message: result.error || 'Error procesando la solicitud. Intentalo de nuevo.'
         })
       }
-    } catch (error) {
+    } catch {
       setSubmitResult({
         success: false,
-        message: 'Error de conexión. Verifica tu internet e inténtalo de nuevo.'
+        message: 'Error de conexion. Verifica tu internet e intentalo de nuevo.'
       })
     } finally {
       setIsSubmitting(false)
@@ -69,143 +68,115 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brilliant-blue to-plum flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-8 bg-white/95 backdrop-blur-sm shadow-2xl border-0">
-        <div className="text-center mb-8">
-          {/* Logo FOMO - Mismo tamaño que login */}
-          <div className="mb-6">
-            <svg xmlns="http://www.w3.org/2000/svg" width="140" height="58" viewBox="0 0 46.83 19.27" className="mx-auto">
-              <defs>
-                <style>{`.cls-1,.cls-2,.cls-3{fill:#0f172a;}.cls-2{font-size:11.64px;letter-spacing:0.08em;}.cls-2,.cls-3{font-family:ConcertOne-Regular, Concert One;}.cls-3{font-size:6.47px;letter-spacing:0.2em;}`}</style>
-              </defs>
-              <g id="Capa_2" data-name="Capa 2">
-                <g id="Capa_1-2" data-name="Capa 1">
-                  <path className="cls-1" d="M7.07,3.23C6.27,3.51,6,4,5.76,5.32c-.07.42-.17.9-.21,1s-.07.3-.08.35-.09.27-.2.51c-.41.91-1.06,1.45-3,2.48a4.91,4.91,0,0,0-1.55,1,2.45,2.45,0,0,0-.57.84A3.71,3.71,0,0,0,0,12.76a4.36,4.36,0,0,0,.2,1.12c.2.43.4.59.65.5a.5.5,0,0,0,.25-.23c0-.15.07-.21-.05-.62a2.3,2.3,0,0,1,0-1.68,1.79,1.79,0,0,1,.7-.88,3,3,0,0,1,1.32-.38,4.48,4.48,0,0,1,1.77.51A7.45,7.45,0,0,1,7,13.27c.79,1.07,1.13,1.31,1.86,1.32a1.6,1.6,0,0,0,1.22-.49,1.71,1.71,0,0,0,.54-1.33,1.59,1.59,0,0,0-.4-1.18,1.71,1.71,0,0,0-2-.42,1.86,1.86,0,0,1-.9.14,1.83,1.83,0,0,1-1.7-2,1.92,1.92,0,0,1,.54-1.45A4.27,4.27,0,0,1,7.79,6.83,2.46,2.46,0,0,0,9,5.79,2.43,2.43,0,0,0,9.24,5,1.73,1.73,0,0,0,9,4.08a2.06,2.06,0,0,0-.88-.79A1.93,1.93,0,0,0,7.07,3.23Z"/>
-                  <text className="cls-2" transform="translate(12.66 9.8) rotate(0.21)">FOMO</text>
-                  <text className="cls-3" transform="translate(13.32 16.18) rotate(0.21)">DIGITAL</text>
-                </g>
-              </g>
-            </svg>
-          </div>
-          
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Crear Cuenta
-          </h1>
-          <p className="text-gray-600">
-            Únete a la nueva forma de trabajar
-          </p>
+    <AuthLayout>
+      <div className="text-center mb-8">
+        <h1 className="text-2xl font-bold text-foreground mb-2">
+          Crear Cuenta
+        </h1>
+        <p className="text-muted-foreground">
+          Unite a la nueva forma de trabajar
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-2">
+          <Label htmlFor="name">Nombre Completo</Label>
+          <Input
+            id="name"
+            name="name"
+            type="text"
+            placeholder="Juan Perez"
+            value={formData.name}
+            onChange={handleChange}
+            className="h-11"
+            required
+          />
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-sm font-medium text-gray-700">Nombre Completo</Label>
-            <Input
-              id="name"
-              name="name"
-              type="text"
-              placeholder="Juan Pérez"
-              value={formData.name}
-              onChange={handleChange}
-              className="h-11 border-gray-300 focus:border-brilliant-blue focus:ring-brilliant-blue"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email Corporativo</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="juan@empresa.com"
-              value={formData.email}
-              onChange={handleChange}
-              className="h-11 border-gray-300 focus:border-brilliant-blue focus:ring-brilliant-blue"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="company" className="text-sm font-medium text-gray-700">Empresa</Label>
-            <Input
-              id="company"
-              name="company"
-              type="text"
-              placeholder="Mi Empresa S.A."
-              value={formData.company}
-              onChange={handleChange}
-              className="h-11 border-gray-300 focus:border-brilliant-blue focus:ring-brilliant-blue"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="phone" className="text-sm font-medium text-gray-700">Teléfono</Label>
-            <Input
-              id="phone"
-              name="phone"
-              type="tel"
-              placeholder="+34 123 456 789"
-              value={formData.phone}
-              onChange={handleChange}
-              className="h-11 border-gray-300 focus:border-brilliant-blue focus:ring-brilliant-blue"
-              required
-            />
-          </div>
-
-          <Button 
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full h-11 bg-gradient-to-r from-brilliant-blue to-plum hover:from-brilliant-blue/90 hover:to-plum/90 text-white font-medium transition-all duration-200 mt-6 disabled:opacity-50"
-          >
-            {isSubmitting ? 'Enviando solicitud...' : 'Solicitar Acceso'}
-          </Button>
-
-          {/* Mostrar resultado del envío */}
-          {submitResult && (
-            <div className={`mt-4 p-4 rounded-lg border ${
-              submitResult.success 
-                ? 'bg-green-50 border-green-200 text-green-700' 
-                : 'bg-red-50 border-red-200 text-red-700'
-            }`}>
-              <p className="text-sm font-medium">
-                {submitResult.success ? '✅ ¡Solicitud enviada!' : '❌ Error'}
-              </p>
-              <p className="text-sm mt-1">
-                {submitResult.message}
-              </p>
-            </div>
-          )}
-        </form>
-
-        {/* Información del proceso */}
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <h3 className="text-sm font-medium text-blue-900 mb-2">📋 Proceso de Registro</h3>
-          <div className="text-xs text-blue-700 space-y-1">
-            <p>1. Enviamos tu solicitud</p>
-            <p>2. Revisamos tu información (24h)</p>
-            <p>3. Te contactamos con tus credenciales</p>
-            <p>4. ¡Empiezas a usar la plataforma!</p>
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="email">Email Corporativo</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="juan@empresa.com"
+            value={formData.email}
+            onChange={handleChange}
+            className="h-11"
+            required
+          />
         </div>
 
-        <div className="mt-6 text-center">
-          <p className="text-gray-600">
-            ¿Ya tienes cuenta?{' '}
-            <Link href="/login" className="text-blue-600 hover:underline">
-              Iniciar Sesión
-            </Link>
-          </p>
+        <div className="space-y-2">
+          <Label htmlFor="company">Empresa</Label>
+          <Input
+            id="company"
+            name="company"
+            type="text"
+            placeholder="Mi Empresa S.A."
+            value={formData.company}
+            onChange={handleChange}
+            className="h-11"
+            required
+          />
         </div>
 
-        {/* Value props sutiles */}
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <div className="text-center text-xs text-gray-500 space-y-1">
-            <p>🚀 Sin compromiso • ⚡ Configuración rápida</p>
-            <p>🔐 Datos seguros • 💼 Ideal para equipos</p>
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="phone">Telefono</Label>
+          <Input
+            id="phone"
+            name="phone"
+            type="tel"
+            placeholder="+54 11 1234 5678"
+            value={formData.phone}
+            onChange={handleChange}
+            className="h-11"
+            required
+          />
         </div>
-      </Card>
-    </div>
+
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 font-medium mt-2 disabled:opacity-50"
+        >
+          {isSubmitting ? 'Enviando solicitud...' : 'Solicitar Acceso'}
+        </Button>
+
+        {submitResult && (
+          <div className={`p-4 rounded-lg border text-sm ${
+            submitResult.success
+              ? 'bg-green-500/10 border-green-500/20 text-green-500'
+              : 'bg-destructive/10 border-destructive/20 text-destructive'
+          }`}>
+            <p className="font-medium">
+              {submitResult.success ? '¡Solicitud enviada!' : 'Error'}
+            </p>
+            <p className="mt-1">
+              {submitResult.message}
+            </p>
+          </div>
+        )}
+      </form>
+
+      <div className="mt-6 p-4 bg-muted/50 rounded-lg border border-border">
+        <h3 className="text-sm font-medium text-foreground mb-2">Proceso de Registro</h3>
+        <div className="text-xs text-muted-foreground space-y-1">
+          <p>1. Enviamos tu solicitud</p>
+          <p>2. Revisamos tu informacion (24h)</p>
+          <p>3. Te contactamos con tus credenciales</p>
+          <p>4. ¡Empezas a usar la plataforma!</p>
+        </div>
+      </div>
+
+      <div className="mt-6 text-center">
+        <p className="text-sm text-muted-foreground">
+          ¿Ya tenes cuenta?{' '}
+          <Link href="/login" className="text-primary hover:underline">
+            Iniciar Sesion
+          </Link>
+        </p>
+      </div>
+    </AuthLayout>
   )
-} 
+}

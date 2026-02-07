@@ -124,11 +124,11 @@ export function NotificationBell() {
                 </div>
                 <div className="max-h-80 overflow-y-auto">
                     {loading ? (
-                        <div className="p-4 text-center text-gray-500 text-sm">
+                        <div className="p-4 text-center text-muted-foreground text-sm">
                             Cargando...
                         </div>
                     ) : notifications.length === 0 ? (
-                        <div className="p-4 text-center text-gray-500 text-sm">
+                        <div className="p-4 text-center text-muted-foreground text-sm">
                             No hay notificaciones
                         </div>
                     ) : (
@@ -143,8 +143,8 @@ export function NotificationBell() {
                                     setOpen(false)
                                 }}
                                 className={cn(
-                                    "flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors border-b last:border-0",
-                                    !notification.is_read && "bg-blue-50/50"
+                                    "flex items-start gap-3 px-4 py-3 hover:bg-muted transition-colors border-b last:border-0",
+                                    !notification.is_read && "bg-primary/5"
                                 )}
                             >
                                 <div className="mt-1">
@@ -158,12 +158,12 @@ export function NotificationBell() {
                                         {notification.title}
                                     </p>
                                     {notification.message && (
-                                        <p className="text-xs text-gray-500 truncate">
+                                        <p className="text-xs text-muted-foreground truncate">
                                             {notification.message}
                                         </p>
                                     )}
                                 </div>
-                                <span className="text-xs text-gray-400 whitespace-nowrap">
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">
                                     {formatTime(notification.created_at)}
                                 </span>
                             </Link>
@@ -174,7 +174,7 @@ export function NotificationBell() {
                     <div className="border-t px-4 py-2">
                         <Link
                             href="/workspace/notifications"
-                            className="text-xs text-blue-600 hover:underline"
+                            className="text-xs text-primary hover:text-primary/80 hover:underline"
                             onClick={() => setOpen(false)}
                         >
                             Ver todas las notificaciones

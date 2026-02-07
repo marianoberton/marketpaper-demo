@@ -15,6 +15,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const validPaths = [
   '/workspace',
   '/workspace/construccion',
+  '/workspace/crm-fomo',
   '/workspace/crm',
   '/workspace/settings',
   '/workspace/Finanzas',

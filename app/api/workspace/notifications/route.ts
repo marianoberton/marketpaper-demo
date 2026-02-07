@@ -119,3 +119,68 @@ export async function PATCH(request: NextRequest) {
     )
   }
 }
+
+// DELETE - Eliminar notificaciones
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json(
+        { success: false, error: 'No autorizado' },
+        { status: 401 }
+      )
+    }
+
+    const body = await request.json()
+    const { notification_ids, delete_read } = body
+
+    if (delete_read) {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('is_read', true)
+
+      if (error) {
+        console.error('Error deleting read notifications:', error)
+        return NextResponse.json(
+          { success: false, error: 'Error al eliminar notificaciones' },
+          { status: 500 }
+        )
+      }
+    } else if (notification_ids?.length > 0) {
+      const { error } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('user_id', user.id)
+        .in('id', notification_ids)
+
+      if (error) {
+        console.error('Error deleting notifications:', error)
+        return NextResponse.json(
+          { success: false, error: 'Error al eliminar notificaciones' },
+          { status: 500 }
+        )
+      }
+    } else {
+      return NextResponse.json(
+        { success: false, error: 'Se requiere notification_ids o delete_read' },
+        { status: 400 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Notificaciones eliminadas'
+    })
+
+  } catch (error) {
+    console.error('Delete Notifications API Error:', error)
+    return NextResponse.json(
+      { success: false, error: 'Error interno del servidor' },
+      { status: 500 }
+    )
+  }
+}

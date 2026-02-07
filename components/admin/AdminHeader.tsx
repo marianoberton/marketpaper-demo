@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { Bell, Search, LogOut, User, Settings, Command, Moon, Sun, Monitor } from 'lucide-react'
+import { Search, LogOut, User, Settings, Command, Moon, Sun, Monitor } from 'lucide-react'
+import { NotificationBell } from '@/components/notification-bell'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -113,13 +114,7 @@ export function Header() {
             </Button>
 
             {/* Notifications */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="relative h-9 w-9 rounded-lg hover:bg-muted"
-            >
-              <Bell className="h-4 w-4" />
-            </Button>
+            <NotificationBell />
 
             {/* User menu */}
             <DropdownMenu>

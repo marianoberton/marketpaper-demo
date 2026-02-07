@@ -45,16 +45,15 @@ export async function GET(request: NextRequest) {
     .neq('role', 'super_admin') // IMPORTANTE: Los super_admin no pertenecen a empresas
     .order('created_at', { ascending: false })
 
-  if (currentUser.role !== 'super_admin') {
-    // Usuarios regulares solo ven su empresa
-    query = query.eq('company_id', currentUser.company_id)
-  } else {
-    // Super admin debe especificar qué empresa quiere ver
-    const targetCompanyId = new URL(request.url).searchParams.get('company_id') || currentUser.company_id
-    if (targetCompanyId) {
-      query = query.eq('company_id', targetCompanyId)
-    }
+  const targetCompanyId = currentUser.role === 'super_admin'
+    ? new URL(request.url).searchParams.get('company_id')
+    : currentUser.company_id
+
+  if (!targetCompanyId) {
+    return NextResponse.json({ error: 'company_id es requerido' }, { status: 400 })
   }
+
+  query = query.eq('company_id', targetCompanyId)
 
   const { data: users, error: usersError } = await query
 
@@ -65,24 +64,14 @@ export async function GET(request: NextRequest) {
 
   // Fetch company clients for viewer invitation flow
   // Using admin client to bypass RLS for reliable client listing
-  let companyId: string | null = currentUser.role === 'super_admin'
-    ? new URL(request.url).searchParams.get('company_id') || currentUser.company_id
-    : currentUser.company_id
-
-  // If companyId is still null (e.g., super_admin without company), infer from fetched users
-  if (!companyId && users && users.length > 0) {
-    const firstUserWithCompany = users.find((u: any) => u.company_id)
-    companyId = firstUserWithCompany?.company_id || null
-  }
-
   let clients: { id: string; name: string }[] = []
-  if (companyId) {
+  if (targetCompanyId) {
     try {
       const supabaseAdmin = getSupabaseAdmin()
       const { data: clientsData, error: clientsError } = await supabaseAdmin
         .from('clients')
         .select('id, name')
-        .eq('company_id', companyId)
+        .eq('company_id', targetCompanyId)
         .order('name')
 
       if (clientsError) {

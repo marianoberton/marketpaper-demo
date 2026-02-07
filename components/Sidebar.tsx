@@ -24,27 +24,27 @@ const navigation = [
     icon: LayoutDashboard,
   },
   {
-    name: 'CRM',
+    name: 'CRM-FOMO',
     icon: Users,
     children: [
       {
         name: 'Leads',
-        href: '/workspace/crm/leads',
+        href: '/workspace/crm-fomo/leads',
         icon: UserPlus,
       },
       {
         name: 'Contactos',
-        href: '/workspace/crm/contacts',
+        href: '/workspace/crm-fomo/contacts',
         icon: Users,
       },
       {
         name: 'Pipeline',
-        href: '/workspace/crm/pipeline',
+        href: '/workspace/crm-fomo/pipeline',
         icon: BarChart3,
       },
       {
         name: 'Actividades',
-        href: '/workspace/crm/activities',
+        href: '/workspace/crm-fomo/activities',
         icon: Activity,
       }
     ]

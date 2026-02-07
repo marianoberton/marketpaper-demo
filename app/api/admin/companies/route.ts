@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
+import { createSupabaseAdmin } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
@@ -227,6 +228,98 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(transformedData)
   } catch (error) {
     console.error('API PUT Error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const cookieStore = await cookies()
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get: (name: string) => cookieStore.get(name)?.value,
+        },
+      }
+    )
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { data: superAdmin, error: superAdminError } = await supabase
+      .from('super_admins')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .single()
+
+    if (superAdminError || !superAdmin) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
+
+    const companyId = new URL(request.url).searchParams.get('id')
+    if (!companyId) {
+      return NextResponse.json({ error: 'Company ID is required' }, { status: 400 })
+    }
+
+    const supabaseAdmin = createSupabaseAdmin()
+
+    // Fetch company to check protection
+    const { data: company, error: companyError } = await supabaseAdmin
+      .from('companies')
+      .select('id, name')
+      .eq('id', companyId)
+      .single()
+
+    if (companyError || !company) {
+      return NextResponse.json({ error: 'Company not found' }, { status: 404 })
+    }
+
+    // Protect INTED
+    if (company.name.toUpperCase().includes('INTED')) {
+      return NextResponse.json(
+        { error: 'No se puede eliminar la empresa INTED. Es un cliente activo protegido.' },
+        { status: 403 }
+      )
+    }
+
+    // Get all users of this company to delete from auth
+    const { data: companyUsers } = await supabaseAdmin
+      .from('user_profiles')
+      .select('id')
+      .eq('company_id', companyId)
+
+    // Delete each user from auth (profiles will be cascade-deleted with the company)
+    if (companyUsers && companyUsers.length > 0) {
+      for (const profile of companyUsers) {
+        try {
+          await supabaseAdmin.auth.admin.deleteUser(profile.id)
+        } catch (err) {
+          console.error(`Error deleting auth user ${profile.id}:`, err)
+        }
+      }
+    }
+
+    // Delete the company (CASCADE handles child tables)
+    const { error: deleteError } = await supabaseAdmin
+      .from('companies')
+      .delete()
+      .eq('id', companyId)
+
+    if (deleteError) {
+      console.error('Error deleting company:', deleteError)
+      return NextResponse.json({ error: 'Failed to delete company' }, { status: 500 })
+    }
+
+    revalidatePath('/admin/companies')
+
+    return NextResponse.json({ success: true, message: `Empresa "${company.name}" eliminada correctamente` })
+  } catch (error) {
+    console.error('API DELETE Error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 } 

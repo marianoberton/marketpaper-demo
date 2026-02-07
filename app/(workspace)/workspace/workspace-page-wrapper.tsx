@@ -1,7 +1,8 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
+import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { getCurrentUser } from '@/lib/auth-server';
-import { getCurrentCompany, getModulesForCompany } from '@/lib/crm-multitenant';
+import { getCurrentCompany, getEffectiveModulesForUser } from '@/lib/crm-multitenant';
 import { WorkspaceLayoutWithProvider } from '../workspace-layout-with-provider';
 
 interface WorkspacePageWrapperProps {
@@ -63,7 +64,7 @@ export async function WorkspacePageWrapper({ children, searchParams }: Workspace
     // Use Promise.allSettled to ensure both requests are attempted
     const [companyResult, modulesResult] = await Promise.allSettled([
       getCurrentCompany(companyId),
-      getModulesForCompany(companyId), // Now using company-specific modules
+      getEffectiveModulesForUser(companyId, user.id, user.role),
     ]);
 
     // Process company result
@@ -86,6 +87,9 @@ export async function WorkspacePageWrapper({ children, searchParams }: Workspace
     }
 
   } catch (error: any) {
+    if (isRedirectError(error)) {
+      throw error;
+    }
     console.error(`[WorkspacePageWrapper] Failed to fetch data:`, error.message);
     fetchError = error.message || 'An unknown error occurred on the server.';
   }

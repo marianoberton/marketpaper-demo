@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { sendEmail } from '@/lib/email'
+import { InvitationEmail } from '@/lib/emails/invitation'
 
 // GET - List invitations for my company
 export async function GET(request: NextRequest) {
@@ -199,13 +201,43 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Error al crear invitación' }, { status: 500 })
   }
 
-  // TODO: Send invitation email using Supabase or external service
-  // For now, just log the invitation token
-  console.log(`Invitation created for ${email} with token: ${invitation.token}`)
+  // Send invitation email via Resend
+  try {
+    // Get company name for the email
+    const { data: company } = await supabase
+      .from('companies')
+      .select('name')
+      .eq('id', currentUser.company_id)
+      .single()
 
-  return NextResponse.json({ 
+    // Get inviter name
+    const { data: inviterProfile } = await supabase
+      .from('user_profiles')
+      .select('full_name')
+      .eq('id', currentUser.id)
+      .single()
+
+    const origin = request.headers.get('origin') || request.headers.get('referer')?.replace(/\/[^/]*$/, '') || ''
+    const inviteUrl = `${origin}/invite/accept?token=${invitation.token}`
+
+    await sendEmail({
+      to: email,
+      subject: `Te invitaron a ${company?.name || 'una empresa'} en FOMO Platform`,
+      react: InvitationEmail({
+        inviteUrl,
+        companyName: company?.name || 'una empresa',
+        role: targetRole,
+        invitedByName: inviterProfile?.full_name || undefined,
+      }),
+    })
+  } catch (emailError) {
+    console.error('Failed to send invitation email:', emailError)
+    // Don't fail the invitation creation if email fails
+  }
+
+  return NextResponse.json({
     invitation,
-    message: 'Invitación creada. El usuario recibirá un email para unirse.' 
+    message: 'Invitacion creada. El usuario recibira un email para unirse.'
   })
 }
 

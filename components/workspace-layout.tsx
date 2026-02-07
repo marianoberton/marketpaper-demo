@@ -13,7 +13,8 @@ import {
   SheetClose
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Menu, ArrowLeft, LogOut, User } from "lucide-react";
+import { Menu, ArrowLeft, LogOut, User, LifeBuoy } from "lucide-react";
+import { NotificationBell } from "@/components/notification-bell";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { logout } from "@/lib/auth-client";
@@ -55,8 +56,8 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
                     src={companyLogoUrl}
                     alt={`Logo de ${companyName}`}
                     width={120}
-                    height={120}
-                    className="object-contain rounded"
+                    height={40}
+                    className="object-contain rounded max-h-10"
                   />
                 ) : (
                   <div className="text-2xl font-bold text-foreground">
@@ -68,6 +69,12 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
 
             {/* Controles */}
             <div className="flex items-center gap-2">
+              <Link href="/workspace/soporte" title="Soporte">
+                <Button variant="ghost" size="icon">
+                  <LifeBuoy className="h-5 w-5" />
+                </Button>
+              </Link>
+              <NotificationBell />
               <ThemeToggle />
               <LayoutToggle />
               <Button
@@ -109,9 +116,9 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
                   <Image
                     src={companyLogoUrl}
                     alt={`Logo de ${companyName}`}
-                    width={64}
-                    height={64}
-                    className="object-contain rounded"
+                    width={40}
+                    height={40}
+                    className="object-contain rounded max-h-10 max-w-[40px]"
                     title={companyName || 'Workspace'}
                   />
                 ) : (
@@ -137,9 +144,9 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
                     <Image
                       src={companyLogoUrl}
                       alt={`Logo de ${companyName}`}
-                      width={100}
-                      height={100}
-                      className="object-contain rounded"
+                      width={140}
+                      height={40}
+                      className="object-contain rounded max-h-10"
                     />
                   ) : (
                     <div className="text-2xl font-bold text-foreground">
@@ -163,6 +170,12 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
             }`}>
             {isCollapsed ? (
               <>
+                <Link href="/workspace/soporte" title="Soporte">
+                  <Button variant="ghost" size="icon">
+                    <LifeBuoy className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <NotificationBell />
                 <ThemeToggle />
                 <div className="w-full h-px bg-border my-2" />
                 <Button
@@ -187,7 +200,15 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
                       <p className="text-xs text-muted-foreground truncate max-w-[120px]">{companyName || 'Manager'}</p>
                     </div>
                   </div>
-                  <ThemeToggle />
+                  <div className="flex items-center gap-1">
+                    <Link href="/workspace/soporte" title="Soporte">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <LifeBuoy className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                    <NotificationBell />
+                    <ThemeToggle />
+                  </div>
                 </div>
                 <Button
                   variant="outline"
@@ -220,9 +241,9 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
                   <Image
                     src={companyLogoUrl}
                     alt={`Logo de ${companyName}`}
-                    width={64}
-                    height={64}
-                    className="object-contain rounded"
+                    width={120}
+                    height={40}
+                    className="object-contain rounded max-h-10"
                   />
                 ) : (
                   <div className="text-2xl font-bold text-foreground">
@@ -282,6 +303,12 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
             )}
           </div>
           <div className="flex items-center gap-2">
+            <Link href="/workspace/soporte" title="Soporte">
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <LifeBuoy className="h-4 w-4" />
+              </Button>
+            </Link>
+            <NotificationBell />
             <ThemeToggle />
             <LayoutToggle />
             <Button

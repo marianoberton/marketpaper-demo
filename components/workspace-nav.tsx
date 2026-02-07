@@ -81,9 +81,10 @@ export function WorkspaceNav() {
       const orderMap: Record<string, number> = {
         'Dashboard': 1,
         'Analytics': 2,
-        'Workspace': 3,
-        'Tools': 4,
-        'Admin': 5
+        'CRM': 3,
+        'Workspace': 4,
+        'Tools': 5,
+        'Admin': 6
       };
       const orderA = orderMap[a.name] || 99;
       const orderB = orderMap[b.name] || 99;
