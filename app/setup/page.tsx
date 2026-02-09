@@ -308,24 +308,24 @@ export default function SetupPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4">Verificando configuración...</p>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Verificando configuración...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
+    <div className="min-h-screen bg-background py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <Card className="p-6">
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl font-bold text-foreground mb-2">
               {mode === 'super_admin_setup' ? '👑 Configuración Super Admin' : '👤 Completar Perfil'}
             </h1>
-            <p className="text-gray-600">
+            <p className="text-muted-foreground">
               {mode === 'super_admin_setup' 
                 ? 'Completa tu perfil de Super Administrador'
                 : 'Completa tu perfil para comenzar'
@@ -334,7 +334,7 @@ export default function SetupPage() {
           </div>
 
           {error && (
-            <div className="mb-4 p-4 bg-red-100 border border-red-300 rounded text-red-700">
+            <div className="mb-4 p-4 bg-state-error-muted border border-state-error/30 rounded text-state-error">
               <p><strong>Error:</strong> {error}</p>
               <div className="mt-2 space-x-2">
                 <Button variant="outline" onClick={() => router.push('/fix-user')}>
@@ -348,7 +348,7 @@ export default function SetupPage() {
           )}
 
           {result && (
-            <div className="mb-4 p-4 bg-green-100 border border-green-300 rounded text-green-700">
+            <div className="mb-4 p-4 bg-state-success-muted border border-state-success/30 rounded text-state-success">
               <p><strong>¡Éxito!</strong> {result.message}</p>
             </div>
           )}
@@ -356,13 +356,13 @@ export default function SetupPage() {
           {mode === 'super_admin_setup' && (
             <div className="space-y-4">
               <div className="text-center">
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-sm text-muted-foreground mb-4">
                   Eres un Super Administrador. Crea tu perfil para acceder al panel de administración.
                 </p>
                 <Button 
                   onClick={createSuperAdminProfile}
                   disabled={loading}
-                  className="w-full bg-purple-600 hover:bg-purple-700"
+                  className="w-full bg-primary hover:bg-primary/90"
                 >
                   {loading ? 'Creando...' : '👑 Crear Perfil de Super Admin'}
                 </Button>
@@ -383,11 +383,11 @@ export default function SetupPage() {
                 />
               </div>
 
-              <div className="border-t pt-4">
-                <Label className="text-sm font-medium text-gray-700">
+              <div className="border-t border-border pt-4">
+                <Label className="text-sm font-medium text-foreground">
                   ¿Quieres crear tu propia empresa? (Opcional)
                 </Label>
-                <p className="text-xs text-gray-500 mb-3">
+                <p className="text-xs text-muted-foreground mb-3">
                   Si dejas esto vacío, un administrador deberá asignarte a una empresa
                 </p>
 
@@ -418,7 +418,7 @@ export default function SetupPage() {
               <Button 
                 type="submit" 
                 disabled={loading}
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full bg-primary hover:bg-primary/90"
               >
                 {loading ? 'Configurando...' : 'Completar Configuración'}
               </Button>
@@ -471,7 +471,7 @@ export default function SetupPage() {
           )}
 
           <div className="mt-6 text-center space-y-3">
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-muted-foreground">
               <p><strong>Estado del Sistema:</strong></p>
               <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
                 <div>Base de datos: ⚠️ Verificar setup</div>
@@ -481,16 +481,16 @@ export default function SetupPage() {
               </div>
             </div>
 
-            <div className="border-t pt-3">
-              <p className="text-xs text-gray-500 mb-2">💡 Información:</p>
-              <ul className="text-xs text-gray-500 space-y-1">
+            <div className="border-t border-border pt-3">
+              <p className="text-xs text-muted-foreground mb-2">💡 Información:</p>
+              <ul className="text-xs text-muted-foreground space-y-1">
                 <li>• Si no especificas una empresa, un administrador deberá asignarte a una más tarde</li>
                 <li>• El slug solo puede contener letras minúsculas, números y guiones</li>
                 <li>• Puedes cambiar esta información después en configuración</li>
               </ul>
             </div>
 
-            <div className="text-xs text-gray-400">
+            <div className="text-xs text-muted-foreground/70">
               ¿Problemas con la configuración?
             </div>
             
@@ -501,7 +501,7 @@ export default function SetupPage() {
             >
               🚀 Ir al Workspace (Modo Simple)
             </Button>
-            <p className="text-xs text-gray-400">Omite la configuración y ve directo al workspace</p>
+            <p className="text-xs text-muted-foreground/70">Omite la configuración y ve directo al workspace</p>
           </div>
         </Card>
       </div>
