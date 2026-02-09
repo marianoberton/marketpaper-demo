@@ -42,7 +42,7 @@ export function SeguimientoTab({ companyId, pipelineId, refreshKey, dateRange }:
   const [sheetOpen, setSheetOpen] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('cards')
   const [sortField, setSortField] = useState<SortField>('daysSinceCreation')
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc') // Mostrar primero los menos antiguos
 
   const fetchData = useCallback(async () => {
     if (!companyId || !pipelineId) return
@@ -144,6 +144,36 @@ export function SeguimientoTab({ companyId, pipelineId, refreshKey, dateRange }:
     <div className="flex flex-col gap-6">
       <KPICards cards={kpis} columns={3} />
 
+      {/* Price Classification Legend */}
+      <div className="rounded-lg border bg-muted/30 p-4">
+        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+          Clasificación de Precios m²
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+          <div className="flex items-start gap-2">
+            <div className="mt-0.5 h-4 w-4 rounded bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800" />
+            <div className="flex-1">
+              <p className="font-medium text-green-700 dark:text-green-400">Competitivo</p>
+              <p className="text-xs text-muted-foreground">≤ $700/m² - Precio dentro del rango competitivo</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <div className="mt-0.5 h-4 w-4 rounded bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800" />
+            <div className="flex-1">
+              <p className="font-medium text-yellow-700 dark:text-yellow-400">Normal</p>
+              <p className="text-xs text-muted-foreground">$701-$850/m² - Precio dentro del rango estándar</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <div className="mt-0.5 h-4 w-4 rounded bg-red-100 dark:bg-red-900/30 border border-red-200 dark:border-red-800" />
+            <div className="flex-1">
+              <p className="font-medium text-red-700 dark:text-red-400">Alto</p>
+              <p className="text-xs text-muted-foreground">&gt; $850/m² - Precio por encima del rango estándar</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* View Toggle */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-muted-foreground">
@@ -183,14 +213,16 @@ export function SeguimientoTab({ companyId, pipelineId, refreshKey, dateRange }:
                 </h3>
               </div>
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {data.urgente.map(deal => (
-                  <DealCard
-                    key={deal.id}
-                    deal={deal}
-                    variant="urgente"
-                    onClick={() => { setSelectedDeal(deal); setSheetOpen(true) }}
-                  />
-                ))}
+                {[...data.urgente]
+                  .sort((a, b) => a.daysSinceCreation - b.daysSinceCreation)
+                  .map(deal => (
+                    <DealCard
+                      key={deal.id}
+                      deal={deal}
+                      variant="urgente"
+                      onClick={() => { setSelectedDeal(deal); setSheetOpen(true) }}
+                    />
+                  ))}
               </div>
             </div>
           )}
@@ -202,14 +234,16 @@ export function SeguimientoTab({ companyId, pipelineId, refreshKey, dateRange }:
                 -14 Dias - Seguimiento Normal ({data.normal.length})
               </h3>
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {data.normal.map(deal => (
-                  <DealCard
-                    key={deal.id}
-                    deal={deal}
-                    variant="normal"
-                    onClick={() => { setSelectedDeal(deal); setSheetOpen(true) }}
-                  />
-                ))}
+                {[...data.normal]
+                  .sort((a, b) => a.daysSinceCreation - b.daysSinceCreation)
+                  .map(deal => (
+                    <DealCard
+                      key={deal.id}
+                      deal={deal}
+                      variant="normal"
+                      onClick={() => { setSelectedDeal(deal); setSheetOpen(true) }}
+                    />
+                  ))}
               </div>
             </div>
           )}
@@ -267,8 +301,10 @@ function DealCard({
             {deal.daysSinceCreation}d
           </Badge>
         </div>
-        {deal.clienteEmpresa && (
-          <p className="text-xs text-muted-foreground">{deal.clienteEmpresa}</p>
+        {(deal.associatedCompanyName || deal.clienteEmpresa || deal.clienteNombre) && (
+          <p className="text-xs text-muted-foreground">
+            {deal.associatedCompanyName || deal.clienteEmpresa || deal.clienteNombre}
+          </p>
         )}
       </CardHeader>
       <CardContent className="space-y-3">
@@ -278,26 +314,32 @@ function DealCard({
             <p className="text-[10px] text-muted-foreground uppercase">Monto</p>
             <p className="text-sm font-semibold">{formatCurrency(amount)}</p>
           </div>
-          {deal.m2Total > 0 && (
-            <div>
-              <p className="text-[10px] text-muted-foreground uppercase">m2</p>
-              <p className="text-sm font-semibold">{formatM2(deal.m2Total)}</p>
-            </div>
-          )}
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase">m2</p>
+            <p className="text-sm font-semibold">
+              {deal.m2Total >= 10 ? formatM2(deal.m2Total) : <span className="text-muted-foreground">Sin datos</span>}
+            </p>
+          </div>
         </div>
 
         {/* Price Indicator */}
-        {deal.precioPromedioM2 > 0 && (
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] text-muted-foreground uppercase">Precio x m2</p>
-              <p className="text-sm font-semibold">{formatCurrencyPerM2(deal.precioPromedioM2)}</p>
-            </div>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase">Precio x m2</p>
+            <p className="text-sm font-semibold">
+              {deal.m2Total >= 10 && deal.precioPromedioM2 > 0 ? (
+                formatCurrencyPerM2(deal.precioPromedioM2)
+              ) : (
+                <span className="text-muted-foreground">Sin datos</span>
+              )}
+            </p>
+          </div>
+          {deal.m2Total >= 10 && deal.precioPromedioM2 > 0 && (
             <Badge className={`${priceIndicator.bgColor} ${priceIndicator.color} border-0`}>
               {priceIndicator.label}
             </Badge>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Items Preview */}
         {itemsCount > 0 && (
@@ -453,15 +495,23 @@ function DealsTable({
                   </div>
                 </TableCell>
                 <TableCell className="max-w-[150px]">
-                  <div className="truncate">{deal.clienteEmpresa || deal.clienteNombre || '-'}</div>
+                  <div className="truncate">
+                    {deal.associatedCompanyName || deal.clienteEmpresa || deal.clienteNombre || '-'}
+                  </div>
                 </TableCell>
                 <TableCell>{formatCurrency(amount)}</TableCell>
-                <TableCell>{deal.m2Total > 0 ? formatM2(deal.m2Total) : '-'}</TableCell>
                 <TableCell>
-                  {deal.precioPromedioM2 > 0 ? formatCurrencyPerM2(deal.precioPromedioM2) : '-'}
+                  {deal.m2Total >= 10 ? formatM2(deal.m2Total) : <span className="text-muted-foreground">Sin datos</span>}
                 </TableCell>
                 <TableCell>
-                  {deal.precioPromedioM2 > 0 && (
+                  {deal.m2Total >= 10 && deal.precioPromedioM2 > 0 ? (
+                    formatCurrencyPerM2(deal.precioPromedioM2)
+                  ) : (
+                    <span className="text-muted-foreground">Sin datos</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {deal.m2Total >= 10 && deal.precioPromedioM2 > 0 && (
                     <Badge className={`${priceIndicator.bgColor} ${priceIndicator.color} border-0 text-xs`}>
                       {priceIndicator.label}
                     </Badge>

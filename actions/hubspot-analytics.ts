@@ -336,7 +336,8 @@ export async function getDealsEnriched(
   companyId: string,
   pipelineId: string,
   stageIds?: string[],
-  after?: string
+  after?: string,
+  dateRange?: { from?: string; to?: string }
 ): Promise<EnrichedDealsResponse> {
   const hubspot = await getHubSpotClient(companyId)
   const { map: stagesMap } = await buildStagesMap(companyId, pipelineId)
@@ -346,6 +347,22 @@ export async function getDealsEnriched(
   ]
   if (stageIds && stageIds.length > 0 && !stageIds.includes('all')) {
     filters.push({ propertyName: "dealstage", operator: "IN" as any, values: stageIds })
+  }
+
+  // Add date filters for closedate
+  if (dateRange?.from) {
+    filters.push({
+      propertyName: "closedate",
+      operator: "GTE" as any,
+      value: dateRange.from
+    })
+  }
+  if (dateRange?.to) {
+    filters.push({
+      propertyName: "closedate",
+      operator: "LTE" as any,
+      value: dateRange.to
+    })
   }
 
   const searchRequest: any = {
@@ -360,7 +377,44 @@ export async function getDealsEnriched(
 
   const result = await hubspot.crm.deals.searchApi.doSearch(searchRequest)
 
-  const enriched = result.results.map(deal => enrichDeal(deal, stagesMap))
+  // Obtener companies asociadas para cada deal
+  const dealsWithCompanies = await Promise.all(
+    result.results.map(async (deal) => {
+      try {
+        // Obtener deal con asociaciones de companies
+        const dealWithAssoc = await hubspot.crm.deals.basicApi.getById(
+          deal.id,
+          undefined,
+          undefined,
+          ['companies']
+        )
+
+        // @ts-ignore - HubSpot returns association keys with spaces
+        const companyAssociations = dealWithAssoc.associations?.companies?.results
+
+        if (companyAssociations && companyAssociations.length > 0) {
+          // Obtener el nombre de la primera company asociada
+          const companyId = companyAssociations[0].id
+          try {
+            const company = await hubspot.crm.companies.basicApi.getById(companyId, ['name'])
+            return {
+              ...deal,
+              associatedCompanyName: company.properties.name || null
+            }
+          } catch (e) {
+            console.error(`Error fetching company ${companyId}:`, e)
+            return { ...deal, associatedCompanyName: null }
+          }
+        }
+        return { ...deal, associatedCompanyName: null }
+      } catch (e) {
+        console.error(`Error fetching associations for deal ${deal.id}:`, e)
+        return { ...deal, associatedCompanyName: null }
+      }
+    })
+  )
+
+  const enriched = dealsWithCompanies.map(deal => enrichDeal(deal, stagesMap))
 
   return {
     results: enriched,

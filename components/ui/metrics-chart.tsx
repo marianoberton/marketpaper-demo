@@ -201,21 +201,26 @@ export function MetricsChart({
               ))}
             </AreaChart>
           ) : chartType === "bar" ? (
-            <BarChart data={chartDataWithContext}>
+            <BarChart data={chartDataWithContext} margin={{ bottom: 60, left: 10, right: 10 }}>
               {showGrid && <CartesianGrid strokeDasharray="3 3" vertical={false} />}
-              <XAxis 
-                dataKey="name" 
+              <XAxis
+                dataKey="name"
                 tickLine={false}
                 axisLine={false}
-                fontSize={12}
+                fontSize={11}
+                angle={-45}
+                textAnchor="end"
+                height={80}
+                interval={0}
               />
-              <YAxis 
+              <YAxis
                 tickFormatter={yFormatter}
                 tickLine={false}
                 axisLine={false}
-                fontSize={12}
+                fontSize={11}
+                width={80}
               />
-              <Tooltip 
+              <Tooltip
                 formatter={(value) => [yFormatter(Number(value)), ""]}
                 labelStyle={{ fontSize: 12 }}
               />

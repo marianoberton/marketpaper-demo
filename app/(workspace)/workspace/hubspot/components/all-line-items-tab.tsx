@@ -1,26 +1,29 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { subDays } from 'date-fns'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { 
-  getDealsEnriched, 
+import {
+  getDealsEnriched,
   getDealLineItems,
-  type EnrichedDeal, 
+  type EnrichedDeal,
   type HubSpotLineItem,
-  type HubSpotStage 
+  type HubSpotStage
 } from '@/actions/hubspot-analytics'
 import { StageBadge } from './stage-badge'
 import { CSVExportButton } from './csv-export-button'
+import { DateRangePicker } from './date-range-picker'
 import { formatCurrency, formatM2 } from '@/lib/formatters'
-import { 
-  Search, 
-  Filter, 
-  Loader2, 
+import type { DateRange } from '@/lib/hubspot-analytics-types'
+import {
+  Search,
+  Filter,
+  Loader2,
   Package,
   Download,
   ChevronDown
@@ -39,43 +42,121 @@ interface ExtendedLineItem {
   deal: EnrichedDeal
 }
 
-export function AllLineItemsTab({ 
-  companyId, 
-  pipelineId, 
+/**
+ * Calcula m² de una caja según su tipo
+ * Todas las medidas de entrada están en milímetros
+ */
+function calculateM2PerUnit(
+  tipo: string | null | undefined,
+  largo: number,
+  ancho: number,
+  alto: number
+): number {
+  if (!tipo || largo <= 0 || ancho <= 0) return 0
+
+  const tipoLower = tipo.toLowerCase().trim()
+  let largoPlancha = 0
+  let anchoPlancha = 0
+
+  if (tipoLower.includes('dos planchas') || tipoLower.includes('2 planchas')) {
+    // Dos Planchas = Una Caja
+    largoPlancha = largo + ancho + 40
+    anchoPlancha = ancho + alto
+    return ((largoPlancha * anchoPlancha) * 2) / 1000000
+  } else if (tipoLower.includes('bandeja')) {
+    // Bandeja
+    largoPlancha = largo + (2 * alto) + 30
+    anchoPlancha = ancho + (2 * alto)
+  } else if (tipoLower.includes('cerco')) {
+    // Cerco
+    largoPlancha = 2 * (largo - 10) + 2 * (ancho - 10) + 40
+    anchoPlancha = ancho + alto
+  } else if (tipoLower.includes('aleta cruzada') && tipoLower.includes('x2')) {
+    // Caja Aleta Cruzada (x2 Lados)
+    largoPlancha = (2 * largo) + (2 * ancho) + 40
+    anchoPlancha = (2 * ancho) + largo - 20
+  } else if (tipoLower.includes('aleta cruzada') && tipoLower.includes('x1')) {
+    // Caja Aleta Cruzada (x1 Lado)
+    largoPlancha = (2 * largo) + (2 * ancho) + 40
+    anchoPlancha = ancho + (0.5 * ancho) + alto - 10
+  } else if (tipoLower.includes('telescópica') || tipoLower.includes('telescopica')) {
+    // Base o Tapa Telescópica
+    largoPlancha = (2 * largo) + (2 * ancho) + 50
+    anchoPlancha = (0.5 * ancho) + alto
+  } else if (tipoLower.includes('plancha')) {
+    // Plancha Simple
+    largoPlancha = largo
+    anchoPlancha = ancho
+  } else {
+    // Caja Aleta Simple (Estándar) - default
+    largoPlancha = (2 * largo) + (2 * ancho) + 40
+    anchoPlancha = ancho + alto
+  }
+
+  return (largoPlancha * anchoPlancha) / 1000000
+}
+
+export function AllLineItemsTab({
+  companyId,
+  pipelineId,
   stages,
   refreshKey,
-  dateRange 
+  dateRange
 }: AllLineItemsTabProps) {
+  // Pre-filtrar solo etapa "Cierre Ganado"
+  const wonStages = stages.filter(s =>
+    s.label.toLowerCase().includes('ganado') &&
+    s.label.toLowerCase().includes('cierre')
+  )
+
+  // Default: últimas 2 semanas
+  const [localDateRange, setLocalDateRange] = useState<DateRange>({
+    from: subDays(new Date(), 14),
+    to: new Date()
+  })
+
   const [lineItems, setLineItems] = useState<ExtendedLineItem[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedStages, setSelectedStages] = useState<string[]>([])
+  const [selectedStages, setSelectedStages] = useState<string[]>(
+    wonStages.map(s => s.id)
+  )
   const [loadingProgress, setLoadingProgress] = useState({ current: 0, total: 0 })
 
   const fetchData = useCallback(async () => {
     if (!companyId || !pipelineId) return
-    
+
     try {
       setLoading(true)
       setLineItems([])
-      
-      // Obtener todos los deals
+
+      // Usar el rango de fechas del estado
+      const dateRangeParam = localDateRange.from || localDateRange.to
+        ? {
+            from: localDateRange.from?.toISOString(),
+            to: localDateRange.to?.toISOString()
+          }
+        : undefined
+
+      // Obtener solo los primeros 20 deals cerrados en el rango seleccionado
       const dealsResponse = await getDealsEnriched(
-        companyId, 
-        pipelineId, 
-        selectedStages.length > 0 ? selectedStages : undefined
+        companyId,
+        pipelineId,
+        selectedStages.length > 0 ? selectedStages : undefined,
+        undefined,
+        dateRangeParam
       )
-      
-      const deals = dealsResponse.results
+
+      const deals = dealsResponse.results.slice(0, 20) // Limitar a 20 deals
       setLoadingProgress({ current: 0, total: deals.length })
 
-      // Obtener line items de cada deal
+      // Obtener line items de cada deal (máximo 20 deals)
       const allItems: ExtendedLineItem[] = []
-      
+
       for (let i = 0; i < deals.length; i++) {
         const deal = deals[i]
         setLoadingProgress({ current: i + 1, total: deals.length })
-        
+
         try {
           const items = await getDealLineItems(companyId, deal.id)
           for (const item of items) {
@@ -92,7 +173,7 @@ export function AllLineItemsTab({
     } finally {
       setLoading(false)
     }
-  }, [companyId, pipelineId, selectedStages])
+  }, [companyId, pipelineId, selectedStages, localDateRange])
 
   useEffect(() => {
     fetchData()
@@ -109,6 +190,7 @@ export function AllLineItemsTab({
     ? lineItems.filter(({ item, deal }) =>
         item.properties.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         deal.properties.dealname.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        deal.associatedCompanyName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         deal.clienteEmpresa?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         deal.clienteNombre?.toLowerCase().includes(searchQuery.toLowerCase())
       )
@@ -117,6 +199,18 @@ export function AllLineItemsTab({
   // Calcular totales
   const totalQuantity = filteredItems.reduce(
     (sum, { item }) => sum + (parseFloat(item.properties.quantity || '0') || 0),
+    0
+  )
+  const totalM2 = filteredItems.reduce(
+    (sum, { item }) => {
+      const quantity = parseFloat(item.properties.quantity || '0')
+      const largo = parseFloat(item.properties.mp_largo_mm || '0')
+      const ancho = parseFloat(item.properties.mp_ancho_mm || '0')
+      const alto = parseFloat(item.properties.mp_alto_mm || '0')
+      const tipo = item.properties.mp_tipo_caja
+      const m2PerUnit = calculateM2PerUnit(tipo, largo, ancho, alto)
+      return sum + (m2PerUnit * quantity)
+    },
     0
   )
   const totalAmount = filteredItems.reduce(
@@ -128,23 +222,40 @@ export function AllLineItemsTab({
     if (filteredItems.length === 0) return
 
     const headers = [
-      'Deal', 'Cliente', 'Etapa', 'Item', 'SKU', 
-      'Cantidad', 'Precio Unitario', 'Total', 'Fecha'
+      'Deal', 'Cliente', 'Item', 'Cantidad', 'Largo (mm)', 'Ancho (mm)', 'Alto (mm)',
+      'm2 por Unidad (Calc)', 'm2 Totales (Calc)', 'Tipo', 'Precio Unitario', 'Subtotal SIN IVA', 'Fecha Creación', 'Fecha Cierre'
     ]
 
-    const rows = filteredItems.map(({ item, deal }) => [
-      deal.properties.dealname,
-      deal.clienteEmpresa || deal.clienteNombre || '-',
-      deal.stageLabel,
-      item.properties.name || '-',
-      item.properties.hs_sku || '-',
-      item.properties.quantity || '0',
-      item.properties.price || '0',
-      item.properties.amount || '0',
-      deal.properties.createdate 
-        ? new Date(deal.properties.createdate).toLocaleDateString('es-AR')
-        : '-'
-    ])
+    const rows = filteredItems.map(({ item, deal }) => {
+      const quantity = parseFloat(item.properties.quantity || '0')
+      const largo = parseFloat(item.properties.mp_largo_mm || '0')
+      const ancho = parseFloat(item.properties.mp_ancho_mm || '0')
+      const alto = parseFloat(item.properties.mp_alto_mm || '0')
+      const tipo = item.properties.mp_tipo_caja
+      const m2PerUnit = calculateM2PerUnit(tipo, largo, ancho, alto)
+      const m2Total = m2PerUnit * quantity
+
+      return [
+        deal.properties.dealname,
+        deal.associatedCompanyName || deal.clienteEmpresa || deal.clienteNombre || '-',
+        item.properties.name || '-',
+        quantity,
+        largo,
+        ancho,
+        item.properties.mp_alto_mm || '0',
+        m2PerUnit.toFixed(4),
+        m2Total.toFixed(2),
+        item.properties.mp_tipo_caja || '-',
+        item.properties.price || '0',
+        item.properties.amount || '0',
+        deal.properties.createdate
+          ? new Date(deal.properties.createdate).toLocaleDateString('es-AR')
+          : '-',
+        deal.properties.closedate
+          ? new Date(deal.properties.closedate).toLocaleDateString('es-AR')
+          : '-'
+      ]
+    })
 
     const csv = [headers, ...rows]
       .map(row =>
@@ -175,6 +286,11 @@ export function AllLineItemsTab({
             className="pl-9 h-9"
           />
         </div>
+
+        <DateRangePicker
+          dateRange={localDateRange}
+          onDateRangeChange={setLocalDateRange}
+        />
 
         <Popover>
           <PopoverTrigger asChild>
@@ -230,7 +346,7 @@ export function AllLineItemsTab({
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
@@ -246,6 +362,14 @@ export function AllLineItemsTab({
               <span className="text-sm text-muted-foreground">Cantidad Total</span>
             </div>
             <p className="text-2xl font-bold">{totalQuantity.toLocaleString('es-AR')}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">m2 Totales</span>
+            </div>
+            <p className="text-2xl font-bold">{formatM2(totalM2)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -287,20 +411,26 @@ export function AllLineItemsTab({
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-left font-medium text-muted-foreground">
                 <tr>
-                  <th className="p-3 pl-4">Item</th>
-                  <th className="p-3">Deal</th>
+                  <th className="p-3 pl-4">Deal</th>
                   <th className="p-3">Cliente</th>
-                  <th className="p-3">Etapa</th>
-                  <th className="p-3 text-right">Cantidad</th>
-                  <th className="p-3 text-right">Precio Unit.</th>
-                  <th className="p-3 text-right">Total</th>
-                  <th className="p-3">Fecha</th>
+                  <th className="p-3">Item</th>
+                  <th className="p-3 text-right">Cant.</th>
+                  <th className="p-3 text-right">Largo (mm)</th>
+                  <th className="p-3 text-right">Ancho (mm)</th>
+                  <th className="p-3 text-right">Alto (mm)</th>
+                  <th className="p-3 text-right" title="Calculado según tipo de caja (ver nota al pie)">m2/u*</th>
+                  <th className="p-3 text-right" title="Calculado: m2/u × Cantidad">m2 Tot*</th>
+                  <th className="p-3">Tipo</th>
+                  <th className="p-3 text-right">$ Unit.</th>
+                  <th className="p-3 text-right">Subtotal</th>
+                  <th className="p-3">Fecha Creación</th>
+                  <th className="p-3">Fecha Cierre</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {filteredItems.length === 0 && !loading ? (
                   <tr>
-                    <td colSpan={8} className="p-12 text-center text-muted-foreground">
+                    <td colSpan={14} className="p-12 text-center text-muted-foreground">
                       <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
                       <p>No se encontraron line items</p>
                       {selectedStages.length > 0 && (
@@ -309,65 +439,98 @@ export function AllLineItemsTab({
                     </td>
                   </tr>
                 ) : (
-                  filteredItems.map(({ item, deal }, idx) => (
-                    <tr
-                      key={`${deal.id}-${item.id}-${idx}`}
-                      className="hover:bg-muted/50 transition-colors"
-                    >
-                      <td className="p-3 pl-4">
-                        <div className="flex flex-col">
-                          <span className="font-medium">
-                            {item.properties.name || 'Sin nombre'}
+                  filteredItems.map(({ item, deal }, idx) => {
+                    const quantity = parseFloat(item.properties.quantity || '0')
+                    const largo = parseFloat(item.properties.mp_largo_mm || '0')
+                    const ancho = parseFloat(item.properties.mp_ancho_mm || '0')
+                    const alto = parseFloat(item.properties.mp_alto_mm || '0')
+                    const tipo = item.properties.mp_tipo_caja
+                    const m2PerUnit = calculateM2PerUnit(tipo, largo, ancho, alto)
+                    const m2Total = m2PerUnit * quantity
+
+                    return (
+                      <tr
+                        key={`${deal.id}-${item.id}-${idx}`}
+                        className="hover:bg-muted/50 transition-colors"
+                      >
+                        <td className="p-3 pl-4 max-w-[150px]">
+                          <span className="truncate block text-xs font-medium" title={deal.properties.dealname}>
+                            {deal.properties.dealname}
                           </span>
-                          {item.properties.hs_sku && (
-                            <span className="text-xs text-muted-foreground">
-                              SKU: {item.properties.hs_sku}
+                        </td>
+                        <td className="p-3 max-w-[120px]">
+                          <span className="truncate block text-xs">
+                            {deal.associatedCompanyName || deal.clienteEmpresa || deal.clienteNombre || '-'}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex flex-col">
+                            <span className="text-xs">
+                              {item.properties.name || 'Sin nombre'}
                             </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-3 max-w-[150px]">
-                        <span className="truncate block" title={deal.properties.dealname}>
-                          {deal.properties.dealname}
-                        </span>
-                      </td>
-                      <td className="p-3">
-                        {deal.clienteEmpresa || deal.clienteNombre || '-'}
-                      </td>
-                      <td className="p-3">
-                        <StageBadge label={deal.stageLabel} />
-                      </td>
-                      <td className="p-3 text-right font-mono">
-                        {parseFloat(item.properties.quantity || '0').toLocaleString('es-AR')}
-                      </td>
-                      <td className="p-3 text-right font-mono text-muted-foreground">
-                        {formatCurrency(parseFloat(item.properties.price || '0'))}
-                      </td>
-                      <td className="p-3 text-right font-mono font-medium">
-                        {formatCurrency(parseFloat(item.properties.amount || '0'))}
-                      </td>
-                      <td className="p-3 text-muted-foreground">
-                        {deal.properties.createdate
-                          ? new Date(deal.properties.createdate).toLocaleDateString('es-AR')
-                          : '-'}
-                      </td>
-                    </tr>
-                  ))
+                          </div>
+                        </td>
+                        <td className="p-3 text-right font-mono text-xs">
+                          {quantity.toLocaleString('es-AR')}
+                        </td>
+                        <td className="p-3 text-right font-mono text-xs text-muted-foreground">
+                          {largo > 0 ? largo.toLocaleString('es-AR') : '-'}
+                        </td>
+                        <td className="p-3 text-right font-mono text-xs text-muted-foreground">
+                          {ancho > 0 ? ancho.toLocaleString('es-AR') : '-'}
+                        </td>
+                        <td className="p-3 text-right font-mono text-xs text-muted-foreground">
+                          {alto > 0 ? alto.toLocaleString('es-AR') : '-'}
+                        </td>
+                        <td className="p-3 text-right font-mono text-xs" title={`Calculado según tipo: ${tipo || 'Aleta Simple'}`}>
+                          {m2PerUnit > 0 ? formatM2(m2PerUnit) : '-'}
+                        </td>
+                        <td className="p-3 text-right font-mono text-xs font-medium" title={`Calculado: ${formatM2(m2PerUnit)} × ${quantity}`}>
+                          {m2Total > 0 ? formatM2(m2Total) : '-'}
+                        </td>
+                        <td className="p-3 text-xs">
+                          {item.properties.mp_tipo_caja || '-'}
+                        </td>
+                        <td className="p-3 text-right font-mono text-xs text-muted-foreground">
+                          {formatCurrency(parseFloat(item.properties.price || '0'))}
+                        </td>
+                        <td className="p-3 text-right font-mono text-xs font-medium">
+                          {formatCurrency(parseFloat(item.properties.amount || '0'))}
+                        </td>
+                        <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">
+                          {deal.properties.createdate
+                            ? new Date(deal.properties.createdate).toLocaleDateString('es-AR')
+                            : '-'}
+                        </td>
+                        <td className="p-3 text-xs text-muted-foreground whitespace-nowrap">
+                          {deal.properties.closedate
+                            ? new Date(deal.properties.closedate).toLocaleDateString('es-AR')
+                            : '-'}
+                        </td>
+                      </tr>
+                    )
+                  })
                 )}
               </tbody>
               {filteredItems.length > 0 && (
                 <tfoot className="bg-muted/50 font-semibold border-t-2">
                   <tr>
-                    <td colSpan={4} className="p-3 pl-4 text-right text-xs uppercase tracking-wider text-muted-foreground">
+                    <td colSpan={3} className="p-3 pl-4 text-right text-xs uppercase tracking-wider text-muted-foreground">
                       Totales
                     </td>
-                    <td className="p-3 text-right font-mono">
+                    <td className="p-3 text-right font-mono text-xs">
                       {totalQuantity.toLocaleString('es-AR')}
                     </td>
+                    <td colSpan={4} className="p-3" />
+                    <td className="p-3 text-right font-mono text-xs">
+                      {formatM2(totalM2)}
+                    </td>
                     <td className="p-3" />
-                    <td className="p-3 text-right font-mono">
+                    <td className="p-3" />
+                    <td className="p-3 text-right font-mono text-xs">
                       {formatCurrency(totalAmount)}
                     </td>
+                    <td className="p-3" />
                     <td className="p-3" />
                   </tr>
                 </tfoot>
@@ -375,6 +538,13 @@ export function AllLineItemsTab({
             </table>
           </div>
         </div>
+        <CardContent className="pt-0">
+          <p className="text-xs text-muted-foreground">
+            * <strong>m2/u</strong>: Metros cuadrados por unidad, calculado según el tipo de caja (Aleta Simple, Dos Planchas, Bandeja, Cerco, Aleta Cruzada, Telescópica, o Plancha)
+            <br />
+            * <strong>m2 Tot</strong>: Metros cuadrados totales, calculado como m2/u × Cantidad
+          </p>
+        </CardContent>
       </Card>
     </div>
   )

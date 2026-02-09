@@ -43,19 +43,21 @@ export function DealDetailSheet({ companyId, deal, open, onOpenChange }: DealDet
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader className="pb-4 border-b">
-          <SheetTitle className="text-lg">{deal.properties.dealname}</SheetTitle>
-          <div className="flex items-center gap-2 mt-1">
-            <StageBadge label={deal.stageLabel} />
-            <Badge variant="outline" className="gap-1">
-              <Clock className="h-3 w-3" />
-              {deal.daysSinceCreation} dias
-            </Badge>
-          </div>
-        </SheetHeader>
+      <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto p-0">
+        <div className="px-6 pt-6">
+          <SheetHeader className="pb-4 border-b">
+            <SheetTitle className="text-lg">{deal.properties.dealname}</SheetTitle>
+            <div className="flex items-center gap-2 mt-1">
+              <StageBadge label={deal.stageLabel} />
+              <Badge variant="outline" className="gap-1">
+                <Clock className="h-3 w-3" />
+                {deal.daysSinceCreation} dias
+              </Badge>
+            </div>
+          </SheetHeader>
+        </div>
 
-        <div className="flex flex-col gap-6 py-6">
+        <div className="flex flex-col gap-6 px-6 py-6">
           {/* Financial Summary */}
           <Section title="Resumen Financiero">
             <DataRow label="Monto" value={formatCurrency(amount)} bold />
@@ -245,6 +247,9 @@ export function DealDetailSheet({ companyId, deal, open, onOpenChange }: DealDet
             </Button>
           )}
         </div>
+
+        {/* Bottom padding for scroll */}
+        <div className="pb-6" />
       </SheetContent>
     </Sheet>
   )

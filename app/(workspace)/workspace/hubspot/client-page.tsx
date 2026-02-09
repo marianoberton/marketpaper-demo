@@ -22,13 +22,10 @@ import { Loader2, RefreshCcw } from 'lucide-react'
 import { useWorkspace } from '@/components/workspace-context'
 
 import { OverviewTab } from './components/overview-tab'
-import { PipelineTab } from './components/pipeline-tab'
 import { SeguimientoTab } from './components/seguimiento-tab'
 import { PedidosTab } from './components/pedidos-tab'
-import { ReportesTab } from './components/reportes-tab'
 import { AllLineItemsTab } from './components/all-line-items-tab'
 import { DailyReport } from './components/daily-report'
-import { PriceAnalysisTab } from './components/price-analysis-tab'
 import { DateRangePicker } from './components/date-range-picker'
 
 export default function HubSpotClientPage() {
@@ -170,12 +167,9 @@ export default function HubSpotClientPage() {
       <Tabs defaultValue="resumen" className="w-full">
         <TabsList className="flex w-full overflow-x-auto">
           <TabsTrigger value="resumen" className="flex-shrink-0">Resumen</TabsTrigger>
-          <TabsTrigger value="pipeline" className="flex-shrink-0">Pipeline</TabsTrigger>
           <TabsTrigger value="seguimiento" className="flex-shrink-0">Seguimiento</TabsTrigger>
           <TabsTrigger value="pedidos" className="flex-shrink-0">Pedidos</TabsTrigger>
-          <TabsTrigger value="items" className="flex-shrink-0">Line Items</TabsTrigger>
-          <TabsTrigger value="precios" className="flex-shrink-0">Análisis m²</TabsTrigger>
-          <TabsTrigger value="reportes" className="flex-shrink-0">Reportes</TabsTrigger>
+          <TabsTrigger value="items" className="flex-shrink-0">Line Items (Fabian)</TabsTrigger>
           <TabsTrigger value="diario" className="flex-shrink-0">Reporte Diario</TabsTrigger>
         </TabsList>
 
@@ -185,15 +179,6 @@ export default function HubSpotClientPage() {
             pipelineId={selectedPipeline}
             refreshKey={refreshKey}
             dateRange={dateRangeForServer}
-          />
-        </TabsContent>
-
-        <TabsContent value="pipeline" className="mt-6">
-          <PipelineTab
-            companyId={companyId}
-            pipelineId={selectedPipeline}
-            stages={stages}
-            refreshKey={refreshKey}
           />
         </TabsContent>
 
@@ -220,24 +205,6 @@ export default function HubSpotClientPage() {
             companyId={companyId}
             pipelineId={selectedPipeline}
             stages={stages}
-            refreshKey={refreshKey}
-            dateRange={dateRangeForServer}
-          />
-        </TabsContent>
-
-        <TabsContent value="precios" className="mt-6">
-          <PriceAnalysisTab
-            companyId={companyId}
-            pipelineId={selectedPipeline}
-            stages={stages}
-            refreshKey={refreshKey}
-          />
-        </TabsContent>
-
-        <TabsContent value="reportes" className="mt-6">
-          <ReportesTab
-            companyId={companyId}
-            pipelineId={selectedPipeline}
             refreshKey={refreshKey}
             dateRange={dateRangeForServer}
           />

@@ -129,13 +129,13 @@ export function OverviewTab({ companyId, pipelineId, refreshKey, dateRange }: Ov
 
   // Chart data: amount by stage (bar)
   const amountByStageData = metrics.stageBreakdown.map(s => ({
-    name: s.stageLabel.length > 15 ? s.stageLabel.substring(0, 15) + '...' : s.stageLabel,
+    name: s.stageLabel,
     monto: s.totalAmount,
   }))
 
   // Chart data: m2 by stage (bar)
   const m2ByStageData = metrics.stageBreakdown.map(s => ({
-    name: s.stageLabel.length > 15 ? s.stageLabel.substring(0, 15) + '...' : s.stageLabel,
+    name: s.stageLabel,
     m2: s.totalM2,
   }))
 
@@ -169,7 +169,7 @@ export function OverviewTab({ companyId, pipelineId, refreshKey, dateRange }: Ov
           series={[{ name: 'Monto', key: 'monto', color: '#0077B6' }]}
           chartType="bar"
           formatterType="currency"
-          height={300}
+          height={350}
           showLegend={false}
         />
       </div>
@@ -182,7 +182,7 @@ export function OverviewTab({ companyId, pipelineId, refreshKey, dateRange }: Ov
         series={[{ name: 'm2', key: 'm2', color: '#FCCD12' }]}
         chartType="bar"
         formatterType="number"
-        height={300}
+        height={350}
         showLegend={false}
       />
     </div>

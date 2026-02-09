@@ -136,3 +136,64 @@ export function PriceStatsCard({ stats }: PriceStatsCardProps) {
     </div>
   )
 }
+
+/**
+ * Leyenda explicativa de los criterios de clasificación de precios
+ */
+export function PriceLegend({ zone = 'amba' }: { zone?: string }) {
+  // Valores de mercado según zona (hardcoded aquí para la leyenda, debe coincidir con MARKET_PRICES)
+  const marketRanges: Record<string, { min: number; max: number; avg: number }> = {
+    'amba': { min: 550, max: 750, avg: 650 },
+    'interior': { min: 600, max: 850, avg: 725 },
+    'exportacion': { min: 500, max: 700, avg: 600 },
+    'default': { min: 550, max: 800, avg: 675 }
+  }
+
+  const range = marketRanges[zone.toLowerCase()] || marketRanges['default']
+
+  return (
+    <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+        Clasificación de Precios m²
+      </h4>
+
+      <div className="space-y-2.5 text-sm">
+        <div className="flex items-start gap-2">
+          <span className="text-base">🟢</span>
+          <div className="flex-1">
+            <p className="font-medium">En precio</p>
+            <p className="text-xs text-muted-foreground">
+              Precio dentro del rango de mercado ({formatCurrencyPerM2(range.min)} - {formatCurrencyPerM2(range.max)})
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-2">
+          <span className="text-base">🟡</span>
+          <div className="flex-1">
+            <p className="font-medium">Por debajo del mercado</p>
+            <p className="text-xs text-muted-foreground">
+              Precio menor a {formatCurrencyPerM2(range.min)}. Riesgoso para el vendedor, márgenes bajos.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-2">
+          <span className="text-base">🔴</span>
+          <div className="flex-1">
+            <p className="font-medium">Por encima del mercado</p>
+            <p className="text-xs text-muted-foreground">
+              Precio mayor a {formatCurrencyPerM2(range.max)}. Difícil de cerrar, fuera del rango competitivo.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="pt-2 border-t text-xs text-muted-foreground">
+        <p>
+          <strong>Zona actual:</strong> {zone === 'amba' ? 'AMBA (Buenos Aires)' : zone === 'interior' ? 'Interior del País' : zone === 'exportacion' ? 'Exportación' : 'General'}
+        </p>
+      </div>
+    </div>
+  )
+}

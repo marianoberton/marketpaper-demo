@@ -58,32 +58,44 @@ export function PedidosTab({ companyId, pipelineId, refreshKey, dateRange }: Ped
     )
   }
 
+  // Calcular métricas por etapa
+  const m2Confirmados = data.confirmados.reduce((sum, deal) => sum + deal.m2Total, 0)
+  const m2Ganados = data.cerradosGanados.reduce((sum, deal) => sum + deal.m2Total, 0)
+  const facturacionConfirmados = data.confirmados.reduce(
+    (sum, deal) => sum + (parseFloat(deal.properties.amount || '0') || 0),
+    0
+  )
+  const facturacionGanados = data.cerradosGanados.reduce(
+    (sum, deal) => sum + (parseFloat(deal.properties.amount || '0') || 0),
+    0
+  )
+
   const kpis: KPICardData[] = [
     {
       title: 'Ordenes Confirmadas',
       value: String(data.confirmados.length),
-      subtitle: 'Pendientes de cierre',
+      subtitle: `${formatM2(m2Confirmados)} • ${formatCurrency(facturacionConfirmados)}`,
       icon: ShoppingCart,
       borderColor: 'border-l-green-500',
     },
     {
       title: 'Cerrados Ganados',
       value: String(data.cerradosGanados.length),
-      subtitle: 'Completados',
+      subtitle: `${formatM2(m2Ganados)} • ${formatCurrency(facturacionGanados)}`,
       icon: CheckCircle2,
       borderColor: 'border-l-emerald-500',
     },
     {
       title: 'm2 Total',
       value: formatM2(data.totalM2),
-      subtitle: 'En todos los pedidos',
+      subtitle: `Confirmados: ${formatM2(m2Confirmados)} • Ganados: ${formatM2(m2Ganados)}`,
       icon: Ruler,
       borderColor: 'border-l-teal-500',
     },
     {
       title: 'Facturacion Total',
       value: formatCurrency(data.totalAmount),
-      subtitle: `${data.totalOrders} pedidos totales`,
+      subtitle: `Confirmados: ${formatCurrency(facturacionConfirmados)} • Ganados: ${formatCurrency(facturacionGanados)}`,
       icon: DollarSign,
       borderColor: 'border-l-blue-500',
     },

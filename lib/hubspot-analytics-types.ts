@@ -7,7 +7,7 @@ export interface DateRange {
   to: Date | undefined
 }
 
-export type DatePreset = 'last30' | 'last90' | 'thisMonth' | 'thisYear' | 'all'
+export type DatePreset = 'last14' | 'last30' | 'last90' | 'thisMonth' | 'thisYear' | 'all'
 
 // ---------------------
 // Price Indicator
@@ -100,6 +100,7 @@ export interface EnrichedDeal extends HubSpotDeal {
   condicionesEntrega: string | null
   condicionesValidez: string | null
   itemsJson: unknown[] | null
+  associatedCompanyName: string | null
 }
 
 export interface PipelineMetrics {
@@ -283,6 +284,7 @@ export function enrichDeal(
     condicionesEntrega: props.mp_condiciones_entrega || null,
     condicionesValidez: props.mp_condiciones_validez || null,
     itemsJson,
+    associatedCompanyName: rawDeal.associatedCompanyName || null,
   }
 }
 

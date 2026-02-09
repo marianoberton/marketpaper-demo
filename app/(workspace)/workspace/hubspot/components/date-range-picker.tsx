@@ -29,6 +29,7 @@ interface DateRangePickerProps {
 }
 
 const presets: { value: DatePreset; label: string }[] = [
+  { value: 'last14', label: 'Ultimas 2 semanas' },
   { value: 'last30', label: 'Ultimos 30 dias' },
   { value: 'last90', label: 'Ultimos 90 dias' },
   { value: 'thisMonth', label: 'Este mes' },
@@ -40,6 +41,8 @@ function getDateRangeFromPreset(preset: DatePreset): DateRange {
   const today = new Date()
 
   switch (preset) {
+    case 'last14':
+      return { from: subDays(today, 14), to: today }
     case 'last30':
       return { from: subDays(today, 30), to: today }
     case 'last90':
@@ -59,7 +62,21 @@ export function DateRangePicker({
   onDateRangeChange,
   className,
 }: DateRangePickerProps) {
-  const [selectedPreset, setSelectedPreset] = React.useState<DatePreset>('all')
+  // Detectar el preset inicial basado en el dateRange
+  const getInitialPreset = (): DatePreset => {
+    if (!dateRange.from && !dateRange.to) return 'all'
+    if (dateRange.from && dateRange.to) {
+      const daysDiff = Math.floor(
+        (dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24)
+      )
+      if (daysDiff === 14) return 'last14'
+      if (daysDiff === 30) return 'last30'
+      if (daysDiff === 90) return 'last90'
+    }
+    return 'all'
+  }
+
+  const [selectedPreset, setSelectedPreset] = React.useState<DatePreset>(getInitialPreset())
 
   const handlePresetChange = (preset: DatePreset) => {
     setSelectedPreset(preset)
@@ -132,6 +149,16 @@ export function DateRangePicker({
               onSelect={handleCalendarSelect}
               numberOfMonths={2}
               locale={es}
+              weekStartsOn={1}
+              formatters={{
+                formatWeekdayName: (date) => {
+                  const dayNames = ['D', 'L', 'M', 'M', 'J', 'V', 'S']
+                  return dayNames[date.getDay()]
+                },
+                formatCaption: (date) => {
+                  return format(date, 'MMMM yyyy', { locale: es })
+                },
+              }}
             />
           </PopoverContent>
         </Popover>

@@ -9,7 +9,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { getDailyReportData, type DailyReportData } from '@/actions/hubspot-price-analysis'
 import { type EnrichedDeal } from '@/actions/hubspot-analytics'
 import { StageBadge } from './stage-badge'
-import { PriceStatsCard } from './price-indicator'
 import { formatCurrency, formatM2 } from '@/lib/formatters'
 import { 
   Calendar, 
@@ -111,11 +110,11 @@ export function DailyReport({ companyId, pipelineId, refreshKey }: DailyReportPr
             className="w-auto"
           />
           <span className="text-sm text-muted-foreground">
-            {new Date(selectedDate).toLocaleDateString('es-AR', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
+            {new Date(selectedDate + 'T00:00:00').toLocaleDateString('es-AR', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
             })}
           </span>
         </div>
@@ -181,17 +180,6 @@ export function DailyReport({ companyId, pipelineId, refreshKey }: DailyReportPr
               <p className="text-3xl font-bold">{formatM2(data.totalPipelineM2)}</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Análisis de Precios */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Análisis de Precios m²</CardTitle>
-          <CardDescription>Clasificación de cotizaciones vs mercado</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <PriceStatsCard stats={data.priceStats} />
         </CardContent>
       </Card>
 
@@ -386,22 +374,6 @@ function generatePDFContent(data: DailyReportData): string {
   <h2>💰 Pipeline Actual</h2>
   <p><strong>Monto Total:</strong> ${formatCurrency(data.totalPipelineAmount)}</p>
   <p><strong>m² Total:</strong> ${formatM2(data.totalPipelineM2)}</p>
-
-  <h2>📈 Análisis de Precios</h2>
-  <div class="stats">
-    <div class="stat-card green">
-      <div class="stat-value">${data.priceStats.inRange}</div>
-      <div class="stat-label">🟢 En Precio</div>
-    </div>
-    <div class="stat-card" style="border-left: 4px solid #eab308;">
-      <div class="stat-value">${data.priceStats.belowMarket}</div>
-      <div class="stat-label">🟡 Por Debajo</div>
-    </div>
-    <div class="stat-card red">
-      <div class="stat-value">${data.priceStats.aboveMarket}</div>
-      <div class="stat-label">🔴 Por Encima</div>
-    </div>
-  </div>
 
   ${data.newLeads.length > 0 ? `
   <h2>🎯 Nuevos Leads</h2>

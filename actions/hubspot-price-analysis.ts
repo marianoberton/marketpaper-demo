@@ -225,7 +225,8 @@ export async function getDailyReportData(
   pipelineId: string,
   date?: string
 ): Promise<DailyReportData> {
-  const targetDate = date ? new Date(date) : new Date()
+  // Parsear fecha en zona horaria local (evitar interpretar como UTC)
+  const targetDate = date ? new Date(date + 'T00:00:00') : new Date()
   const startOfDay = new Date(targetDate)
   startOfDay.setHours(0, 0, 0, 0)
   const endOfDay = new Date(targetDate)
@@ -236,9 +237,22 @@ export async function getDailyReportData(
     to: endOfDay.toISOString(),
   }
 
-  // Obtener todos los deals
-  const dealsResponse = await getDealsEnriched(companyId, pipelineId)
-  const allDeals = dealsResponse.results
+  // Obtener TODOS los deals del pipeline (paginando si es necesario)
+  let allDeals: EnrichedDeal[] = []
+  let after: string | undefined = undefined
+  let hasMore = true
+
+  while (hasMore) {
+    const dealsResponse = await getDealsEnriched(companyId, pipelineId, undefined, after)
+    allDeals = [...allDeals, ...dealsResponse.results]
+
+    // Verificar si hay más páginas
+    if (dealsResponse.paging?.next?.after) {
+      after = dealsResponse.paging.next.after
+    } else {
+      hasMore = false
+    }
+  }
 
   // Filtrar por etapa y fecha
   const newLeads = allDeals.filter(d => {
