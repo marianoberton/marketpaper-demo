@@ -101,11 +101,11 @@ const roleIcons: Record<string, React.ElementType> = {
 }
 
 const statusColors: Record<string, string> = {
-    'active': 'bg-green-100 text-green-800',
-    'inactive': 'bg-gray-100 text-gray-800',
-    'pending': 'bg-yellow-100 text-yellow-800',
-    'expired': 'bg-red-100 text-red-800',
-    'cancelled': 'bg-gray-100 text-gray-800'
+    'active': 'bg-state-success-muted text-state-success',
+    'inactive': 'bg-muted text-muted-foreground',
+    'pending': 'bg-state-warning-muted text-state-warning',
+    'expired': 'bg-state-error-muted text-state-error',
+    'cancelled': 'bg-muted text-muted-foreground'
 }
 
 const statusLabels: Record<string, string> = {
@@ -370,21 +370,21 @@ export default function CompanyUsersClientPage() {
                 <div className="flex items-center gap-4">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium shrink-0 ${
                         user.role === 'viewer'
-                            ? 'bg-gradient-to-br from-amber-500 to-orange-600'
-                            : 'bg-gradient-to-br from-blue-500 to-purple-600'
+                            ? 'bg-gradient-to-br from-orange to-orange/80'
+                            : 'bg-gradient-to-br from-primary to-primary/70'
                     }`}>
                         {user.full_name?.[0]?.toUpperCase() || user.email[0].toUpperCase()}
                     </div>
                     <div>
-                        <div className="font-medium text-gray-900">
+                        <div className="font-medium text-foreground">
                             {user.full_name || 'Sin nombre'}
                         </div>
-                        <div className="text-sm text-gray-500 flex items-center gap-2">
+                        <div className="text-sm text-muted-foreground flex items-center gap-2">
                             <Mail className="h-3 w-3" />
                             {user.email}
                         </div>
                         {showClientInfo && user.client_id && (
-                            <div className="text-sm text-amber-700 flex items-center gap-1 mt-0.5">
+                            <div className="text-sm text-orange flex items-center gap-1 mt-0.5">
                                 <Building className="h-3 w-3" />
                                 Cliente: {clients.find(c => c.id === user.client_id)?.name || 'Sin asignar'}
                             </div>
@@ -393,7 +393,7 @@ export default function CompanyUsersClientPage() {
                 </div>
 
                 <div className="flex items-center gap-3 flex-wrap">
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mr-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mr-2">
                         <Clock className="h-4 w-4" />
                         <span className="hidden xl:inline">Último acceso:</span>
                         {formatDate(user.last_login)}
@@ -464,26 +464,26 @@ export default function CompanyUsersClientPage() {
                 <div className="flex items-center gap-4">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
                         isViewerInvite
-                            ? 'bg-amber-100 text-amber-700'
-                            : 'bg-yellow-100 text-yellow-700'
+                            ? 'bg-state-warning-muted text-state-warning'
+                            : 'bg-state-pending-muted text-state-pending'
                     }`}>
                         {isViewerInvite ? <Eye className="h-5 w-5" /> : <Mail className="h-5 w-5" />}
                     </div>
                     <div>
-                        <div className="font-medium text-gray-900">
+                        <div className="font-medium text-foreground">
                             {invitation.email}
                         </div>
-                        <div className="text-sm text-gray-500 flex items-center gap-2 flex-wrap">
-                            <Badge variant="outline" className={`text-xs ${isViewerInvite ? 'border-amber-300 text-amber-700' : ''}`}>
+                        <div className="text-sm text-muted-foreground flex items-center gap-2 flex-wrap">
+                            <Badge variant="outline" className={`text-xs ${isViewerInvite ? 'border-orange/30 text-orange' : ''}`}>
                                 {isViewerInvite ? 'Portal Cliente' : roleLabels[invitation.target_role] || invitation.target_role}
                             </Badge>
                             {isViewerInvite && (invitation.client || invitation.client_id) && (
-                                <span className="flex items-center gap-1 text-amber-700">
+                                <span className="flex items-center gap-1 text-orange">
                                     <Building className="h-3 w-3" />
                                     {invitation.client?.name || clients.find(c => c.id === invitation.client_id)?.name || 'Cliente'}
                                 </span>
                             )}
-                            <span className="text-gray-400">•</span>
+                            <span className="text-muted-foreground/50">•</span>
                             <span>{formatDate(invitation.created_at)}</span>
                         </div>
                     </div>
@@ -569,7 +569,7 @@ export default function CompanyUsersClientPage() {
                         </CardHeader>
                         <CardContent>
                             {teamUsers.length === 0 ? (
-                                <div className="text-center py-12 text-gray-500">
+                                <div className="text-center py-12 text-muted-foreground">
                                     <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
                                     <p>No hay usuarios de equipo registrados</p>
                                 </div>
@@ -590,7 +590,7 @@ export default function CompanyUsersClientPage() {
                         </div>
                         <Button
                             onClick={() => setIsClientInviteDialogOpen(true)}
-                            className="bg-amber-600 hover:bg-amber-700"
+                            className="bg-orange hover:bg-orange/90 text-primary-foreground"
                         >
                             <UserPlus className="mr-2 h-4 w-4" />
                             Dar acceso a cliente
@@ -598,14 +598,14 @@ export default function CompanyUsersClientPage() {
                     </div>
 
                     {/* Banner informativo */}
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 flex gap-3">
-                        <Info className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
-                        <div className="text-sm text-amber-800">
+                    <div className="bg-state-warning-muted border border-state-warning/30 rounded-lg p-4 mb-4 flex gap-3">
+                        <Info className="h-5 w-5 text-state-warning mt-0.5 shrink-0" />
+                        <div className="text-sm text-foreground">
                             <p className="font-medium mb-1">Portal de Clientes</p>
                             <p>
                                 Los usuarios de tipo cliente acceden a un portal de solo lectura donde pueden ver
                                 la información de sus proyectos, documentos y avance de obra.
-                                Acceden desde una URL diferente (<span className="font-mono text-xs bg-amber-100 px-1 rounded">/client-login</span>)
+                                Acceden desde una URL diferente (<span className="font-mono text-xs bg-state-warning/20 px-1 rounded">/client-login</span>)
                                 y no tienen acceso al workspace de gestión.
                             </p>
                         </div>
@@ -620,15 +620,15 @@ export default function CompanyUsersClientPage() {
                         </CardHeader>
                         <CardContent>
                             {viewerUsers.length === 0 ? (
-                                <div className="text-center py-12 text-gray-500">
+                                <div className="text-center py-12 text-muted-foreground">
                                     <Eye className="h-12 w-12 mx-auto mb-4 opacity-50" />
                                     <p className="mb-2">No hay clientes con acceso al portal</p>
-                                    <p className="text-sm text-gray-400">
+                                    <p className="text-sm text-muted-foreground/70">
                                         Invita a los clientes de tu empresa para que puedan ver sus proyectos
                                     </p>
                                     <Button
                                         variant="link"
-                                        className="mt-2 text-amber-600"
+                                        className="mt-2 text-orange"
                                         onClick={() => setIsClientInviteDialogOpen(true)}
                                     >
                                         Dar acceso a un cliente
@@ -654,7 +654,7 @@ export default function CompanyUsersClientPage() {
                         </CardHeader>
                         <CardContent>
                             {invitations.length === 0 ? (
-                                <div className="text-center py-12 text-gray-500">
+                                <div className="text-center py-12 text-muted-foreground">
                                     <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
                                     <p>No hay invitaciones pendientes</p>
                                 </div>
@@ -734,8 +734,8 @@ export default function CompanyUsersClientPage() {
                     </DialogHeader>
 
                     <div className="space-y-4 py-4">
-                        <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-800 flex gap-2">
-                            <LinkIcon className="h-4 w-4 mt-0.5 shrink-0" />
+                        <div className="bg-state-info-muted border border-state-info/30 rounded-md p-3 text-sm text-foreground flex gap-2">
+                            <LinkIcon className="h-4 w-4 mt-0.5 shrink-0 text-state-info" />
                             <div>
                                 <strong>Nota:</strong> Al crear la invitación, se generará un enlace que deberás copiar y enviar manualmente al usuario (por WhatsApp, Slack, etc.).
                             </div>
@@ -796,8 +796,8 @@ export default function CompanyUsersClientPage() {
                     </DialogHeader>
 
                     <div className="space-y-4 py-4">
-                        <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-sm text-amber-800 flex gap-2">
-                            <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                        <div className="bg-state-warning-muted border border-state-warning/30 rounded-md p-3 text-sm text-foreground flex gap-2">
+                            <Info className="h-4 w-4 mt-0.5 shrink-0 text-state-warning" />
                             <div>
                                 Este usuario accederá al <strong>portal de clientes</strong> con vista de solo lectura.
                                 Podrá ver los proyectos asociados al cliente seleccionado, descargar documentos y consultar el avance de obra.
@@ -819,7 +819,7 @@ export default function CompanyUsersClientPage() {
                         <div>
                             <Label>Cliente asociado</Label>
                             {clients.length === 0 ? (
-                                <div className="mt-2 bg-gray-50 border border-gray-200 rounded-md p-3 text-sm text-gray-600">
+                                <div className="mt-2 bg-muted border border-border rounded-md p-3 text-sm text-muted-foreground">
                                     No hay clientes disponibles. Primero crea un cliente desde el módulo de construcción o CRM.
                                 </div>
                             ) : (
@@ -838,11 +838,11 @@ export default function CompanyUsersClientPage() {
                             )}
                         </div>
 
-                        <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-800 flex gap-2">
-                            <LinkIcon className="h-4 w-4 mt-0.5 shrink-0" />
+                        <div className="bg-state-info-muted border border-state-info/30 rounded-md p-3 text-sm text-foreground flex gap-2">
+                            <LinkIcon className="h-4 w-4 mt-0.5 shrink-0 text-state-info" />
                             <div>
                                 <strong>Nota:</strong> Se generará un enlace de registro que deberás compartir con el cliente.
-                                Una vez registrado, podrá acceder al portal desde <span className="font-mono text-xs bg-blue-100 px-1 rounded">/client-login</span>.
+                                Una vez registrado, podrá acceder al portal desde <span className="font-mono text-xs bg-state-info/20 px-1 rounded">/client-login</span>.
                             </div>
                         </div>
                     </div>
@@ -858,7 +858,7 @@ export default function CompanyUsersClientPage() {
                         <Button
                             onClick={handleInviteClientUser}
                             disabled={isSubmitting || !inviteEmail || !inviteClientId}
-                            className="bg-amber-600 hover:bg-amber-700"
+                            className="bg-orange hover:bg-orange/90 text-primary-foreground"
                         >
                             {isSubmitting ? 'Creando...' : 'Crear acceso de cliente'}
                         </Button>
