@@ -301,11 +301,7 @@ function DealCard({
             {deal.daysSinceCreation}d
           </Badge>
         </div>
-        {(deal.associatedCompanyName || deal.clienteEmpresa || deal.clienteNombre) && (
-          <p className="text-xs text-muted-foreground">
-            {deal.associatedCompanyName || deal.clienteEmpresa || deal.clienteNombre}
-          </p>
-        )}
+        {/* Cliente - temporalmente oculto hasta corregir datos */}
       </CardHeader>
       <CardContent className="space-y-3">
         {/* Key Metrics */}
