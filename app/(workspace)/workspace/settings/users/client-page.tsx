@@ -653,14 +653,14 @@ export default function CompanyUsersClientPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            {invitations.length === 0 ? (
+                            {pendingInvitations.length === 0 ? (
                                 <div className="text-center py-12 text-muted-foreground">
                                     <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
                                     <p>No hay invitaciones pendientes</p>
                                 </div>
                             ) : (
                                 <div className="divide-y">
-                                    {invitations.map((invitation) => renderInvitationRow(invitation))}
+                                    {pendingInvitations.map((invitation) => renderInvitationRow(invitation))}
                                 </div>
                             )}
                         </CardContent>

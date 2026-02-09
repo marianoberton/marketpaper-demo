@@ -182,34 +182,36 @@ export function RoleModulesMatrix() {
             </thead>
             <tbody>
               {Object.entries(modulesByCategory).map(([category, mods]) => (
-                <tr key={`cat-${category}`}>
-                  <td colSpan={ROLES.length + 1} className="pt-4 pb-1">
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      {category}
-                    </span>
-                    {mods.map(mod => (
-                      <tr key={mod.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                        <td className="py-2.5 pr-4">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-foreground">{mod.name}</span>
-                            {mod.is_core && (
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Core</Badge>
-                            )}
-                          </div>
+                <>
+                  <tr key={`cat-${category}`}>
+                    <td colSpan={ROLES.length + 1} className="pt-4 pb-1">
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        {category}
+                      </span>
+                    </td>
+                  </tr>
+                  {mods.map(mod => (
+                    <tr key={mod.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                      <td className="py-2.5 pr-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-foreground">{mod.name}</span>
+                          {mod.is_core && (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Core</Badge>
+                          )}
+                        </div>
+                      </td>
+                      {ROLES.map(role => (
+                        <td key={`${mod.id}-${role.key}`} className="text-center py-2.5 px-3">
+                          <Switch
+                            checked={(roleModules[role.key] || []).includes(mod.id)}
+                            onCheckedChange={() => toggleModule(role.key, mod.id)}
+                            className="mx-auto"
+                          />
                         </td>
-                        {ROLES.map(role => (
-                          <td key={`${mod.id}-${role.key}`} className="text-center py-2.5 px-3">
-                            <Switch
-                              checked={(roleModules[role.key] || []).includes(mod.id)}
-                              onCheckedChange={() => toggleModule(role.key, mod.id)}
-                              className="mx-auto"
-                            />
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </td>
-                </tr>
+                      ))}
+                    </tr>
+                  ))}
+                </>
               ))}
             </tbody>
           </table>
