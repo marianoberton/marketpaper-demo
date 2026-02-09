@@ -81,18 +81,18 @@ const getStatusColor = (status: string | null | undefined) => {
   switch (status?.toLowerCase()) {
     case 'active':
     case 'activo':
-      return 'bg-green-50 text-green-700 border-green-200'
+      return 'bg-state-success-muted text-state-success border-state-success/30'
     case 'pending':
     case 'pendiente':
-      return 'bg-yellow-50 text-yellow-700 border-yellow-200'
+      return 'bg-state-warning-muted text-state-warning border-state-warning/30'
     case 'completed':
     case 'completado':
-      return 'bg-blue-50 text-blue-700 border-blue-200'
+      return 'bg-state-info-muted text-state-info border-state-info/30'
     case 'cancelled':
     case 'cancelado':
-      return 'bg-red-50 text-red-700 border-red-200'
+      return 'bg-state-error-muted text-state-error border-state-error/30'
     default:
-      return 'bg-gray-50 text-gray-700 border-gray-200'
+      return 'bg-muted text-muted-foreground border-border'
   }
 }
 
@@ -144,11 +144,11 @@ function ProjectCoverImage({ project }: { project: Project }) {
               className="object-cover"
             />
           ) : (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center h-full bg-gradient-to-br from-muted to-muted/50">
               <div className="text-center">
-                <Building className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600 font-medium text-lg">Imagen del Proyecto</p>
-                <p className="text-gray-400">No disponible</p>
+                <Building className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
+                <p className="text-muted-foreground font-medium text-lg">Imagen del Proyecto</p>
+                <p className="text-muted-foreground/70">No disponible</p>
               </div>
             </div>
           )}
@@ -283,10 +283,10 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
     // Si no hay proyectos
     if (projects.length === 0) {
       return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="text-center">
-            <Building className="h-16 w-16 text-slate-400 mx-auto mb-4" />
-            <p className="text-slate-600 text-lg">No hay proyectos disponibles</p>
+            <Building className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
+            <p className="text-muted-foreground text-lg">No hay proyectos disponibles</p>
           </div>
         </div>
       )
@@ -294,9 +294,9 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
 
     // Si hay múltiples proyectos, mostrar pantalla de selección
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background">
         {/* Header con navegación */}
-        <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+        <header className="bg-card border-b border-border shadow-sm sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               {/* Logo */}
@@ -315,7 +315,7 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
                 onClick={handleLogout}
                 variant="ghost"
                 size="sm"
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground hover:bg-accent"
               >
                 <LogOut className="h-4 w-4" />
                 Cerrar Sesión
@@ -369,7 +369,7 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
                    {/* Descripción del proyecto */}
                    {project.description && (
                      <div className="mb-3">
-                       <p className="text-gray-600 text-sm line-clamp-2">
+                       <p className="text-muted-foreground text-sm line-clamp-2">
                          {project.description}
                        </p>
                      </div>
@@ -377,7 +377,7 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
 
                    {/* Botón de acceso */}
                    <Button 
-                     className="w-full bg-[#1B293F] hover:bg-[#243447] text-white"
+                     className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                      onClick={(e) => {
                        e.stopPropagation()
                        handleProjectChange(project)
@@ -396,9 +396,9 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Header con navegación mejorada */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+      <header className="bg-card border-b border-border sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
@@ -415,18 +415,18 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
             {/* Breadcrumb centrado y elegante - Oculto en móvil */}
             {projects.length > 1 && (
               <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2">
-                <div className="flex items-center gap-3 bg-gray-50 rounded-full px-4 py-2 border border-gray-200">
+                <div className="flex items-center gap-3 bg-muted rounded-full px-4 py-2 border border-border">
                   <button
                     onClick={() => handleProjectChange(null)}
-                    className="text-gray-600 hover:text-[#1B293F] transition-all duration-200 flex items-center gap-2 hover:bg-white rounded-full px-3 py-1"
+                    className="text-muted-foreground hover:text-foreground transition-all duration-200 flex items-center gap-2 hover:bg-card rounded-full px-3 py-1"
                   >
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                     <span className="text-sm font-medium">Proyectos</span>
                   </button>
-                  <div className="w-px h-4 bg-gray-300"></div>
-                  <span className="text-[#1B293F] font-semibold text-sm">{selectedProject.name}</span>
+                  <div className="w-px h-4 bg-border"></div>
+                  <span className="text-foreground font-semibold text-sm">{selectedProject.name}</span>
                 </div>
               </div>
             )}
@@ -437,7 +437,7 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
               {projects.length > 1 && (
                 <button
                   onClick={() => handleProjectChange(null)}
-                  className="md:hidden flex items-center text-gray-600 hover:text-[#1B293F] transition-colors duration-200 p-2 rounded-md hover:bg-gray-50"
+                  className="md:hidden flex items-center text-muted-foreground hover:text-foreground transition-colors duration-200 p-2 rounded-md hover:bg-accent"
                 >
                   <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -454,7 +454,7 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
                        const project = projects.find(p => p.id === e.target.value)
                        if (project) handleProjectChange(project)
                      }}
-                     className="appearance-none bg-gray-50 border border-gray-200 rounded-lg px-2 sm:px-4 py-2 pr-6 sm:pr-8 text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#1B293F] focus:border-transparent transition-all duration-200 max-w-[120px] sm:max-w-none"
+                     className="appearance-none bg-muted border border-border rounded-lg px-2 sm:px-4 py-2 pr-6 sm:pr-8 text-xs sm:text-sm font-medium text-foreground hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 max-w-[120px] sm:max-w-none"
                    >
                     {projects.map((project) => (
                       <option key={project.id} value={project.id}>
@@ -463,7 +463,7 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
                     ))}
                   </select>
                   <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                    <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </div>
@@ -475,7 +475,7 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
                 onClick={handleLogout}
                 variant="ghost"
                 size="sm"
-                className="flex items-center gap-2 sm:gap-2 text-gray-600 hover:text-[#1B293F] hover:bg-gray-50 transition-all duration-200"
+                className="flex items-center gap-2 sm:gap-2 text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200"
               >
                 <LogOut className="h-4 w-4" />
                 <span className="hidden sm:inline">Cerrar Sesión</span>
@@ -492,8 +492,8 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
         {/* Grid principal con layout fraccional 50/50 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
           {/* Información del Proyecto - 50% del ancho */}
-          <Card className="shadow-md border-0 bg-white overflow-hidden h-full flex flex-col">
-            <div className="bg-[#1B293F] text-white py-6 px-8">
+          <Card className="shadow-md border-0 bg-card overflow-hidden h-full flex flex-col">
+            <div className="bg-primary text-primary-foreground py-6 px-8">
               <div className="flex items-center gap-3">
                 <Building className="h-6 w-6" />
                 <h2 className="text-xl font-bold">Información del Proyecto</h2>
@@ -502,24 +502,24 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
             <div className="p-8 flex-1">
               <div className="space-y-6">
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-3 text-base">Detalles Generales</h4>
+                  <h4 className="font-semibold text-foreground mb-3 text-base">Detalles Generales</h4>
                   <div className="space-y-3 text-sm">
                     {selectedProject.surface && (
-                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                        <span className="text-gray-600">Superficie:</span>
-                        <span className="font-medium text-gray-900">{selectedProject.surface} m²</span>
+                      <div className="flex justify-between items-center py-2 border-b border-border">
+                        <span className="text-muted-foreground">Superficie:</span>
+                        <span className="font-medium text-foreground">{selectedProject.surface} m²</span>
                       </div>
                     )}
                     {selectedProject.project_type && (
-                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                        <span className="text-gray-600">Tipo:</span>
-                        <span className="font-medium text-gray-900">{selectedProject.project_type}</span>
+                      <div className="flex justify-between items-center py-2 border-b border-border">
+                        <span className="text-muted-foreground">Tipo:</span>
+                        <span className="font-medium text-foreground">{selectedProject.project_type}</span>
                       </div>
                     )}
                     {selectedProject.builder && (
-                      <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                        <span className="text-gray-600">Constructor:</span>
-                        <span className="font-medium text-gray-900">{selectedProject.builder}</span>
+                      <div className="flex justify-between items-center py-2 border-b border-border">
+                        <span className="text-muted-foreground">Constructor:</span>
+                        <span className="font-medium text-foreground">{selectedProject.builder}</span>
                       </div>
                     )}
                   </div>
@@ -528,17 +528,17 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
                 {/* Expedientes */}
                 {selectedProject.project_expedientes && selectedProject.project_expedientes.length > 0 && (
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-3 text-base">Expedientes</h4>
+                    <h4 className="font-semibold text-foreground mb-3 text-base">Expedientes</h4>
                     <div className="space-y-3">
                       {selectedProject.project_expedientes.map((exp: any) => (
-                        <div key={exp.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                        <div key={exp.id} className="flex items-center justify-between p-3 bg-muted rounded-lg border border-border">
                           <div>
-                            <p className="font-medium text-sm text-gray-900">{exp.expediente_number}</p>
-                            <p className="text-xs text-gray-500">{exp.expediente_type}</p>
+                            <p className="font-medium text-sm text-foreground">{exp.expediente_number}</p>
+                            <p className="text-xs text-muted-foreground">{exp.expediente_type}</p>
                           </div>
                           <Badge 
                             variant="outline"
-                            className="text-xs bg-white text-[#1B293F] border-[#1B293F]"
+                            className="text-xs bg-card text-foreground border-border"
                           >
                             {exp.expediente_type}
                           </Badge>
@@ -561,8 +561,8 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
           {/* Profesionales - 50% del ancho */}
           <div>
-            <Card className="shadow-md border-0 bg-white overflow-hidden h-full flex flex-col">
-              <div className="bg-[#1B293F] text-white py-6 px-8">
+            <Card className="shadow-md border-0 bg-card overflow-hidden h-full flex flex-col">
+              <div className="bg-primary text-primary-foreground py-6 px-8">
                 <div className="flex items-center gap-3">
                   <Users className="h-6 w-6" />
                   <h2 className="text-xl font-bold">Profesionales</h2>
@@ -615,17 +615,17 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
                       {allProfessionals.map((professional, index) => (
                         <div 
                           key={index} 
-                          className="bg-white rounded-xl p-4 border border-gray-200 hover:shadow-lg transition-all duration-300 hover:scale-105"
+                          className="bg-card rounded-xl p-4 border border-border hover:shadow-lg transition-all duration-300 hover:scale-105"
                         >
                           <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-gradient-to-br from-[#1B293F] to-[#2A3F5F] rounded-full flex items-center justify-center shadow-lg">
-                              <User className="h-6 w-6 text-white" />
+                            <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary/70 rounded-full flex items-center justify-center shadow-lg">
+                              <User className="h-6 w-6 text-primary-foreground" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-bold text-gray-900 text-base">
+                              <h4 className="font-bold text-foreground text-base">
                                 {professional.name}
                               </h4>
-                              <p className="text-sm text-gray-600 font-medium">
+                              <p className="text-sm text-muted-foreground font-medium">
                                 {professional.role}
                               </p>
                             </div>
@@ -637,9 +637,9 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
                       {totalProfessionals === 0 && (
                         <div className="col-span-full flex items-center justify-center py-12">
                           <div className="text-center">
-                            <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                            <p className="text-gray-500 text-lg font-medium">No hay profesionales registrados</p>
-                            <p className="text-gray-400 text-sm mt-2">Los profesionales aparecerán aquí cuando sean asignados</p>
+                            <Users className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
+                            <p className="text-muted-foreground text-lg font-medium">No hay profesionales registrados</p>
+                            <p className="text-muted-foreground/70 text-sm mt-2">Los profesionales aparecerán aquí cuando sean asignados</p>
                           </div>
                         </div>
                       )}
@@ -652,8 +652,8 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
 
           {/* Vigencia de Documentos - 50% del ancho */}
           <div>
-            <Card className="shadow-md border-0 bg-white overflow-hidden h-full flex flex-col">
-              <div className="bg-[#1B293F] text-white py-6 px-8">
+            <Card className="shadow-md border-0 bg-card overflow-hidden h-full flex flex-col">
+              <div className="bg-primary text-primary-foreground py-6 px-8">
                 <div className="flex items-center gap-3">
                   <Calendar className="h-6 w-6" />
                   <h2 className="text-xl font-bold">Vigencia de Documentos</h2>
@@ -667,28 +667,28 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
         </div>
 
         {/* Documentos del Proyecto */}
-        <Card className="shadow-md border-0 bg-white overflow-hidden">
-          <div className="bg-[#1B293F] text-white py-4 sm:py-6 px-4 sm:px-8">
+        <Card className="shadow-md border-0 bg-card overflow-hidden">
+          <div className="bg-primary text-primary-foreground py-4 sm:py-6 px-4 sm:px-8">
             {/* Header responsive */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
               <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                 <FileText className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
                 <h2 className="text-lg sm:text-xl font-bold truncate">Documentos del Proyecto</h2>
               </div>
-              <Badge variant="outline" className="bg-white/10 text-white border-white/20 text-xs sm:text-sm self-start sm:self-auto">
+              <Badge variant="outline" className="bg-primary-foreground/10 text-primary-foreground border-primary-foreground/20 text-xs sm:text-sm self-start sm:self-auto">
                 {filteredDocuments.length} de {getAllDocuments().length} docs
               </Badge>
             </div>
             
             {/* Buscador */}
             <div className="relative mt-3 sm:mt-4">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary-foreground/60 h-4 w-4" />
               <Input
                 type="text"
                 placeholder="Buscar documentos o etapas..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/60 focus:bg-white/20 text-sm sm:text-base"
+                className="pl-10 bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/60 focus:bg-primary-foreground/20 text-sm sm:text-base"
               />
             </div>
           </div>
@@ -706,38 +706,38 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
                     return acc
                   }, {})
                 ).map(([section, docs]: [string, any]) => (
-                  <div key={section} className="border border-gray-200 rounded-xl p-4 sm:p-6 bg-gray-50 h-fit">
-                    <h4 className="font-semibold text-gray-900 mb-4 sm:mb-6 flex items-center gap-3 text-base sm:text-lg">
-                      <FileCheck className="h-6 w-6 sm:h-7 sm:w-7 text-[#1B293F] flex-shrink-0" />
+                  <div key={section} className="border border-border rounded-xl p-4 sm:p-6 bg-muted h-fit">
+                    <h4 className="font-semibold text-foreground mb-4 sm:mb-6 flex items-center gap-3 text-base sm:text-lg">
+                      <FileCheck className="h-6 w-6 sm:h-7 sm:w-7 text-primary flex-shrink-0" />
                       <span className="truncate flex-1 min-w-0">{section}</span>
                     </h4>
                     <div className="space-y-3 sm:space-y-4">
                       {(docs as any[]).map((doc: any, index: number) => {
                         // Determinar el tipo de archivo para mostrar el icono apropiado
                         const getFileIcon = (filename: string) => {
-                          if (!filename) return <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600 flex-shrink-0" />
+                          if (!filename) return <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground flex-shrink-0" />
                           
                           const extension = filename.toLowerCase().split('.').pop()
                           
                           if (extension === 'pdf') {
-                            return <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-[#1B293F] flex-shrink-0" />
+                            return <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
                           } else if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'].includes(extension || '')) {
-                            return <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 flex-shrink-0" />
+                            return <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-state-success flex-shrink-0" />
                           } else if (['doc', 'docx'].includes(extension || '')) {
-                            return <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 flex-shrink-0" />
+                            return <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-state-info flex-shrink-0" />
                           } else if (['xls', 'xlsx'].includes(extension || '')) {
-                            return <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-green-700 flex-shrink-0" />
+                            return <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-state-success flex-shrink-0" />
                           }
                           
-                          return <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600 flex-shrink-0" />
+                          return <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground flex-shrink-0" />
                         }
                         
                         return (
-                          <div key={doc.id} className="bg-white p-4 sm:p-5 rounded-lg border border-gray-200 hover:shadow-md transition-all duration-200 hover:border-gray-300">
+                          <div key={doc.id} className="bg-card p-4 sm:p-5 rounded-lg border border-border hover:shadow-md transition-all duration-200 hover:border-primary/30">
                             <div className="flex items-start sm:items-center gap-3 sm:gap-4">
                               {getFileIcon(doc.filename || doc.original_filename)}
                               <div className="flex-1 min-w-0">
-                                <div className="text-xs sm:text-sm text-gray-500 font-medium mb-1 sm:mb-0">
+                                <div className="text-xs sm:text-sm text-muted-foreground font-medium mb-1 sm:mb-0">
                                   {new Date(doc.upload_date || doc.created_at).toLocaleDateString('es-AR', { 
                                     day: '2-digit', 
                                     month: '2-digit',
@@ -752,7 +752,7 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
                               </div>
                               <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-3">
                                 {doc.file_size && (
-                                  <div className="text-xs sm:text-sm text-gray-400 font-medium hidden sm:block">
+                                  <div className="text-xs sm:text-sm text-muted-foreground font-medium hidden sm:block">
                                     {(doc.file_size / 1024 / 1024).toFixed(1)}MB
                                   </div>
                                 )}
@@ -760,7 +760,7 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    className="px-3 py-2 h-8 hover:bg-gray-50 border-gray-300 text-gray-700 hover:text-gray-800 hover:border-gray-400 text-xs font-medium transition-colors duration-200"
+                                    className="px-3 py-2 h-8 hover:bg-accent border-border text-foreground hover:text-foreground text-xs font-medium transition-colors duration-200"
                                     onClick={() => setPreviewDocument({...doc, section_name: section})}
                                   >
                                     <Eye className="h-3 w-3 sm:mr-1.5" />
@@ -768,7 +768,7 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
                                   </Button>
                                   <Button
                                     size="sm"
-                                    className="px-3 py-2 h-8 bg-[#1B293F] hover:bg-[#1B293F]/90 text-white text-xs font-medium shadow-sm hover:shadow-md transition-all duration-200"
+                                    className="px-3 py-2 h-8 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-medium shadow-sm hover:shadow-md transition-all duration-200"
                                     onClick={() => window.open(doc.file_url, '_blank')}
                                   >
                                     <Download className="h-3 w-3 sm:mr-1.5" />
@@ -785,16 +785,16 @@ export default function ClientViewContent({ projects, clientInfo }: ClientViewCo
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted-foreground">
                 {searchTerm.trim() ? (
                   <>
-                    <Search className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <Search className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
                     <p>No se encontraron documentos que coincidan con "{searchTerm}"</p>
-                    <p className="text-sm mt-2 text-gray-400">Intenta con otros términos de búsqueda</p>
+                    <p className="text-sm mt-2 text-muted-foreground/70">Intenta con otros términos de búsqueda</p>
                   </>
                 ) : (
                   <>
-                    <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                    <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
                     <p>No hay documentos disponibles para este proyecto.</p>
                   </>
                 )}
