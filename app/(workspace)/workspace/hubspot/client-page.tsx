@@ -121,29 +121,31 @@ export default function HubSpotClientPage() {
   return (
     <div className="flex flex-col gap-6 animate-in fade-in duration-500 pb-20">
       {/* Header Actions */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col gap-4">
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1">
+          <Badge variant="outline" className="bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800 gap-1 text-xs">
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
             Live Data
           </Badge>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 w-full">
           {/* Date Range Picker */}
-          <DateRangePicker
-            dateRange={dateRange}
-            onDateRangeChange={(range) => {
-              setDateRange(range)
-              setRefreshKey(prev => prev + 1)
-            }}
-          />
+          <div className="flex-1 min-w-0">
+            <DateRangePicker
+              dateRange={dateRange}
+              onDateRangeChange={(range) => {
+                setDateRange(range)
+                setRefreshKey(prev => prev + 1)
+              }}
+            />
+          </div>
 
           {/* Pipeline Selector */}
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 flex-1 sm:flex-initial sm:min-w-[180px]">
             <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Pipeline</span>
             <Select value={selectedPipeline} onValueChange={handlePipelineChange}>
-              <SelectTrigger className="w-[200px] h-9">
+              <SelectTrigger className="w-full sm:w-[200px] h-9">
                 <SelectValue placeholder="Pipeline" />
               </SelectTrigger>
               <SelectContent>
@@ -154,9 +156,10 @@ export default function HubSpotClientPage() {
             </Select>
           </div>
 
+          {/* Refresh Button */}
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-transparent uppercase tracking-wider font-semibold select-none">.</span>
-            <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleRefresh} disabled={refreshing}>
+            <span className="text-[10px] text-transparent uppercase tracking-wider font-semibold select-none hidden sm:block">.</span>
+            <Button variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={handleRefresh} disabled={refreshing}>
               <RefreshCcw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
             </Button>
           </div>
@@ -165,12 +168,24 @@ export default function HubSpotClientPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="resumen" className="w-full">
-        <TabsList className="flex w-full overflow-x-auto">
-          <TabsTrigger value="resumen" className="flex-shrink-0">Resumen</TabsTrigger>
-          <TabsTrigger value="seguimiento" className="flex-shrink-0">Seguimiento</TabsTrigger>
-          <TabsTrigger value="pedidos" className="flex-shrink-0">Pedidos</TabsTrigger>
-          <TabsTrigger value="items" className="flex-shrink-0">Line Items (Fabian)</TabsTrigger>
-          <TabsTrigger value="diario" className="flex-shrink-0">Reporte Diario</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto scrollbar-hide gap-1 bg-muted/50 p-1">
+          <TabsTrigger value="resumen" className="flex-shrink-0 text-xs sm:text-sm whitespace-nowrap">
+            Resumen
+          </TabsTrigger>
+          <TabsTrigger value="seguimiento" className="flex-shrink-0 text-xs sm:text-sm whitespace-nowrap">
+            Seguimiento
+          </TabsTrigger>
+          <TabsTrigger value="pedidos" className="flex-shrink-0 text-xs sm:text-sm whitespace-nowrap">
+            Pedidos
+          </TabsTrigger>
+          <TabsTrigger value="items" className="flex-shrink-0 text-xs sm:text-sm whitespace-nowrap">
+            <span className="hidden sm:inline">Line Items (Fabian)</span>
+            <span className="sm:hidden">Items</span>
+          </TabsTrigger>
+          <TabsTrigger value="diario" className="flex-shrink-0 text-xs sm:text-sm whitespace-nowrap">
+            <span className="hidden sm:inline">Reporte Diario</span>
+            <span className="sm:hidden">Diario</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="resumen" className="mt-6">

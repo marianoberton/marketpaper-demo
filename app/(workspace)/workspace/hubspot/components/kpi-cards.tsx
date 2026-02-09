@@ -20,8 +20,8 @@ interface KPICardsProps {
 export function KPICards({ cards, columns = 4 }: KPICardsProps) {
   return (
     <div className={cn(
-      'grid gap-4',
-      columns === 4 ? 'md:grid-cols-2 lg:grid-cols-4' : 'md:grid-cols-3'
+      'grid gap-3 sm:gap-4',
+      columns === 4 ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3'
     )}>
       {cards.map((card) => (
         <KPICard key={card.title} {...card} />
@@ -33,16 +33,16 @@ export function KPICards({ cards, columns = 4 }: KPICardsProps) {
 function KPICard({ title, value, subtitle, icon: Icon, borderColor }: KPICardData) {
   return (
     <Card className={cn('border-l-4 shadow-sm', borderColor)}>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-          <Icon className="h-4 w-4" />
-          {title}
+      <CardHeader className="pb-2 p-4 sm:p-6">
+        <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-2">
+          <Icon className="h-4 w-4 flex-shrink-0" />
+          <span className="line-clamp-2">{title}</span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+      <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
+        <div className="text-xl sm:text-2xl font-bold break-words">{value}</div>
         {subtitle && (
-          <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
+          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{subtitle}</p>
         )}
       </CardContent>
     </Card>

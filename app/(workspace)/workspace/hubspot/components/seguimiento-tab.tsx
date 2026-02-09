@@ -212,7 +212,7 @@ export function SeguimientoTab({ companyId, pipelineId, refreshKey, dateRange }:
                   +14 Dias - Prioridad Alta ({data.urgente.length})
                 </h3>
               </div>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
                 {[...data.urgente]
                   .sort((a, b) => a.daysSinceCreation - b.daysSinceCreation)
                   .map(deal => (
@@ -233,7 +233,7 @@ export function SeguimientoTab({ companyId, pipelineId, refreshKey, dateRange }:
               <h3 className="text-sm font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
                 -14 Dias - Seguimiento Normal ({data.normal.length})
               </h3>
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
                 {[...data.normal]
                   .sort((a, b) => a.daysSinceCreation - b.daysSinceCreation)
                   .map(deal => (
