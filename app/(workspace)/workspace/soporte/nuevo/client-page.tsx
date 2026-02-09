@@ -152,11 +152,11 @@ export default function NuevoTicketClientPage() {
                     </Link>
                 </Button>
                 <div>
-                    <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                        <Ticket className="h-5 w-5 text-blue-600" />
+                    <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
+                        <Ticket className="h-5 w-5 text-primary" />
                         Nuevo Ticket de Soporte
                     </h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-sm text-muted-foreground">
                         Describe tu problema o consulta y te responderemos pronto
                     </p>
                 </div>
@@ -172,7 +172,7 @@ export default function NuevoTicketClientPage() {
                 <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-5">
                         {error && (
-                            <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg flex items-center gap-2">
+                            <div className="bg-state-error-muted border border-state-error/30 text-state-error px-4 py-3 rounded-lg flex items-center gap-2">
                                 <AlertCircle className="h-4 w-4" />
                                 {error}
                             </div>
@@ -187,7 +187,7 @@ export default function NuevoTicketClientPage() {
                                 onChange={(e) => setSubject(e.target.value)}
                                 maxLength={200}
                             />
-                            <p className="text-xs text-gray-400">
+                            <p className="text-xs text-muted-foreground">
                                 Describe brevemente el problema o consulta
                             </p>
                         </div>
@@ -246,7 +246,7 @@ export default function NuevoTicketClientPage() {
                                 onChange={(e) => setDescription(e.target.value)}
                                 className="min-h-[150px]"
                             />
-                            <p className="text-xs text-gray-400">
+                            <p className="text-xs text-muted-foreground">
                                 Mientras mas detallada sea la descripcion, mas rapido podremos ayudarte
                             </p>
                         </div>

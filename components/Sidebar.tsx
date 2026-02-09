@@ -96,22 +96,22 @@ export function Sidebar() {
           <button
             onClick={() => toggleExpanded(item.name)}
             className={cn(
-              'w-full flex items-center px-2 py-2 text-sm font-medium rounded-md group',
-              level === 0 ? 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' : 'text-gray-500 hover:text-gray-700',
-              isParentActive && 'bg-gray-100 text-gray-900'
+              'w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg group transition-colors',
+              level === 0 ? 'text-muted-foreground hover:bg-accent hover:text-foreground' : 'text-muted-foreground hover:text-foreground',
+              isParentActive && 'bg-accent text-foreground'
             )}
           >
             <item.icon
               className={cn(
-                'mr-3 flex-shrink-0 h-5 w-5',
-                isParentActive ? 'text-gray-500' : 'text-gray-400 group-hover:text-gray-500'
+                'mr-3 flex-shrink-0 h-5 w-5 transition-colors',
+                isParentActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
               )}
             />
             <span className="flex-1 text-left">{item.name}</span>
             {isExpanded ? (
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
             ) : (
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             )}
           </button>
           {isExpanded && (
@@ -128,15 +128,15 @@ export function Sidebar() {
         key={item.name}
         href={item.href}
         className={cn(
-          'group flex items-center px-2 py-2 text-sm font-medium rounded-md',
-          level === 0 ? 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' : 'text-gray-500 hover:text-gray-700',
-          isActive && 'bg-gray-100 text-gray-900'
+          'group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors',
+          level === 0 ? 'text-muted-foreground hover:bg-accent hover:text-foreground' : 'text-muted-foreground hover:text-foreground',
+          isActive && 'bg-primary/10 text-primary border-l-2 border-primary'
         )}
       >
         <item.icon
           className={cn(
-            'mr-3 flex-shrink-0 h-5 w-5',
-            isActive ? 'text-gray-500' : 'text-gray-400 group-hover:text-gray-500'
+            'mr-3 flex-shrink-0 h-5 w-5 transition-colors',
+            isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
           )}
         />
         {item.name}
@@ -145,7 +145,7 @@ export function Sidebar() {
   }
 
   return (
-    <nav className="flex-1 px-2 py-4 space-y-1">
+    <nav className="flex-1 px-3 py-4 space-y-1">
       {navigation.map(item => renderNavItem(item))}
     </nav>
   )

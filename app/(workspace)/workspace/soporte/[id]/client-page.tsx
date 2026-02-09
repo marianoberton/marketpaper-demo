@@ -69,31 +69,31 @@ interface TicketDetail {
 const statusConfig: Record<string, { label: string; color: string; icon: React.ReactNode; description: string }> = {
     open: {
         label: 'Abierto',
-        color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+        color: 'bg-state-info-muted text-state-info',
         icon: <AlertCircle className="h-4 w-4" />,
         description: 'Tu ticket esta siendo revisado por nuestro equipo'
     },
     in_progress: {
         label: 'En Progreso',
-        color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300',
+        color: 'bg-state-warning-muted text-state-warning',
         icon: <Clock className="h-4 w-4" />,
         description: 'Estamos trabajando en tu solicitud'
     },
     waiting_user: {
         label: 'Esperando tu Respuesta',
-        color: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
+        color: 'bg-state-pending-muted text-state-pending',
         icon: <MessageSquare className="h-4 w-4" />,
         description: 'Te hemos respondido, por favor revisa y responde'
     },
     resolved: {
         label: 'Resuelto',
-        color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
+        color: 'bg-state-success-muted text-state-success',
         icon: <CheckCircle2 className="h-4 w-4" />,
         description: 'Este ticket ha sido resuelto'
     },
     closed: {
         label: 'Cerrado',
-        color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+        color: 'bg-muted text-muted-foreground',
         icon: <XCircle className="h-4 w-4" />,
         description: 'Este ticket ha sido cerrado'
     },
@@ -211,7 +211,7 @@ export default function TicketDetailClientPage({ ticketId }: TicketDetailClientP
     if (loading) {
         return (
             <div className="flex items-center justify-center h-96">
-                <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+                <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
         )
     }
@@ -219,8 +219,8 @@ export default function TicketDetailClientPage({ ticketId }: TicketDetailClientP
     if (error || !ticket) {
         return (
             <div className="flex flex-col items-center justify-center h-96 p-6">
-                <AlertCircle className="h-12 w-12 text-red-400 mb-4" />
-                <p className="text-red-500 text-lg">{error || 'Ticket no encontrado'}</p>
+                <AlertCircle className="h-12 w-12 text-state-error mb-4" />
+                <p className="text-state-error text-lg">{error || 'Ticket no encontrado'}</p>
                 <Button asChild variant="outline" className="mt-4">
                     <Link href="/workspace/soporte">
                         <ArrowLeft className="h-4 w-4 mr-2" />
@@ -245,13 +245,13 @@ export default function TicketDetailClientPage({ ticketId }: TicketDetailClientP
                     </Link>
                 </Button>
                 <div className="flex-1">
-                    <h1 className="text-xl font-bold text-gray-900 dark:text-gray-100">{ticket.subject}</h1>
+                    <h1 className="text-xl font-bold text-foreground">{ticket.subject}</h1>
                     <div className="flex items-center gap-3 mt-2 flex-wrap">
                         <Badge className={`${status.color} gap-1`}>
                             {status.icon}
                             {status.label}
                         </Badge>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                        <span className="text-sm text-muted-foreground">
                             {priority.label}
                         </span>
                         {ticket.category && (
@@ -279,17 +279,17 @@ export default function TicketDetailClientPage({ ticketId }: TicketDetailClientP
             <Card>
                 <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                        <CardTitle className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
                             Tu solicitud
                         </CardTitle>
-                        <div className="flex items-center gap-1 text-xs text-gray-400">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Calendar className="h-3 w-3" />
                             {formatDate(ticket.created_at)}
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{ticket.description}</p>
+                    <p className="text-foreground whitespace-pre-wrap">{ticket.description}</p>
                 </CardContent>
             </Card>
 
@@ -312,10 +312,10 @@ export default function TicketDetailClientPage({ ticketId }: TicketDetailClientP
                     style={{ maxHeight: '400px', minHeight: ticket.messages.length > 0 ? '200px' : '100px' }}
                 >
                     {ticket.messages.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+                        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
                             <MessageSquare className="h-10 w-10 mb-2" />
                             <p className="text-sm">Aun no hay respuestas</p>
-                            <p className="text-xs">Te notificaremos cuando respondamos</p>
+                            <p className="text-xs text-muted-foreground/70">Te notificaremos cuando respondamos</p>
                         </div>
                     ) : (
                         ticket.messages.filter(m => !m.is_internal).map((msg) => (
@@ -325,18 +325,18 @@ export default function TicketDetailClientPage({ ticketId }: TicketDetailClientP
                             >
                                 <div
                                     className={`max-w-[80%] rounded-lg p-3 ${msg.sender_type === 'user'
-                                            ? 'bg-blue-500 text-white'
-                                            : 'bg-gray-100 dark:bg-gray-800 border'
+                                            ? 'bg-primary text-primary-foreground'
+                                            : 'bg-muted border border-border'
                                         }`}
                                 >
                                     {msg.sender_type === 'admin' && (
-                                        <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-1">
+                                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                                             <User className="h-3 w-3" />
                                             Equipo de Soporte
                                         </div>
                                     )}
                                     <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
-                                    <div className={`text-xs mt-2 text-right ${msg.sender_type === 'user' ? 'text-blue-100' : 'text-gray-400'
+                                    <div className={`text-xs mt-2 text-right ${msg.sender_type === 'user' ? 'text-primary-foreground/70' : 'text-muted-foreground'
                                         }`}>
                                         {formatShortDate(msg.created_at)}
                                     </div>
@@ -349,7 +349,7 @@ export default function TicketDetailClientPage({ ticketId }: TicketDetailClientP
 
                 {/* Reply Box */}
                 {!isResolved ? (
-                    <div className="p-4 border-t bg-gray-50 dark:bg-gray-900">
+                    <div className="p-4 border-t bg-muted">
                         <Textarea
                             placeholder="Escribe tu mensaje..."
                             value={newMessage}
@@ -368,7 +368,7 @@ export default function TicketDetailClientPage({ ticketId }: TicketDetailClientP
                                 {pendingAttachments.map((att, index) => (
                                     <div key={att.file_path} className="relative group">
                                         {isImage(att.file_type) && att.publicUrl ? (
-                                            <div className="relative w-16 h-16 rounded overflow-hidden border">
+                                            <div className="relative w-16 h-16 rounded overflow-hidden border border-border">
                                                 <Image
                                                     src={att.publicUrl}
                                                     alt={att.file_name}
@@ -378,13 +378,13 @@ export default function TicketDetailClientPage({ ticketId }: TicketDetailClientP
                                                 />
                                             </div>
                                         ) : (
-                                            <div className="w-16 h-16 rounded border flex items-center justify-center bg-gray-100 dark:bg-gray-800">
-                                                <span className="text-xs text-gray-500">PDF</span>
+                                            <div className="w-16 h-16 rounded border border-border flex items-center justify-center bg-card">
+                                                <span className="text-xs text-muted-foreground">PDF</span>
                                             </div>
                                         )}
                                         <button
                                             onClick={() => handleRemoveAttachment(index)}
-                                            className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
+                                            className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5"
                                         >
                                             <X className="h-3 w-3" />
                                         </button>
@@ -403,7 +403,7 @@ export default function TicketDetailClientPage({ ticketId }: TicketDetailClientP
                                         disabled={sending}
                                     />
                                 )}
-                                <span className="text-xs text-gray-400">
+                                <span className="text-xs text-muted-foreground">
                                     Ctrl + Enter para enviar
                                 </span>
                             </div>
@@ -421,8 +421,8 @@ export default function TicketDetailClientPage({ ticketId }: TicketDetailClientP
                         </div>
                     </div>
                 ) : (
-                    <div className="p-4 border-t bg-gray-50 dark:bg-gray-900 text-center">
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <div className="p-4 border-t bg-muted text-center">
+                        <p className="text-sm text-muted-foreground">
                             Este ticket esta {ticket.status === 'resolved' ? 'resuelto' : 'cerrado'} y no acepta nuevos mensajes.
                         </p>
                         <Button asChild variant="outline" size="sm" className="mt-2">
