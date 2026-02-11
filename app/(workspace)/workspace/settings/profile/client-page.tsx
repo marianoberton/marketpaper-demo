@@ -116,7 +116,6 @@ export default function ProfileClientPage() {
         <PageHeader
           title="Mi Perfil"
           description="Gestiona tu información personal"
-          accentColor="primary"
         />
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -130,7 +129,6 @@ export default function ProfileClientPage() {
       <PageHeader
         title="Mi Perfil"
         description="Actualiza tu información personal y preferencias"
-        accentColor="primary"
       />
 
       <form onSubmit={handleSubmit}>
