@@ -471,6 +471,7 @@ export async function getCurrentCompany(companyIdFromQuery: string) {
       features,
       logo_url,
       custom_colors,
+      client_portal_enabled,
       template:client_templates (available_features)
     `)
     .eq('id', companyIdFromQuery)

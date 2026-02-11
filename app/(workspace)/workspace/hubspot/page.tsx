@@ -8,12 +8,12 @@ export default async function HubSpotPage({
 }) {
     return (
         <WorkspacePageWrapper searchParams={searchParams}>
-            <div className="flex flex-col gap-6 p-6">
-                <div className="flex flex-col gap-2">
-                    <h1 className="text-3xl font-heading font-bold text-gray-900 dark:text-gray-50">
+            <div className="flex flex-col gap-4 sm:gap-6 p-4 sm:p-6">
+                <div className="flex flex-col gap-1.5 sm:gap-2">
+                    <h1 className="text-2xl sm:text-3xl font-heading font-bold text-gray-900 dark:text-gray-50">
                         HubSpot Analytics
                     </h1>
-                    <p className="text-muted-foreground">
+                    <p className="text-sm sm:text-base text-muted-foreground">
                         Dashboard de ventas, pipeline, seguimiento y reporteria.
                     </p>
                 </div>

@@ -5,9 +5,10 @@ import { getPedidosDeals, type PedidosData, type EnrichedDeal } from '@/actions/
 import { KPICards, type KPICardData } from './kpi-cards'
 import { StageBadge } from './stage-badge'
 import { DealDetailSheet } from './deal-detail-sheet'
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { formatCurrency, formatM2, formatCurrencyPerM2 } from '@/lib/formatters'
 import { Loader2, ShoppingCart, CheckCircle2, Ruler, DollarSign } from 'lucide-react'
+import { RotateDeviceBanner } from '@/components/rotate-device-banner'
 
 interface PedidosTabProps {
   companyId: string
@@ -102,7 +103,12 @@ export function PedidosTab({ companyId, pipelineId, refreshKey, dateRange }: Ped
   ]
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 mobile-safe-container">
+      {/* Banner solo si hay datos */}
+      {(data.confirmados.length > 0 || data.cerradosGanados.length > 0) && (
+        <RotateDeviceBanner message="Rota el dispositivo para ver las tablas completas" />
+      )}
+
       <KPICards cards={kpis} />
 
       {/* Confirmado / Orden Recibida */}
@@ -150,8 +156,9 @@ function DealsTable({
   onSelect: (deal: EnrichedDeal) => void
 }) {
   return (
-    <Card className="overflow-hidden">
-      <div className="overflow-x-auto">
+    <Card className="overflow-hidden mobile-safe-container">
+      {/* Vista Desktop - Tabla completa */}
+      <div className="hidden sm:block overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-muted/50 text-left font-medium text-muted-foreground">
             <tr>
@@ -209,6 +216,54 @@ function DealsTable({
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Vista Mobile - Cards */}
+      <div className="sm:hidden p-4 space-y-3">
+        {deals.map((deal) => (
+          <Card key={deal.id} className="p-4 space-y-3 cursor-pointer hover:shadow-md transition-shadow" onClick={() => onSelect(deal)}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm truncate">{deal.properties.dealname}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {deal.clienteEmpresa || deal.clienteNombre || '-'}
+                </p>
+              </div>
+              <StageBadge label={deal.stageLabel} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <p className="text-xs text-muted-foreground">Monto</p>
+                <p className="font-mono font-medium">{formatCurrency(parseFloat(deal.properties.amount || '0') || 0)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">m2</p>
+                <p className="font-mono">{deal.m2Total > 0 ? formatM2(deal.m2Total) : '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">$/m2</p>
+                <p className="font-mono">{deal.precioPromedioM2 > 0 ? formatCurrencyPerM2(deal.precioPromedioM2) : '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Fecha</p>
+                <p className="text-xs">
+                  {deal.properties.closedate
+                    ? new Date(deal.properties.closedate).toLocaleDateString('es-AR')
+                    : deal.properties.createdate
+                      ? new Date(deal.properties.createdate).toLocaleDateString('es-AR')
+                      : '-'}
+                </p>
+              </div>
+            </div>
+
+            {deal.condicionesPago && (
+              <div className="pt-2 border-t text-xs">
+                <p className="text-muted-foreground">Condiciones: <span className="text-foreground">{deal.condicionesPago}</span></p>
+              </div>
+            )}
+          </Card>
+        ))}
       </div>
     </Card>
   )

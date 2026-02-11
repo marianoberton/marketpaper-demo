@@ -9,12 +9,16 @@ interface WorkspaceContextProps {
   companyId?: string
   companyName?: string
   companyLogoUrl?: string
+  clientPortalEnabled?: boolean
   isLoading: boolean
   availableModules: any[]
   // User information
   userName?: string
   userEmail?: string
   userRole?: string
+  userGender?: string
+  userPosition?: string
+  userDepartment?: string
 }
 
 const WorkspaceContext = createContext<WorkspaceContextProps | undefined>(undefined)
@@ -25,6 +29,7 @@ export function WorkspaceProvider({
   companyId,
   companyName,
   companyLogoUrl,
+  clientPortalEnabled,
   isLoading,
   availableModules,
 }: {
@@ -33,12 +38,16 @@ export function WorkspaceProvider({
   companyId?: string
   companyName?: string
   companyLogoUrl?: string
+  clientPortalEnabled?: boolean
   isLoading: boolean
   availableModules: any[]
 }) {
   const [userName, setUserName] = useState<string>()
   const [userEmail, setUserEmail] = useState<string>()
   const [userRole, setUserRole] = useState<string>()
+  const [userGender, setUserGender] = useState<string>()
+  const [userPosition, setUserPosition] = useState<string>()
+  const [userDepartment, setUserDepartment] = useState<string>()
 
   // Debug: Log received props
   useEffect(() => {
@@ -59,6 +68,9 @@ export function WorkspaceProvider({
           setUserName(user.full_name || user.email || 'Usuario')
           setUserEmail(user.email)
           setUserRole(user.role)
+          setUserGender(user.gender)
+          setUserPosition(user.position)
+          setUserDepartment(user.department)
         }
       } catch (error) {
         console.error('Error loading user data:', error)
@@ -73,11 +85,15 @@ export function WorkspaceProvider({
     companyId,
     companyName,
     companyLogoUrl,
+    clientPortalEnabled,
     isLoading,
     availableModules,
     userName,
     userEmail,
     userRole,
+    userGender,
+    userPosition,
+    userDepartment,
   }
   return (
     <WorkspaceContext.Provider value={value}>

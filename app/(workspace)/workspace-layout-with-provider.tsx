@@ -9,6 +9,7 @@ interface Company {
   name: string
   features: string[]
   logo_url?: string
+  client_portal_enabled?: boolean
   custom_colors?: {
     light?: {
       primary?: string
@@ -67,6 +68,7 @@ export function WorkspaceLayoutWithProvider({
   const companyName = initialCompanyData?.name
   const companyId = initialCompanyData?.id
   const companyLogoUrl = initialCompanyData?.logo_url
+  const clientPortalEnabled = initialCompanyData?.client_portal_enabled
   const customColors = initialCompanyData?.custom_colors
   const isLoading = !initialCompanyData; // True if no data was passed from server
 
@@ -76,6 +78,7 @@ export function WorkspaceLayoutWithProvider({
       companyId={companyId}
       companyName={companyName}
       companyLogoUrl={companyLogoUrl}
+      clientPortalEnabled={clientPortalEnabled}
       isLoading={isLoading}
       availableModules={availableModules || []}
     >

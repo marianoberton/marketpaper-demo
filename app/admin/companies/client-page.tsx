@@ -78,6 +78,7 @@ interface Company {
   client_template_id: string | null
   template_name?: string
   logo_url?: string
+  client_portal_enabled?: boolean
 }
 
 interface Template {
@@ -407,6 +408,21 @@ export function CompaniesClientPage({ companies: initialCompanies, templates: in
                       <Calendar className="h-4 w-4" />
                       <span>{formatDate(company.created_at)}</span>
                     </div>
+                  </div>
+
+                  {/* Portal Status Badge */}
+                  <div className="flex items-center gap-2">
+                    {company.client_portal_enabled ? (
+                      <Badge variant="outline" className="bg-state-success-muted text-state-success border-state-success/30">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Portal Habilitado
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-muted text-muted-foreground">
+                        <XCircle className="h-3 w-3 mr-1" />
+                        Portal Deshabilitado
+                      </Badge>
+                    )}
                   </div>
 
                   <div className="pt-2">

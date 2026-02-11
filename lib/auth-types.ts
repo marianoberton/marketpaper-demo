@@ -21,6 +21,13 @@ export interface UserProfile {
   locale: string
   created_at: string
   updated_at: string
+  // Additional profile fields
+  gender?: string
+  phone?: string
+  position?: string
+  department?: string
+  bio?: string
+  birthday?: string
 }
 
 export interface Company {

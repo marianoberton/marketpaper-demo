@@ -226,6 +226,14 @@
     @apply bg-background text-foreground font-body tracking-normal;
   }
 
+  /* Prevenir scroll horizontal en mobile - CRÍTICO */
+  @media (max-width: 640px) {
+    html, body {
+      overflow-x: hidden;
+      max-width: 100vw;
+    }
+  }
+
   h1,
   h2,
   h3,
@@ -296,6 +304,65 @@
 
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Mobile optimizations */
+  .touch-pan-x {
+    touch-action: pan-x;
+  }
+
+  .touch-pan-y {
+    touch-action: pan-y;
+  }
+
+  /* Smooth scroll for horizontal tabs */
+  .scroll-smooth-x {
+    scroll-behavior: smooth;
+    scroll-snap-type: x proximity;
+  }
+
+  /* Mobile safe padding */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 1rem);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+
+  /* Improved tap targets for mobile */
+  @media (max-width: 640px) {
+    button:not(.no-tap-area),
+    a:not(.no-tap-area) {
+      min-height: 44px;
+    }
+  }
+
+  /* Prevenir cualquier desbordamiento horizontal */
+  .no-x-overflow {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  /* Contenedores seguros para mobile */
+  .mobile-safe-container {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  @media (max-width: 640px) {
+    /* Forzar que las tablas no causen overflow */
+    table {
+      display: block;
+      max-width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Limitar cualquier elemento que pueda causar overflow */
+    .mobile-safe-container * {
+      max-width: 100%;
+    }
   }
 
   /* Hide Next.js dev indicators */

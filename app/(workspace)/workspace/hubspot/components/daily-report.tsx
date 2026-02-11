@@ -10,16 +10,17 @@ import { getDailyReportData, type DailyReportData } from '@/actions/hubspot-pric
 import { type EnrichedDeal } from '@/actions/hubspot-analytics'
 import { StageBadge } from './stage-badge'
 import { formatCurrency, formatM2 } from '@/lib/formatters'
-import { 
-  Calendar, 
-  TrendingUp, 
-  TrendingDown, 
-  AlertTriangle, 
+import {
+  Calendar,
+  TrendingUp,
+  TrendingDown,
+  AlertTriangle,
   Target,
   Download,
   Mail,
   Loader2,
-  ChevronRight
+  ChevronRight,
+  RefreshCcw
 } from 'lucide-react'
 
 interface DailyReportProps {
@@ -35,18 +36,46 @@ export function DailyReport({ companyId, pipelineId, refreshKey }: DailyReportPr
     new Date().toISOString().split('T')[0]
   )
 
+  const [error, setError] = useState<string | null>(null)
+  const [retryCountdown, setRetryCountdown] = useState(0)
+
   const fetchData = useCallback(async () => {
     if (!companyId || !pipelineId) return
     try {
       setLoading(true)
+      setError(null)
+      console.log('[DailyReport] Fetching data for date:', selectedDate)
       const result = await getDailyReportData(companyId, pipelineId, selectedDate)
+      console.log('[DailyReport] Data fetched successfully:', {
+        newLeads: result.newLeads.length,
+        closedWon: result.closedWon.length,
+        closedLost: result.closedLost.length,
+        followUpNeeded: result.followUpNeeded.length,
+      })
       setData(result)
     } catch (err) {
-      console.error('Error fetching daily report', err)
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido'
+      console.error('[DailyReport] Error fetching daily report:', errorMessage, err)
+      setError(errorMessage)
+
+      // Si es error de rate limit, iniciar countdown de 12 segundos
+      if (errorMessage.includes('limitando') || errorMessage.includes('espera')) {
+        setRetryCountdown(12)
+      }
     } finally {
       setLoading(false)
     }
   }, [companyId, pipelineId, selectedDate])
+
+  // Countdown para reintentar después de rate limit
+  useEffect(() => {
+    if (retryCountdown > 0) {
+      const timer = setTimeout(() => {
+        setRetryCountdown(retryCountdown - 1)
+      }, 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [retryCountdown])
 
   useEffect(() => {
     fetchData()
@@ -85,6 +114,28 @@ export function DailyReport({ companyId, pipelineId, refreshKey }: DailyReportPr
           ))}
         </div>
         <Skeleton className="h-64" />
+      </div>
+    )
+  }
+
+  if (error) {
+    const isRateLimit = error.includes('limitando') || error.includes('espera')
+    return (
+      <div className="flex flex-col h-64 items-center justify-center gap-4">
+        <div className="flex items-center gap-2 text-destructive">
+          <AlertTriangle className="h-5 w-5" />
+          <p className="font-medium">{isRateLimit ? 'Rate Limit de HubSpot' : 'Error al cargar el reporte'}</p>
+        </div>
+        <p className="text-sm text-muted-foreground max-w-md text-center">{error}</p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => fetchData()}
+          disabled={retryCountdown > 0}
+        >
+          <RefreshCcw className={`h-4 w-4 mr-2 ${retryCountdown > 0 ? 'animate-spin' : ''}`} />
+          {retryCountdown > 0 ? `Espera ${retryCountdown}s` : 'Reintentar'}
+        </Button>
       </div>
     )
   }

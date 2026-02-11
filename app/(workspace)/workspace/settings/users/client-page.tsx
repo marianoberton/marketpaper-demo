@@ -46,12 +46,14 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { RoleModulesMatrix } from './components/RoleModulesMatrix'
 import { UserModuleOverrides } from './components/UserModuleOverrides'
 
 interface ClientInfo {
     id: string
     name: string
+    portal_enabled?: boolean
 }
 
 interface UserProfile {
@@ -64,6 +66,9 @@ interface UserProfile {
     created_at: string
     avatar_url: string | null
     client_id: string | null
+    phone?: string | null
+    position?: string | null
+    department?: string | null
 }
 
 interface Invitation {
@@ -117,7 +122,7 @@ const statusLabels: Record<string, string> = {
 }
 
 export default function CompanyUsersClientPage() {
-    const { companyId } = useWorkspace()
+    const { companyId, clientPortalEnabled } = useWorkspace()
     const [users, setUsers] = useState<UserProfile[]>([])
     const [invitations, setInvitations] = useState<Invitation[]>([])
     const [clients, setClients] = useState<ClientInfo[]>([])
@@ -125,6 +130,7 @@ export default function CompanyUsersClientPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null)
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+    const [isEditProfileDialogOpen, setIsEditProfileDialogOpen] = useState(false)
     const [isTeamInviteDialogOpen, setIsTeamInviteDialogOpen] = useState(false)
     const [isClientInviteDialogOpen, setIsClientInviteDialogOpen] = useState(false)
     const [inviteEmail, setInviteEmail] = useState('')
@@ -133,6 +139,13 @@ export default function CompanyUsersClientPage() {
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [activeTab, setActiveTab] = useState('team')
     const [moduleOverrideUser, setModuleOverrideUser] = useState<UserProfile | null>(null)
+    const [editFormData, setEditFormData] = useState({
+        full_name: '',
+        phone: '',
+        position: '',
+        department: ''
+    })
+    const [selectedInvitations, setSelectedInvitations] = useState<Set<string>>(new Set())
 
     const teamUsers = useMemo(() => users.filter(u => u.role !== 'viewer'), [users])
     const viewerUsers = useMemo(() => users.filter(u => u.role === 'viewer'), [users])
@@ -198,6 +211,40 @@ export default function CompanyUsersClientPage() {
             setSelectedUser(null)
         } catch (error: any) {
             toast.error(error.message || 'Error al actualizar usuario')
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    const handleUpdateUserProfile = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!selectedUser) return
+
+        setIsSubmitting(true)
+        try {
+            const response = await fetch('/api/company/users', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: selectedUser.id,
+                    full_name: editFormData.full_name,
+                    phone: editFormData.phone,
+                    position: editFormData.position,
+                    department: editFormData.department
+                })
+            })
+
+            if (!response.ok) {
+                const data = await response.json()
+                throw new Error(data.error || 'Error al actualizar perfil')
+            }
+
+            toast.success('Perfil actualizado correctamente')
+            fetchUsers()
+            setIsEditProfileDialogOpen(false)
+            setSelectedUser(null)
+        } catch (error: any) {
+            toast.error(error.message || 'Error al actualizar perfil')
         } finally {
             setIsSubmitting(false)
         }
@@ -300,6 +347,81 @@ export default function CompanyUsersClientPage() {
         })
     }
 
+    const toggleInvitationSelection = (id: string) => {
+        setSelectedInvitations(prev => {
+            const newSet = new Set(prev)
+            if (newSet.has(id)) {
+                newSet.delete(id)
+            } else {
+                newSet.add(id)
+            }
+            return newSet
+        })
+    }
+
+    const toggleSelectAll = () => {
+        if (selectedInvitations.size === pendingInvitations.length) {
+            setSelectedInvitations(new Set())
+        } else {
+            setSelectedInvitations(new Set(pendingInvitations.map(i => i.id)))
+        }
+    }
+
+    const handleBulkDeleteInvitations = async () => {
+        if (selectedInvitations.size === 0) {
+            toast.error('Selecciona al menos una invitación')
+            return
+        }
+
+        if (!confirm(`¿Estás seguro de cancelar ${selectedInvitations.size} invitacion(es)?`)) return
+
+        setIsSubmitting(true)
+        try {
+            const deletePromises = Array.from(selectedInvitations).map(id =>
+                fetch(`/api/company/invitations?id=${id}`, { method: 'DELETE' })
+            )
+
+            const results = await Promise.allSettled(deletePromises)
+            const failed = results.filter(r => r.status === 'rejected').length
+
+            if (failed > 0) {
+                toast.error(`${failed} invitacion(es) no pudieron cancelarse`)
+            } else {
+                toast.success(`${selectedInvitations.size} invitacion(es) canceladas`)
+            }
+
+            setSelectedInvitations(new Set())
+            fetchInvitations()
+        } catch (error) {
+            toast.error('Error al cancelar invitaciones')
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    const handleToggleClientPortalAccess = async (clientId: string, currentlyEnabled: boolean) => {
+        try {
+            const response = await fetch('/api/company/clients/portal-toggle', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    clientId,
+                    portalEnabled: !currentlyEnabled
+                })
+            })
+
+            if (!response.ok) {
+                const data = await response.json()
+                throw new Error(data.error || 'Error al actualizar acceso')
+            }
+
+            toast.success(!currentlyEnabled ? 'Portal habilitado para el cliente' : 'Portal deshabilitado para el cliente')
+            fetchUsers() // Refresh to get updated client info
+        } catch (error: any) {
+            toast.error(error.message || 'Error al actualizar acceso al portal')
+        }
+    }
+
     const getTeamRoles = () => {
         if (currentUserRole === 'super_admin') {
             return ['company_owner', 'company_admin', 'manager', 'employee']
@@ -354,10 +476,9 @@ export default function CompanyUsersClientPage() {
                 <PageHeader
                     title="Usuarios de la Empresa"
                     description="Gestiona tu equipo y los accesos de clientes"
-                    accentColor="blue"
                 />
                 <div className="flex items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
             </div>
         )
@@ -404,7 +525,7 @@ export default function CompanyUsersClientPage() {
                         {roleLabels[user.role] || user.role}
                     </Badge>
 
-                    <Badge className={statusColors[user.status] || 'bg-gray-100'}>
+                    <Badge className={statusColors[user.status] || 'bg-muted'}>
                         {statusLabels[user.status] || user.status}
                     </Badge>
 
@@ -420,6 +541,19 @@ export default function CompanyUsersClientPage() {
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onClick={() => {
                                     setSelectedUser(user)
+                                    setEditFormData({
+                                        full_name: user.full_name || '',
+                                        phone: user.phone || '',
+                                        position: user.position || '',
+                                        department: user.department || ''
+                                    })
+                                    setIsEditProfileDialogOpen(true)
+                                }}>
+                                    <User className="mr-2 h-4 w-4" />
+                                    Editar Perfil
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => {
+                                    setSelectedUser(user)
                                     setIsEditDialogOpen(true)
                                 }}>
                                     <Shield className="mr-2 h-4 w-4" />
@@ -433,7 +567,7 @@ export default function CompanyUsersClientPage() {
                                 {user.status === 'active' ? (
                                     <DropdownMenuItem
                                         onClick={() => handleUpdateUser(user.id, { status: 'inactive' })}
-                                        className="text-red-600"
+                                        className="text-destructive"
                                     >
                                         <Ban className="mr-2 h-4 w-4" />
                                         Desactivar
@@ -441,7 +575,7 @@ export default function CompanyUsersClientPage() {
                                 ) : (
                                     <DropdownMenuItem
                                         onClick={() => handleUpdateUser(user.id, { status: 'active' })}
-                                        className="text-green-600"
+                                        className="text-state-success"
                                     >
                                         <CheckCircle className="mr-2 h-4 w-4" />
                                         Activar
@@ -462,6 +596,12 @@ export default function CompanyUsersClientPage() {
         return (
             <div key={invitation.id} className="flex flex-col sm:flex-row sm:items-center justify-between py-4 gap-4">
                 <div className="flex items-center gap-4">
+                    {isPending && (
+                        <Checkbox
+                            checked={selectedInvitations.has(invitation.id)}
+                            onCheckedChange={() => toggleInvitationSelection(invitation.id)}
+                        />
+                    )}
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
                         isViewerInvite
                             ? 'bg-state-warning-muted text-state-warning'
@@ -490,7 +630,7 @@ export default function CompanyUsersClientPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <Badge className={statusColors[invitation.status] || 'bg-gray-100'}>
+                    <Badge className={statusColors[invitation.status] || 'bg-muted'}>
                         {statusLabels[invitation.status] || invitation.status}
                     </Badge>
 
@@ -509,7 +649,7 @@ export default function CompanyUsersClientPage() {
                             <Button
                                 size="icon"
                                 variant="ghost"
-                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                 onClick={() => handleCancelInvitation(invitation.id)}
                             >
                                 <Trash2 className="h-4 w-4" />
@@ -526,7 +666,6 @@ export default function CompanyUsersClientPage() {
             <PageHeader
                 title="Usuarios de la Empresa"
                 description="Gestiona tu equipo interno y los accesos de clientes al portal"
-                accentColor="blue"
             />
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -535,10 +674,12 @@ export default function CompanyUsersClientPage() {
                         <Users className="h-4 w-4" />
                         Equipo ({teamUsers.length})
                     </TabsTrigger>
-                    <TabsTrigger value="clients" className="flex items-center gap-2">
-                        <ExternalLink className="h-4 w-4" />
-                        Portal Clientes ({viewerUsers.length})
-                    </TabsTrigger>
+                    {clientPortalEnabled && (
+                        <TabsTrigger value="clients" className="flex items-center gap-2">
+                            <ExternalLink className="h-4 w-4" />
+                            Portal Clientes ({viewerUsers.length})
+                        </TabsTrigger>
+                    )}
                     <TabsTrigger value="invitations" className="flex items-center gap-2">
                         <Mail className="h-4 w-4" />
                         Invitaciones ({pendingInvitations.length})
@@ -552,7 +693,7 @@ export default function CompanyUsersClientPage() {
                 {/* ==================== TAB: EQUIPO ==================== */}
                 <TabsContent value="team">
                     <div className="flex justify-between items-center mb-4">
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-muted-foreground">
                             Usuarios con acceso a la plataforma de gestión
                         </div>
                         <Button onClick={() => setIsTeamInviteDialogOpen(true)}>
@@ -583,9 +724,10 @@ export default function CompanyUsersClientPage() {
                 </TabsContent>
 
                 {/* ==================== TAB: PORTAL CLIENTES ==================== */}
-                <TabsContent value="clients">
+                {clientPortalEnabled && (
+                    <TabsContent value="clients">
                     <div className="flex justify-between items-center mb-4">
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-muted-foreground">
                             Usuarios con acceso al portal de solo lectura
                         </div>
                         <Button
@@ -610,6 +752,55 @@ export default function CompanyUsersClientPage() {
                             </p>
                         </div>
                     </div>
+
+                    {/* Gestión de acceso al portal por cliente */}
+                    <Card className="mb-6">
+                        <CardHeader>
+                            <CardTitle>Configurar acceso al portal</CardTitle>
+                            <CardDescription>
+                                Habilita o deshabilita el acceso al portal para cada cliente de tu empresa
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {clients.length === 0 ? (
+                                <div className="text-center py-8 text-muted-foreground">
+                                    <Building className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                                    <p className="text-sm">No hay clientes registrados en tu empresa</p>
+                                    <p className="text-xs mt-1">Crea clientes desde el módulo de Construcción o CRM</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {clients.map((client) => (
+                                        <div
+                                            key={client.id}
+                                            className="flex items-center justify-between p-3 rounded-lg border hover:bg-muted/30 transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <Building className="h-5 w-5 text-muted-foreground" />
+                                                <div>
+                                                    <p className="font-medium text-foreground">{client.name}</p>
+                                                    {client.portal_enabled ? (
+                                                        <p className="text-xs text-state-success">Portal habilitado</p>
+                                                    ) : (
+                                                        <p className="text-xs text-muted-foreground">Portal deshabilitado</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Switch
+                                                    checked={client.portal_enabled || false}
+                                                    onCheckedChange={() => handleToggleClientPortalAccess(client.id, client.portal_enabled || false)}
+                                                />
+                                                <span className="text-xs text-muted-foreground min-w-[80px] text-right">
+                                                    {client.portal_enabled ? 'Habilitado' : 'Deshabilitado'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
 
                     <Card>
                         <CardHeader>
@@ -642,9 +833,34 @@ export default function CompanyUsersClientPage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
+                )}
 
                 {/* ==================== TAB: INVITACIONES ==================== */}
                 <TabsContent value="invitations">
+                    {pendingInvitations.length > 0 && (
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                                <Checkbox
+                                    checked={selectedInvitations.size === pendingInvitations.length}
+                                    onCheckedChange={toggleSelectAll}
+                                />
+                                <span className="text-sm text-muted-foreground">
+                                    {selectedInvitations.size > 0 ? `${selectedInvitations.size} seleccionadas` : 'Seleccionar todas'}
+                                </span>
+                            </div>
+                            {selectedInvitations.size > 0 && (
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={handleBulkDeleteInvitations}
+                                    disabled={isSubmitting}
+                                >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Eliminar seleccionadas ({selectedInvitations.size})
+                                </Button>
+                            )}
+                        </div>
+                    )}
                     <Card>
                         <CardHeader>
                             <CardTitle>Invitaciones Pendientes</CardTitle>
@@ -681,6 +897,77 @@ export default function CompanyUsersClientPage() {
                     onClose={() => setModuleOverrideUser(null)}
                 />
             )}
+
+            {/* ==================== DIALOG: EDITAR PERFIL ==================== */}
+            <Dialog open={isEditProfileDialogOpen} onOpenChange={setIsEditProfileDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Editar Perfil de Usuario</DialogTitle>
+                        <DialogDescription>
+                            Modifica la información de {selectedUser?.full_name || selectedUser?.email}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <form onSubmit={handleUpdateUserProfile} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-full-name">Nombre completo</Label>
+                            <Input
+                                id="edit-full-name"
+                                value={editFormData.full_name}
+                                onChange={(e) => setEditFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                                placeholder="Nombre completo"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-phone">Teléfono</Label>
+                            <Input
+                                id="edit-phone"
+                                type="tel"
+                                value={editFormData.phone}
+                                onChange={(e) => setEditFormData(prev => ({ ...prev, phone: e.target.value }))}
+                                placeholder="+54 11 1234-5678"
+                            />
+                        </div>
+
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-position">Puesto / Cargo</Label>
+                                <Input
+                                    id="edit-position"
+                                    value={editFormData.position}
+                                    onChange={(e) => setEditFormData(prev => ({ ...prev, position: e.target.value }))}
+                                    placeholder="Ej: Gerente de Ventas"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-department">Departamento</Label>
+                                <Input
+                                    id="edit-department"
+                                    value={editFormData.department}
+                                    onChange={(e) => setEditFormData(prev => ({ ...prev, department: e.target.value }))}
+                                    placeholder="Ej: Comercial"
+                                />
+                            </div>
+                        </div>
+
+                        <DialogFooter>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsEditProfileDialogOpen(false)}
+                                disabled={isSubmitting}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting ? 'Guardando...' : 'Guardar cambios'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
 
             {/* ==================== DIALOG: CAMBIAR ROL ==================== */}
             <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -822,19 +1109,29 @@ export default function CompanyUsersClientPage() {
                                 <div className="mt-2 bg-muted border border-border rounded-md p-3 text-sm text-muted-foreground">
                                     No hay clientes disponibles. Primero crea un cliente desde el módulo de construcción o CRM.
                                 </div>
+                            ) : clients.filter(c => c.portal_enabled).length === 0 ? (
+                                <div className="mt-2 bg-state-warning-muted border border-state-warning/30 rounded-md p-3 text-sm text-foreground">
+                                    <p className="font-medium mb-1">No hay clientes con portal habilitado</p>
+                                    <p className="text-xs">Primero habilita el acceso al portal para al menos un cliente en la pestaña "Portal Clientes".</p>
+                                </div>
                             ) : (
-                                <Select value={inviteClientId} onValueChange={setInviteClientId}>
-                                    <SelectTrigger className="mt-2">
-                                        <SelectValue placeholder="Selecciona un cliente" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {clients.map((client) => (
-                                            <SelectItem key={client.id} value={client.id}>
-                                                {client.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <>
+                                    <Select value={inviteClientId} onValueChange={setInviteClientId}>
+                                        <SelectTrigger className="mt-2">
+                                            <SelectValue placeholder="Selecciona un cliente" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {clients.filter(c => c.portal_enabled).map((client) => (
+                                                <SelectItem key={client.id} value={client.id}>
+                                                    {client.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        Solo se muestran clientes con portal habilitado ({clients.filter(c => c.portal_enabled).length} de {clients.length})
+                                    </p>
+                                </>
                             )}
                         </div>
 

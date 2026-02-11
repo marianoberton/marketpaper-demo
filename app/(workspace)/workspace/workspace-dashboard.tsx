@@ -100,12 +100,47 @@ const CATEGORY_STYLES: Record<string, {
 }
 
 export function WorkspaceDashboard() {
-  const { companyId, companyName, isLoading, userName, availableModules } = useWorkspace()
+  const { companyId, companyName, isLoading, userName, userGender, userPosition, userDepartment, availableModules } = useWorkspace()
 
   // Filtrar el módulo Overview del grid
   const modulesToShow = availableModules
     .filter(m => m.route_path !== '/workspace' && m.name !== 'Overview')
     .sort((a, b) => (a.display_order || 100) - (b.display_order || 100))
+
+  // Generar saludo personalizado según género
+  const getGreeting = () => {
+    const firstName = userName?.split(' ')[0] || ''
+
+    if (!firstName) return 'Bienvenido'
+
+    if (userGender === 'female') {
+      return `Bienvenida, ${firstName}`
+    } else if (userGender === 'male') {
+      return `Bienvenido, ${firstName}`
+    } else if (userGender === 'non-binary') {
+      return `Bienvenid@, ${firstName}`
+    } else {
+      // Por defecto si no hay género especificado
+      return `Bienvenid@, ${firstName}`
+    }
+  }
+
+  // Generar descripción personalizada
+  const getDescription = () => {
+    const parts: string[] = []
+
+    if (userPosition) {
+      parts.push(userPosition)
+    }
+    if (userDepartment) {
+      parts.push(userDepartment)
+    }
+
+    const roleInfo = parts.length > 0 ? parts.join(' • ') : companyName || ''
+    const moduleCount = `${modulesToShow.length} módulos disponibles`
+
+    return `${roleInfo} · ${moduleCount}`
+  }
 
   return (
     <div className="flex-1 space-y-8 p-6 md:p-8">
@@ -118,13 +153,13 @@ export function WorkspaceDashboard() {
         </div>
       ) : companyName ? (
         <>
-          {/* Header con bienvenida */}
+          {/* Header con bienvenida personalizada */}
           <div className="space-y-2">
             <h1 className="text-3xl font-bold text-foreground">
-              Bienvenido{userName ? `, ${userName.split(' ')[0]}` : ''}
+              {getGreeting()}
             </h1>
             <p className="text-muted-foreground text-lg">
-              {companyName} · {modulesToShow.length} módulos disponibles
+              {getDescription()}
             </p>
           </div>
 

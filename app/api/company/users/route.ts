@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
   // Build query - always exclude super_admins from company user lists
   let query = supabase
     .from('user_profiles')
-    .select('id, email, full_name, role, status, last_login, created_at, company_id, avatar_url, client_id')
+    .select('id, email, full_name, role, status, last_login, created_at, company_id, avatar_url, client_id, phone, position, department')
     .neq('role', 'super_admin') // IMPORTANTE: Los super_admin no pertenecen a empresas
     .order('created_at', { ascending: false })
 
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
       const supabaseAdmin = getSupabaseAdmin()
       const { data: clientsData, error: clientsError } = await supabaseAdmin
         .from('clients')
-        .select('id, name')
+        .select('id, name, portal_enabled')
         .eq('company_id', targetCompanyId)
         .order('name')
 
@@ -111,7 +111,7 @@ export async function PUT(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { userId, role, status } = body
+  const { userId, role, status, full_name, phone, position, department } = body
 
   if (!userId) {
     return NextResponse.json({ error: 'userId es requerido' }, { status: 400 })
@@ -149,6 +149,10 @@ export async function PUT(request: NextRequest) {
   const updateData: Record<string, any> = {}
   if (role) updateData.role = role
   if (status) updateData.status = status
+  if (full_name !== undefined) updateData.full_name = full_name
+  if (phone !== undefined) updateData.phone = phone
+  if (position !== undefined) updateData.position = position
+  if (department !== undefined) updateData.department = department
 
   if (Object.keys(updateData).length === 0) {
     return NextResponse.json({ error: 'Nada que actualizar' }, { status: 400 })

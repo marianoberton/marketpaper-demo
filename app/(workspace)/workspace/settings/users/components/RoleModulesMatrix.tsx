@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
 import { useWorkspace } from '@/components/workspace-context'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -182,8 +182,8 @@ export function RoleModulesMatrix() {
             </thead>
             <tbody>
               {Object.entries(modulesByCategory).map(([category, mods]) => (
-                <>
-                  <tr key={`cat-${category}`}>
+                <Fragment key={`cat-${category}`}>
+                  <tr>
                     <td colSpan={ROLES.length + 1} className="pt-4 pb-1">
                       <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                         {category}
@@ -211,7 +211,7 @@ export function RoleModulesMatrix() {
                       ))}
                     </tr>
                   ))}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>

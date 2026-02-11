@@ -12,8 +12,16 @@ import {
   SheetTitle,
   SheetClose
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Menu, ArrowLeft, LogOut, User, LifeBuoy } from "lucide-react";
+import { Menu, ArrowLeft, LogOut, User, LifeBuoy, Settings as SettingsIcon, ChevronDown } from "lucide-react";
 import { NotificationBell } from "@/components/notification-bell";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -69,23 +77,49 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
 
             {/* Controles */}
             <div className="flex items-center gap-2">
-              <Link href="/workspace/soporte" title="Soporte">
-                <Button variant="ghost" size="icon">
-                  <LifeBuoy className="h-5 w-5" />
-                </Button>
-              </Link>
               <NotificationBell />
               <ThemeToggle />
               <LayoutToggle />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-                className="flex items-center gap-2 hover:bg-red-50 hover:border-red-300 hover:text-red-600"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="hidden sm:inline">Cerrar Sesión</span>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <User className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end">
+                  <DropdownMenuLabel>
+                    <div className="truncate">{userName || 'Usuario'}</div>
+                    <div className="text-xs font-normal text-muted-foreground truncate">{companyName}</div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/workspace/settings/profile" className="flex items-center cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      Mi Perfil
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/workspace/settings" className="flex items-center cursor-pointer">
+                      <SettingsIcon className="mr-2 h-4 w-4" />
+                      Configuración
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/workspace/soporte" className="flex items-center cursor-pointer">
+                      <LifeBuoy className="mr-2 h-4 w-4" />
+                      Soporte
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-destructive focus:text-destructive cursor-pointer"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Cerrar Sesión
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -170,55 +204,102 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
             }`}>
             {isCollapsed ? (
               <>
-                <Link href="/workspace/soporte" title="Soporte">
-                  <Button variant="ghost" size="icon">
-                    <LifeBuoy className="h-4 w-4" />
-                  </Button>
-                </Link>
                 <NotificationBell />
                 <ThemeToggle />
                 <div className="w-full h-px bg-border my-2" />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="w-full flex items-center justify-center hover:bg-red-50 hover:text-red-600"
-                  title="Cerrar Sesión"
-                >
-                  <LogOut className="h-4 w-4" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" title="Mi Cuenta">
+                      <User className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end" side="right">
+                    <DropdownMenuLabel>
+                      <div className="truncate">{userName || 'Usuario'}</div>
+                      <div className="text-xs font-normal text-muted-foreground truncate">{companyName}</div>
+                    </DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/workspace/settings/profile" className="flex items-center cursor-pointer">
+                        <User className="mr-2 h-4 w-4" />
+                        Mi Perfil
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/workspace/settings" className="flex items-center cursor-pointer">
+                        <SettingsIcon className="mr-2 h-4 w-4" />
+                        Configuración
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/workspace/soporte" className="flex items-center cursor-pointer">
+                        <LifeBuoy className="mr-2 h-4 w-4" />
+                        Soporte
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      className="text-destructive focus:text-destructive cursor-pointer"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Cerrar Sesión
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             ) : (
               <>
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
-                      <User className="h-4 w-4 text-primary-foreground" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate max-w-[120px]">{userName || 'Usuario'}</p>
-                      <p className="text-xs text-muted-foreground truncate max-w-[120px]">{companyName || 'Manager'}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Link href="/workspace/soporte" title="Soporte">
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <LifeBuoy className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <NotificationBell />
-                    <ThemeToggle />
-                  </div>
+                <div className="flex items-center gap-2 mb-3">
+                  <NotificationBell />
+                  <ThemeToggle />
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-2 hover:bg-red-50 hover:border-red-300 hover:text-red-600"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Cerrar Sesión
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between h-auto py-2 px-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                          <User className="h-4 w-4 text-primary-foreground" />
+                        </div>
+                        <div className="min-w-0 text-left">
+                          <p className="text-sm font-medium text-foreground truncate max-w-[120px]">{userName || 'Usuario'}</p>
+                          <p className="text-xs text-muted-foreground truncate max-w-[120px]">{companyName}</p>
+                        </div>
+                      </div>
+                      <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56" align="end" side="top">
+                    <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/workspace/settings/profile" className="flex items-center cursor-pointer">
+                        <User className="mr-2 h-4 w-4" />
+                        Mi Perfil
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/workspace/settings" className="flex items-center cursor-pointer">
+                        <SettingsIcon className="mr-2 h-4 w-4" />
+                        Configuración
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/workspace/soporte" className="flex items-center cursor-pointer">
+                        <LifeBuoy className="mr-2 h-4 w-4" />
+                        Soporte
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      className="text-destructive focus:text-destructive cursor-pointer"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Cerrar Sesión
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             )}
           </div>
@@ -226,16 +307,16 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
       </aside>
 
       {/* Mobile Header */}
-      <div className="lg:hidden sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-card/90 backdrop-blur-sm px-4 shadow-sm">
+      <div className="lg:hidden sticky top-0 z-50 flex h-14 items-center justify-between border-b bg-card/90 backdrop-blur-sm px-3 shadow-sm">
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="hover:bg-primary hover:text-primary-foreground transition-colors">
+            <Button variant="ghost" size="icon" className="hover:bg-primary/10 hover:text-primary transition-colors">
               <Menu className="h-5 w-5" />
               <span className="sr-only">Abrir menú</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="flex flex-col bg-sidebar backdrop-blur-sm">
-            <div className="flex h-20 items-center justify-center border-b">
+          <SheetContent side="left" className="flex flex-col bg-sidebar backdrop-blur-sm w-[280px]">
+            <div className="flex h-16 items-center justify-center border-b">
               <div className="flex items-center gap-3">
                 {companyLogoUrl ? (
                   <Image
@@ -246,7 +327,7 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
                     className="object-contain rounded max-h-10"
                   />
                 ) : (
-                  <div className="text-2xl font-bold text-foreground">
+                  <div className="text-xl font-bold text-foreground">
                     {companyName || 'Workspace'}
                   </div>
                 )}
@@ -257,22 +338,52 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
               <WorkspaceNav />
             </div>
 
-            {/* User info y logout en mobile */}
-            <div className="border-t p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-primary-foreground" />
+            {/* User info y controles en mobile */}
+            <div className="border-t p-4 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-primary rounded-full flex items-center justify-center">
+                  <User className="h-5 w-5 text-primary-foreground" />
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">{userName || 'Usuario'}</p>
-                  <p className="text-xs text-muted-foreground">{companyName || 'Manager'}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{userName || 'Usuario'}</p>
+                  <p className="text-xs text-muted-foreground truncate">{companyName}</p>
                 </div>
+                <ThemeToggle />
               </div>
+
+              {/* Menu options */}
+              <div className="space-y-1 pt-2 border-t">
+                <SheetClose asChild>
+                  <Link href="/workspace/settings/profile">
+                    <Button variant="ghost" size="sm" className="w-full justify-start h-9">
+                      <User className="h-4 w-4 mr-2" />
+                      Mi Perfil
+                    </Button>
+                  </Link>
+                </SheetClose>
+                <SheetClose asChild>
+                  <Link href="/workspace/settings">
+                    <Button variant="ghost" size="sm" className="w-full justify-start h-9">
+                      <SettingsIcon className="h-4 w-4 mr-2" />
+                      Configuración
+                    </Button>
+                  </Link>
+                </SheetClose>
+                <SheetClose asChild>
+                  <Link href="/workspace/soporte">
+                    <Button variant="ghost" size="sm" className="w-full justify-start h-9">
+                      <LifeBuoy className="h-4 w-4 mr-2" />
+                      Soporte
+                    </Button>
+                  </Link>
+                </SheetClose>
+              </div>
+
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleLogout}
-                className="w-full flex items-center gap-2 hover:bg-red-50 hover:border-red-300 hover:text-red-600"
+                className="w-full flex items-center gap-2 hover:bg-destructive/10 hover:border-destructive hover:text-destructive mt-2"
               >
                 <LogOut className="h-4 w-4" />
                 Cerrar Sesión
@@ -281,46 +392,26 @@ export function WorkspaceLayout({ children, showBackLink = false }: WorkspaceLay
             <SheetClose />
           </SheetContent>
         </Sheet>
-        <div className="flex items-center gap-2">
-          {showBackLink && (
-            <Link href="/admin" className="text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
+
+        {/* Logo central */}
+        <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
+          {companyLogoUrl ? (
+            <Image
+              src={companyLogoUrl}
+              alt={`Logo de ${companyName}`}
+              width={90}
+              height={36}
+              className="object-contain rounded max-h-9"
+            />
+          ) : (
+            <div className="text-xl font-bold text-foreground">
+              {companyName || 'W'}
+            </div>
           )}
-          <div className="flex items-center gap-2">
-            {companyLogoUrl ? (
-              <Image
-                src={companyLogoUrl}
-                alt={`Logo de ${companyName}`}
-                width={24}
-                height={24}
-                className="object-contain rounded"
-              />
-            ) : (
-              <div className="text-xl font-bold text-foreground">
-                {companyName || 'Workspace'}
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href="/workspace/soporte" title="Soporte">
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <LifeBuoy className="h-4 w-4" />
-              </Button>
-            </Link>
-            <NotificationBell />
-            <ThemeToggle />
-            <LayoutToggle />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleLogout}
-              className="hover:bg-red-50 hover:border-red-300 hover:text-red-600"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
         </div>
+
+        {/* Notificaciones */}
+        <NotificationBell />
       </div>
 
       {/* Main Content Area */}

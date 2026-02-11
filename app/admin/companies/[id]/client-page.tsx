@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
   Building2,
   Users,
@@ -66,6 +67,7 @@ interface Company {
   features: string[]
   logo_url?: string
   template_id?: string | null
+  client_portal_enabled?: boolean
 }
 
 interface CompanyUser {
@@ -292,6 +294,29 @@ export default function CompanyDetailsClient({
 
       console.log('✅ File validation passed')
       setLogoFile(file)
+    }
+  }
+
+  const handleToggleClientPortal = async (enabled: boolean) => {
+    if (!company) return
+
+    try {
+      const response = await fetch(`/api/admin/companies/${company.id}/portal`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_portal_enabled: enabled })
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Error al actualizar portal')
+      }
+
+      // Update local state
+      setCompany(prev => prev ? { ...prev, client_portal_enabled: enabled } : null)
+      toast.success(enabled ? 'Portal de clientes habilitado' : 'Portal de clientes deshabilitado')
+    } catch (error: any) {
+      toast.error(error.message || 'Error al actualizar configuración de portal')
     }
   }
 
@@ -747,8 +772,28 @@ export default function CompanyDetailsClient({
                 <CardTitle>Configuración General</CardTitle>
                 <CardDescription>Configuraciones adicionales de la empresa</CardDescription>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-center py-8">Configuraciones adicionales por implementar</p>
+              <CardContent className="space-y-6">
+                {/* Client Portal Toggle */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Users className="h-4 w-4 text-primary" />
+                      <h4 className="font-medium text-foreground">Portal de Clientes</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Permite que esta empresa invite clientes externos con acceso de solo lectura a sus proyectos
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 ml-4">
+                    <span className="text-sm text-muted-foreground">
+                      {company.client_portal_enabled ? 'Habilitado' : 'Deshabilitado'}
+                    </span>
+                    <Switch
+                      checked={company.client_portal_enabled || false}
+                      onCheckedChange={handleToggleClientPortal}
+                    />
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
