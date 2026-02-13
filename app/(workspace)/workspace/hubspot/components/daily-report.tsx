@@ -40,7 +40,11 @@ export function DailyReport({ companyId, pipelineId, refreshKey }: DailyReportPr
   const [retryCountdown, setRetryCountdown] = useState(0)
 
   const fetchData = useCallback(async () => {
-    if (!companyId || !pipelineId) return
+    if (!companyId || !pipelineId) {
+      setError('Faltan parámetros: companyId o pipelineId no están configurados')
+      setLoading(false)
+      return
+    }
     try {
       setLoading(true)
       setError(null)
@@ -54,14 +58,26 @@ export function DailyReport({ companyId, pipelineId, refreshKey }: DailyReportPr
       })
       setData(result)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error desconocido'
-      console.error('[DailyReport] Error fetching daily report:', errorMessage, err)
-      setError(errorMessage)
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido al cargar el reporte'
+      console.error('[DailyReport] Error fetching daily report:', err)
 
-      // Si es error de rate limit, iniciar countdown de 12 segundos
-      if (errorMessage.includes('limitando') || errorMessage.includes('espera')) {
+      // Mensajes de error más específicos
+      let userFriendlyError = errorMessage
+
+      if (errorMessage.includes('No se encontraron integraciones') || errorMessage.includes('No se encontró integración')) {
+        userFriendlyError = 'HubSpot no está configurado para esta empresa. Por favor, configure la integración en Configuración > Integraciones.'
+      } else if (errorMessage.includes('descifrar') || errorMessage.includes('credentials')) {
+        userFriendlyError = 'Error con las credenciales de HubSpot. Por favor, reconfigure la integración en Configuración.'
+      } else if (errorMessage.includes('token') && errorMessage.includes('vacío')) {
+        userFriendlyError = 'El token de HubSpot está vacío. Por favor, configure un token válido en Configuración.'
+      } else if (errorMessage.includes('429') || errorMessage.includes('RATE_LIMIT') || errorMessage.includes('ten_secondly_rolling')) {
+        userFriendlyError = 'HubSpot está limitando las llamadas a la API. Por favor espera 10 segundos e intenta nuevamente.'
+        setRetryCountdown(12)
+      } else if (errorMessage.includes('limitando') || errorMessage.includes('espera')) {
         setRetryCountdown(12)
       }
+
+      setError(userFriendlyError)
     } finally {
       setLoading(false)
     }
@@ -119,24 +135,43 @@ export function DailyReport({ companyId, pipelineId, refreshKey }: DailyReportPr
   }
 
   if (error) {
-    const isRateLimit = error.includes('limitando') || error.includes('espera')
+    const isRateLimit = error.includes('limitando') || error.includes('espera') || error.includes('Rate Limit')
+    const isConfigError = error.includes('no está configurado') || error.includes('No se encontr') || error.includes('reconfigure')
+
     return (
-      <div className="flex flex-col h-64 items-center justify-center gap-4">
-        <div className="flex items-center gap-2 text-destructive">
-          <AlertTriangle className="h-5 w-5" />
-          <p className="font-medium">{isRateLimit ? 'Rate Limit de HubSpot' : 'Error al cargar el reporte'}</p>
-        </div>
-        <p className="text-sm text-muted-foreground max-w-md text-center">{error}</p>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => fetchData()}
-          disabled={retryCountdown > 0}
-        >
-          <RefreshCcw className={`h-4 w-4 mr-2 ${retryCountdown > 0 ? 'animate-spin' : ''}`} />
-          {retryCountdown > 0 ? `Espera ${retryCountdown}s` : 'Reintentar'}
-        </Button>
-      </div>
+      <Card className="border-destructive/50">
+        <CardContent className="flex flex-col items-center justify-center gap-4 py-12">
+          <div className="flex items-center gap-2 text-destructive">
+            <AlertTriangle className="h-6 w-6" />
+            <p className="font-semibold text-lg">
+              {isRateLimit ? 'Límite de API de HubSpot' : isConfigError ? 'Configuración requerida' : 'Error al cargar el reporte'}
+            </p>
+          </div>
+          <p className="text-sm text-muted-foreground max-w-lg text-center leading-relaxed">
+            {error}
+          </p>
+          {!isConfigError && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fetchData()}
+              disabled={retryCountdown > 0}
+            >
+              <RefreshCcw className={`h-4 w-4 mr-2 ${retryCountdown > 0 ? 'animate-spin' : ''}`} />
+              {retryCountdown > 0 ? `Espera ${retryCountdown}s` : 'Reintentar'}
+            </Button>
+          )}
+          {isConfigError && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => window.location.href = '/workspace/settings/integrations'}
+            >
+              Ir a Configuración
+            </Button>
+          )}
+        </CardContent>
+      </Card>
     )
   }
 

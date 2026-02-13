@@ -127,23 +127,30 @@ export function useIsSuperAdmin() {
           return
         }
 
-        const { data: superAdmin } = await supabase
+        // Verificar en super_admins sin .single() para evitar error 406
+        const { data: superAdmins, error: superAdminError } = await supabase
           .from('super_admins')
           .select('id')
           .eq('user_id', user.id)
           .eq('status', 'active')
-          .single()
+          .limit(1)
 
-        if (superAdmin) {
+        // Si hay error pero NO es por no encontrar registros, logear
+        if (superAdminError && superAdminError.code !== 'PGRST116') {
+          console.error('Error checking super_admins:', superAdminError)
+        }
+
+        if (superAdmins && superAdmins.length > 0) {
           setIsSuperAdmin(true)
           return
         }
 
+        // Fallback a user_profiles
         const { data: profile } = await supabase
           .from('user_profiles')
           .select('role')
           .eq('id', user.id)
-          .single()
+          .maybeSingle()
 
         setIsSuperAdmin(profile?.role === 'super_admin')
       } catch (error) {

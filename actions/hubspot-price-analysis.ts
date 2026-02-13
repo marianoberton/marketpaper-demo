@@ -366,10 +366,21 @@ export async function getDailyReportData(
 
     // Detectar error de rate limiting de HubSpot
     const errorMessage = error instanceof Error ? error.message : String(error)
+
     if (errorMessage.includes('429') || errorMessage.includes('RATE_LIMIT') || errorMessage.includes('ten_secondly_rolling')) {
       throw new Error('HubSpot está limitando las llamadas a la API. Por favor espera 10 segundos e intenta nuevamente.')
     }
 
+    // Si el error ya es de nuestro sistema (configuración, credenciales), pasarlo tal cual
+    if (errorMessage.includes('No se encontr') ||
+        errorMessage.includes('no está configurado') ||
+        errorMessage.includes('descifrar') ||
+        errorMessage.includes('token') ||
+        errorMessage.includes('reconfigure')) {
+      throw error
+    }
+
+    // Otros errores
     throw new Error(`Error al generar reporte diario: ${errorMessage}`)
   }
 }
