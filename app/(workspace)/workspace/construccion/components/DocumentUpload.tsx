@@ -63,7 +63,7 @@ interface DocumentUploadProps {
   isTogglingCompletion?: boolean
 }
 
-export default function DocumentUpload({ 
+export default function DocumentUpload({
   projectId,
   sectionName,
   onDocumentUploaded,
@@ -94,7 +94,7 @@ export default function DocumentUpload({
   const [error, setError] = useState<string | null>(null)
   const [isExpanded, setIsExpanded] = useState(isInitiallyExpanded)
   const [uploadingSection, setUploadingSection] = useState<string | null>(null)
-  
+
   const workspace = useWorkspace()
   const directFileUpload = useDirectFileUpload()
   const { uploadFile, isUploading, progress } = directFileUpload
@@ -122,8 +122,6 @@ export default function DocumentUpload({
       if (!response.ok) {
         throw new Error('Error al guardar fecha de vencimiento')
       }
-
-      console.log(`Fecha de vencimiento guardada para ${sectionName}: ${date}`)
     } catch (error) {
       console.error('Error saving expiration date:', error)
       throw error
@@ -134,31 +132,23 @@ export default function DocumentUpload({
     try {
       setLoading(true)
       setError(null)
-      
+
       const response = await fetch(`/api/workspace/construction/documents?projectId=${projectId}`)
-      
+
       if (!response.ok) {
         // Si el endpoint aún no existe, no bloquear el render del uploader
-        console.warn('GET /api/workspace/construction/documents todavía no implementado. Continuando sin documentos...')
+        console.error('GET /api/workspace/construction/documents not implemented yet. Continuing without documents...')
         setDocuments([])
         return
       }
-      
+
       const data = await response.json()
-      
-      // Debug: Log de todos los documentos recibidos
-      console.log(`🔍 [DocumentUpload] Documentos recibidos para proyecto ${projectId}:`, data)
-      console.log(`🔍 [DocumentUpload] Filtrando por sectionName: "${sectionName}"`)
-      
+
       // Filtrar documentos por sección
       const filteredDocuments = data.filter((doc: any) => {
-        const matches = doc.section_name === sectionName
-        console.log(`🔍 [DocumentUpload] Documento "${doc.original_filename}" - section_name: "${doc.section_name}" - matches "${sectionName}": ${matches}`)
-        return matches
+        return doc.section_name === sectionName
       })
-      
-      console.log(`🔍 [DocumentUpload] Documentos filtrados para "${sectionName}":`, filteredDocuments)
-      
+
       // Adaptar al shape que espera el frontend
       const adaptedDocuments: FrontendProjectDocument[] = filteredDocuments.map((doc: any) => ({
         id: doc.id,
@@ -172,7 +162,7 @@ export default function DocumentUpload({
         fileUrl: doc.file_url,
         status: 'uploaded' as const
       }))
-      
+
       setDocuments(adaptedDocuments)
     } catch (error) {
       console.error('Error loading documents:', error)
@@ -197,7 +187,7 @@ export default function DocumentUpload({
       await deleteProjectDocument(documentId)
       setDocuments(prev => prev.filter(doc => doc.id !== documentId))
       onDocumentDeleted?.(documentId)
-      
+
       // Disparar evento para recargar fechas de vencimiento
       window.dispatchEvent(new CustomEvent('reloadDeadlineDates'))
     } catch (err) {
@@ -224,7 +214,7 @@ export default function DocumentUpload({
 
     setUploadingSection(targetSection)
     setError(null)
-    
+
     try {
       for (const file of Array.from(files)) {
         // Validar tipo de archivo
@@ -248,20 +238,20 @@ export default function DocumentUpload({
           .replace(/[^a-zA-Z0-9._-]/g, '')  // Solo permitir caracteres alfanuméricos, puntos, guiones bajos y guiones
           .replace(/_{2,}/g, '_')  // Reemplazar múltiples guiones bajos consecutivos con uno solo
           .toLowerCase()  // Convertir a minúsculas para consistencia
-        
+
         // Generar un ID único para cada subida (incluso del mismo archivo)
         const uniqueId = crypto.randomUUID()
         const timestamp = Date.now()
-        
+
         // Sanitizar nombre de sección para usar como carpeta
         const sanitizedSectionName = targetSection
           .replace(/\s+/g, '_')
           .replace(/[^a-zA-Z0-9._-]/g, '')
           .toLowerCase()
-        
+
         // Crear estructura de carpetas más robusta: companyId/projectId/sectionName/uniqueId-timestamp-fileName
         const path = `${workspace.companyId}/${projectId}/${sanitizedSectionName}/${uniqueId}-${timestamp}-${sanitizedFileName}`
-        
+
         // Validar parámetros requeridos para directFileUpload
         const uploadParams = {
           bucket: 'construction-documents',
@@ -273,7 +263,7 @@ export default function DocumentUpload({
         if (!uploadParams.bucket || !uploadParams.path || !uploadParams.file) {
           throw new Error('Faltan parámetros requeridos para la subida')
         }
-        
+
         // Subir archivo usando directFileUpload
         const uploadResult = await uploadFile(uploadParams)
 
@@ -322,10 +312,10 @@ export default function DocumentUpload({
 
         // Actualizar estado local
         setDocuments(prev => [...prev, newDocument])
-        
+
         // Notificar al componente padre
         onDocumentUploaded?.(newDocument)
-        
+
         // Disparar evento para recargar fechas de vencimiento
         window.dispatchEvent(new CustomEvent('reloadDeadlineDates'))
 
@@ -365,17 +355,17 @@ export default function DocumentUpload({
   return (
     <div className="space-y-4">
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+        <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
           {error}
         </div>
       )}
 
       {loading && (
         <div className="space-y-3">
-          <div className="h-16 bg-gray-100 rounded-lg animate-pulse" />
+          <div className="h-16 bg-muted rounded-lg animate-pulse" />
         </div>
       )}
-      
+
       <DocumentSection
         title={sectionName}
         sectionName={sectionName}

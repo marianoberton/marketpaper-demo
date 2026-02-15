@@ -159,8 +159,8 @@ export default function ProjectProfessionalsCard({
           {/* Director de Obra */}
           <div className="border-b pb-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <User className="h-4 w-4 text-blue-600" />
+              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                <User className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-medium">Director de Obra</p>
@@ -210,8 +210,8 @@ export default function ProjectProfessionalsCard({
               <div className="space-y-3">
                 {(editedProject.profesionales || []).map((profesional, index) => (
                   <div key={index} className="flex items-center gap-2 p-3 border rounded-lg">
-                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                      <User className="h-4 w-4 text-green-600" />
+                    <div className="w-8 h-8 bg-emerald-500/10 rounded-full flex items-center justify-center">
+                      <User className="h-4 w-4 text-emerald-600" />
                     </div>
                     <div className="flex-1 space-y-2">
                         <Input
@@ -229,7 +229,7 @@ export default function ProjectProfessionalsCard({
                       size="sm"
                       variant="ghost"
                       onClick={() => removeProfesional(index)}
-                      className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -237,7 +237,7 @@ export default function ProjectProfessionalsCard({
                 ))}
                 
                 {(!editedProject.profesionales || editedProject.profesionales.length === 0) && (
-                  <div className="text-center py-4 border-2 border-dashed border-gray-200 rounded-lg">
+                  <div className="text-center py-4 border-2 border-dashed border-border rounded-lg">
                     <p className="text-sm text-muted-foreground">
                       No hay profesionales adicionales
                     </p>
@@ -254,8 +254,8 @@ export default function ProjectProfessionalsCard({
                   <div className="space-y-3">
                     {project.profesionales.map((profesional, index) => (
                       <div key={index} className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                          <User className="h-4 w-4 text-green-600" />
+                        <div className="w-8 h-8 bg-emerald-500/10 rounded-full flex items-center justify-center">
+                          <User className="h-4 w-4 text-emerald-600" />
                         </div>
                         <div className="flex-1">
                           <p className="text-sm font-medium">{profesional.name}</p>
@@ -285,8 +285,8 @@ export default function ProjectProfessionalsCard({
           {project.inspector_name && !project.profesionales?.length && (
             <div className="border-t pt-3">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-gray-600" />
+                <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                  <User className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium">{project.inspector_name}</p>

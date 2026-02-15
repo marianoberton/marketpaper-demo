@@ -74,7 +74,7 @@ export default function ProjectAllDocuments({
         
         {/* Buscador */}
         <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             type="text"
             placeholder="Buscar por nombre de documento o etapa..."
@@ -109,7 +109,8 @@ export default function ProjectAllDocuments({
               <SelectItem value="Informe de Dominio">Informe de Dominio</SelectItem>
               <SelectItem value="Póliza de Seguro">Póliza de Seguro</SelectItem>
               <SelectItem value="Informe de Inhibición">Informe de Inhibición</SelectItem>
-              
+              <SelectItem value="Contrato de Obra">Contrato de Obra</SelectItem>
+
               {/* Etapas del proyecto */}
               <SelectItem value="Prefactibilidad del proyecto">Prefactibilidad del proyecto</SelectItem>
               <SelectItem value="Consulta DGIUR">Consulta DGIUR</SelectItem>
@@ -125,6 +126,8 @@ export default function ProjectAllDocuments({
               <SelectItem value="AVO 3">AVO 3</SelectItem>
               <SelectItem value="Conforme de obra">Conforme de obra</SelectItem>
               <SelectItem value="MH-SUBDIVISION">MH-SUBDIVISION</SelectItem>
+              <SelectItem value="Conforme de obra - Plano">Conforme de obra - Plano</SelectItem>
+              <SelectItem value="MH-SUBDIVISION - Plano">MH-SUBDIVISION - Plano</SelectItem>
             </SelectContent>
           </Select>
           <Button
@@ -201,7 +204,7 @@ export default function ProjectAllDocuments({
               }, {} as Record<string, typeof documents>)
             ).map(([section, sectionDocs]) => (
               <div key={section}>
-                <h4 className="font-medium text-sm text-gray-700 mb-3 pb-2 border-b">
+                <h4 className="font-medium text-sm text-muted-foreground mb-3 pb-2 border-b">
                   {section} ({sectionDocs.length} documento{sectionDocs.length !== 1 ? 's' : ''})
                 </h4>
                 <div className="space-y-2">
@@ -239,7 +242,7 @@ export default function ProjectAllDocuments({
                             size="sm" 
                             variant="outline"
                             onClick={() => handleDeleteDocument(doc.id)}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-destructive hover:text-destructive"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

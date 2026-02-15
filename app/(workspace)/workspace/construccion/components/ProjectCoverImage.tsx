@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Building, Camera, Upload } from 'lucide-react'
+import { toast } from 'sonner'
 import { Project } from '@/lib/construction'
 import { useDirectFileUpload } from '@/lib/hooks/useDirectFileUpload'
 import { sanitizeFileName } from '@/lib/utils/file-utils'
@@ -56,12 +57,12 @@ export default function ProjectCoverImage({
       }
     } catch (error) {
       console.error('Error updating project with image URL:', error)
-      alert('Error al actualizar el proyecto con la imagen. Por favor, inténtalo de nuevo.')
+      toast.error('Error al actualizar el proyecto con la imagen. Por favor, inténtalo de nuevo.')
     }
   }
   
   const handleImageUploadError = (error: string) => {
-    alert(`Error al subir la imagen: ${error}`)
+    toast.error(`Error al subir la imagen: ${error}`)
   }
 
   const handleImageUpload = async (file: File) => {
@@ -93,7 +94,7 @@ export default function ProjectCoverImage({
     <div className="w-full">
       <Card className="overflow-hidden">
         <CardContent className="p-0">
-          <div className="relative h-80 bg-gray-100">
+          <div className="relative h-80 bg-muted">
             {editedProject.cover_image_url ? (
               <img
                 src={editedProject.cover_image_url}
@@ -101,11 +102,11 @@ export default function ProjectCoverImage({
                 className="absolute inset-0 w-full h-full object-cover"
               />
             ) : (
-              <div className="flex items-center justify-center h-full bg-gradient-to-br from-gray-100 to-gray-200">
+              <div className="flex items-center justify-center h-full bg-muted">
                 <div className="text-center">
-                  <Building className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500 font-medium">Imagen del Proyecto</p>
-                  <p className="text-gray-400 text-sm">No disponible</p>
+                  <Building className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground font-medium">Imagen del Proyecto</p>
+                  <p className="text-muted-foreground/70 text-sm">No disponible</p>
                 </div>
               </div>
             )}
@@ -141,7 +142,7 @@ export default function ProjectCoverImage({
               <Button
                 size="sm"
                 variant="secondary"
-                className="bg-white/90 hover:bg-white text-gray-700 shadow-lg"
+                className="bg-card/90 hover:bg-card text-foreground shadow-lg"
                 onClick={() => document.getElementById('project-image-upload')?.click()}
                 disabled={uploadingImage || isUploadingImage}
               >

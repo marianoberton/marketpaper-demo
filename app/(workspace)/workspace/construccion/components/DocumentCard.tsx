@@ -6,11 +6,11 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { 
-  File, 
-  FileText, 
-  Image as ImageIcon, 
-  Download, 
+import {
+  File,
+  FileText,
+  Image as ImageIcon,
+  Download,
   Trash2,
   Plus,
   Upload,
@@ -18,8 +18,8 @@ import {
   AlertCircle,
   Calendar
 } from 'lucide-react'
-import { 
-  getProjectDocuments, 
+import {
+  getProjectDocuments,
   deleteProjectDocument,
   formatFileSize,
   type ProjectDocument
@@ -63,7 +63,7 @@ const getFileIcon = (mimeType: string) => {
   if (mimeType === 'application/pdf') {
     return <FileText className="h-5 w-5 text-red-500" />
   }
-  return <File className="h-5 w-5 text-gray-500" />
+  return <File className="h-5 w-5 text-muted-foreground" />
 }
 
 const MIME_TO_EXT: Record<string, string> = {
@@ -103,7 +103,7 @@ export default function DocumentCard({
   const [isDragOver, setIsDragOver] = useState(false)
   const [noDocsRequired, setNoDocsRequired] = useState(noDocumentationRequired)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  
+
   const workspace = useWorkspace()
   const { uploadFile, isUploading, progress } = useDirectFileUpload()
 
@@ -127,7 +127,7 @@ export default function DocumentCard({
 
   const handleFileSelect = (files: FileList | null): void => {
     if (!files || files.length === 0) return
-    
+
     const file = files[0]
     handleFileUpload(file)
   }
@@ -135,7 +135,7 @@ export default function DocumentCard({
   const handleFileUpload = async (file: File): Promise<void> => {
     try {
       setError(null)
-      
+
       // Validaciones
       if (file.size > maxFileSize) {
         setError(`El archivo es demasiado grande. Máximo ${Math.round(maxFileSize / (1024 * 1024))}MB`)
@@ -154,7 +154,7 @@ export default function DocumentCard({
         section: title,
         fileName: file.name
       })
-      
+
       // Subir archivo
       const result = await uploadFile({
         bucket: 'construction-documents',
@@ -175,7 +175,7 @@ export default function DocumentCard({
           description: description || `Documento de ${title}`,
           uploaded_by: workspace.userEmail || 'unknown'
         }
-        
+
         // Aquí necesitarías una función para crear el documento en la DB
         // Por ahora, solo recargamos los documentos
         await loadDocuments()
@@ -221,22 +221,22 @@ export default function DocumentCard({
     handleFileSelect(e.dataTransfer.files)
   }
 
-  const acceptString = acceptedFileTypes.map(type => 
+  const acceptString = acceptedFileTypes.map(type =>
     MIME_TO_EXT[type] || `.${type.split('/')[1]}`
   ).join(',')
 
   // Determinar el estado visual
   const getStatusInfo = () => {
     if (noDocsRequired) {
-      return { color: 'bg-gray-100 border-gray-200', badge: 'No requerido', badgeColor: 'bg-gray-500' }
+      return { color: 'bg-muted border-border', badge: 'No requerido', badgeColor: 'bg-gray-500' }
     }
     if (documents.length > 0) {
-      return { color: 'bg-green-50 border-green-200', badge: 'Completado', badgeColor: 'bg-green-500' }
+      return { color: 'bg-emerald-500/10 border-green-200 dark:border-green-800', badge: 'Completado', badgeColor: 'bg-green-500' }
     }
     if (isUploading) {
-      return { color: 'bg-blue-50 border-blue-200', badge: 'Subiendo...', badgeColor: 'bg-blue-500' }
+      return { color: 'bg-primary/10 border-primary/30', badge: 'Subiendo...', badgeColor: 'bg-blue-500' }
     }
-    return { color: 'bg-white border-gray-200', badge: 'Pendiente', badgeColor: 'bg-yellow-500' }
+    return { color: 'bg-card border-border', badge: 'Pendiente', badgeColor: 'bg-yellow-500' }
   }
 
   const statusInfo = getStatusInfo()
@@ -245,26 +245,26 @@ export default function DocumentCard({
     return (
       <Card className="animate-pulse">
         <CardContent className="p-4">
-          <div className="h-4 bg-gray-200 rounded mb-2"></div>
-          <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+          <div className="h-4 bg-muted rounded mb-2"></div>
+          <div className="h-3 bg-muted rounded w-2/3"></div>
         </CardContent>
       </Card>
     )
   }
 
   return (
-    <Card className={`transition-all duration-200 hover:shadow-md ${statusInfo.color} ${isDragOver ? 'ring-2 ring-blue-400 ring-opacity-50' : ''}`}>
+    <Card className={`transition-all duration-200 hover:shadow-md ${statusInfo.color} ${isDragOver ? 'ring-2 ring-primary ring-opacity-50' : ''}`}>
       <CardContent className="p-5">
         {/* Header mejorado */}
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
-            <h3 className="font-semibold text-base text-gray-900 mb-1">{title}</h3>
+            <h3 className="font-semibold text-base text-foreground mb-1">{title}</h3>
             {description && (
-              <p className="text-sm text-gray-600 leading-relaxed">{description}</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
             )}
           </div>
-          <Badge 
-            variant="secondary" 
+          <Badge
+            variant="secondary"
             className={`${statusInfo.badgeColor} text-white text-xs px-3 py-1 font-medium shadow-sm`}
           >
             {statusInfo.badge}
@@ -273,17 +273,17 @@ export default function DocumentCard({
 
         {/* Checkbox "No requiere documentación" mejorado */}
         {showNoDocumentationOption && (
-          <div className="flex items-center space-x-3 mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+          <div className="flex items-center space-x-3 mb-4 p-3 bg-muted/50 border border-border rounded-lg">
             <input
               type="checkbox"
               id={`no-docs-${title.replace(/\s+/g, '-').toLowerCase()}`}
               checked={noDocsRequired}
               onChange={(e) => handleNoDocsChange(e.target.checked)}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors"
+              className="h-4 w-4 text-primary focus:ring-primary border-border rounded transition-colors"
             />
-            <label 
-              htmlFor={`no-docs-${title.replace(/\s+/g, '-').toLowerCase()}`} 
-              className="text-sm text-gray-700 font-medium cursor-pointer"
+            <label
+              htmlFor={`no-docs-${title.replace(/\s+/g, '-').toLowerCase()}`}
+              className="text-sm text-muted-foreground font-medium cursor-pointer"
             >
               No requiere documentación
             </label>
@@ -292,28 +292,28 @@ export default function DocumentCard({
 
         {/* Campos de fecha mejorados */}
         {requiresDates && (
-          <div className="mb-5 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="mb-5 p-4 bg-primary/10 border border-primary/30 rounded-lg">
             <div className="flex items-center gap-2 mb-3">
-              <Calendar className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-semibold text-blue-800">Fechas del proceso</span>
+              <Calendar className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold text-primary">Fechas del proceso</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label className="text-sm font-medium text-gray-700 mb-1 block">{startDateLabel}</Label>
+                <Label className="text-sm font-medium text-muted-foreground mb-1 block">{startDateLabel}</Label>
                 <Input
                   type="date"
                   value={startDate}
                   onChange={(e) => onStartDateChange?.(e.target.value)}
-                  className="text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="text-sm"
                 />
               </div>
               <div>
-                <Label className="text-sm font-medium text-gray-700 mb-1 block">{endDateLabel}</Label>
+                <Label className="text-sm font-medium text-muted-foreground mb-1 block">{endDateLabel}</Label>
                 <Input
                   type="date"
                   value={endDate}
                   onChange={(e) => onEndDateChange?.(e.target.value)}
-                  className="text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="text-sm"
                 />
               </div>
             </div>
@@ -322,16 +322,16 @@ export default function DocumentCard({
 
         {/* Error mejorado */}
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+          <div className="mb-4 p-3 bg-destructive/10 border border-destructive/30 rounded-lg flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
-              <span className="text-sm text-red-700 font-medium">{error}</span>
+              <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0" />
+              <span className="text-sm text-destructive font-medium">{error}</span>
             </div>
             <Button
               size="sm"
               variant="ghost"
               onClick={() => setError(null)}
-              className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-100 transition-colors"
+              className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors"
             >
               ×
             </Button>
@@ -349,28 +349,28 @@ export default function DocumentCard({
               onClick={() => fileInputRef.current?.click()}
               className={`
                 border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all duration-200
-                ${isDragOver ? 'border-blue-400 bg-blue-50 scale-[1.02]' : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'}
+                ${isDragOver ? 'border-primary bg-primary/10 scale-[1.02]' : 'border-border hover:border-muted-foreground hover:bg-muted/50'}
                 ${isUploading ? 'pointer-events-none opacity-50' : ''}
               `}
             >
-              <Upload className="h-8 w-8 text-gray-400 mx-auto mb-3" />
-              <p className="text-sm font-semibold text-gray-700 mb-2">
+              <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm font-semibold text-muted-foreground mb-2">
                 {isUploading ? 'Subiendo archivo...' : 'Arrastra archivos aquí o haz clic para seleccionar'}
               </p>
-              <p className="text-xs text-gray-500 leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 Formatos: {acceptedFileTypes.map(type => MIME_TO_EXT[type] || type).join(', ')} • Tamaño máximo: {Math.round(maxFileSize / (1024 * 1024))}MB
               </p>
-              
+
               {/* Barra de progreso mejorada */}
               {isUploading && (
                 <div className="mt-4">
-                  <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                  <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+                    <div
+                      className="bg-primary h-2 rounded-full transition-all duration-300 ease-out"
                       style={{ width: `${progress}%` }}
                     />
                   </div>
-                  <p className="text-sm text-blue-600 mt-2 font-medium">{Math.round(progress)}% completado</p>
+                  <p className="text-sm text-primary mt-2 font-medium">{Math.round(progress)}% completado</p>
                 </div>
               )}
             </div>
@@ -389,24 +389,24 @@ export default function DocumentCard({
         {/* Lista de documentos mejorada */}
         {!noDocsRequired && documents.length > 0 && (
           <div className="mt-5 space-y-3">
-            <h4 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <h4 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Documentos cargados ({documents.length})
             </h4>
             {documents.map((doc) => (
               <div
                 key={doc.id}
-                className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 group"
+                className="flex items-center justify-between p-3 bg-card border border-border rounded-lg hover:bg-muted/50 hover:border-muted-foreground/30 transition-all duration-200 group"
               >
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div className="flex-shrink-0">
                     {getFileIcon(doc.mime_type)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                    <p className="text-sm font-medium text-foreground truncate">
                       {doc.original_filename}
                     </p>
-                    <div className="flex items-center gap-4 text-xs text-gray-500 mt-1">
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
                       <span className="flex items-center gap-1">
                         <File className="h-3 w-3" />
                         {formatFileSize(doc.file_size)}
@@ -423,7 +423,7 @@ export default function DocumentCard({
                     size="sm"
                     variant="ghost"
                     onClick={() => window.open(doc.file_url, '_blank')}
-                    className="h-8 w-8 p-0 text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                    className="h-8 w-8 p-0 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
                     title="Descargar archivo"
                   >
                     <Download className="h-4 w-4" />
@@ -432,7 +432,7 @@ export default function DocumentCard({
                     size="sm"
                     variant="ghost"
                     onClick={() => handleDelete(doc.id)}
-                    className="h-8 w-8 p-0 text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                    className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                     title="Eliminar archivo"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -445,10 +445,10 @@ export default function DocumentCard({
 
         {/* Estado "No requiere documentación" mejorado */}
         {noDocsRequired && (
-          <div className="text-center py-6 bg-gray-50 border border-gray-200 rounded-lg">
-            <CheckCircle className="h-10 w-10 text-gray-400 mx-auto mb-3" />
-            <p className="text-sm font-medium text-gray-600">Esta sección no requiere documentación</p>
-            <p className="text-xs text-gray-500 mt-1">Puedes continuar con el siguiente paso</p>
+          <div className="text-center py-6 bg-muted/50 border border-border rounded-lg">
+            <CheckCircle className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-sm font-medium text-muted-foreground">Esta sección no requiere documentación</p>
+            <p className="text-xs text-muted-foreground mt-1">Puedes continuar con el siguiente paso</p>
           </div>
         )}
       </CardContent>

@@ -232,8 +232,8 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
           <CardHeader className="border-b">
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <User className="h-6 w-6 text-blue-600" />
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <User className="h-6 w-6 text-primary" />
                 </div>
                 <div>
                   <h3 className="text-xl font-bold">
@@ -254,23 +254,23 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
               {/* Información básica */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
-                  <UserCheck className="h-5 w-5 text-blue-600" />
+                  <UserCheck className="h-5 w-5 text-primary" />
                   <h4 className="text-lg font-semibold">Información Básica</h4>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
                     <Label htmlFor="name">
-                      Nombre/Razón Social <span className="text-red-500">*</span>
+                      Nombre/Razón Social <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="name"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
                       placeholder="Ej: TABOADA CORA RAQUEL"
-                      className={errors.name ? 'border-red-500' : ''}
+                      className={errors.name ? 'border-destructive' : ''}
                     />
-                    {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
+                    {errors.name && <p className="text-sm text-destructive mt-1">{errors.name}</p>}
                   </div>
 
                   <div>
@@ -281,9 +281,9 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
                       placeholder="cliente@email.com"
-                      className={errors.email ? 'border-red-500' : ''}
+                      className={errors.email ? 'border-destructive' : ''}
                     />
-                    {errors.email && <p className="text-sm text-red-500 mt-1">{errors.email}</p>}
+                    {errors.email && <p className="text-sm text-destructive mt-1">{errors.email}</p>}
                   </div>
 
                   <div>
@@ -331,7 +331,7 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
               {/* Referentes */}
               <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-4">
-                  <Users className="h-5 w-5 text-blue-600" />
+                  <Users className="h-5 w-5 text-primary" />
                   <h4 className="text-lg font-semibold">Referentes</h4>
                 </div>
                 
@@ -340,7 +340,7 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
                     <div key={index} className="flex gap-3 items-end">
                       <div className="flex-1">
                         <Label htmlFor={`referente-name-${index}`}>
-                          Nombre del Referente {index === 0 && <span className="text-red-500">*</span>}
+                          Nombre del Referente {index === 0 && <span className="text-destructive">*</span>}
                         </Label>
                         <Input
                           id={`referente-name-${index}`}
@@ -366,14 +366,14 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
                           variant="outline"
                           size="sm"
                           onClick={() => removeReferente(index)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
                           <X className="h-4 w-4" />
                         </Button>
                       )}
                     </div>
                   ))}
-                  
+
                   <Button
                     type="button"
                     variant="outline"
@@ -427,8 +427,8 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
                   <CardHeader className="pb-4">
                     <CardTitle className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 rounded-full group-hover:bg-blue-200 transition-colors">
-                          <User className="h-5 w-5 text-blue-600" />
+                        <div className="p-2 bg-primary/10 rounded-full group-hover:bg-primary/20 transition-colors">
+                          <User className="h-5 w-5 text-primary" />
                         </div>
                         <div>
                           <h3 className="font-semibold text-lg leading-tight">{client.name}</h3>
@@ -449,7 +449,7 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
                             variant="ghost"
                             size="sm"
                             onClick={() => setClientToDelete(client)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
                             title="Eliminar cliente"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -519,7 +519,7 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
                           href={client.website_url} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 truncate text-sm"
+                          className="text-primary hover:text-primary/80 truncate text-sm"
                         >
                           {client.website_url}
                         </a>
@@ -583,7 +583,7 @@ export default function ClientManagement({ clients, onCreateClient, onUpdateClie
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
+              <AlertTriangle className="h-5 w-5 text-destructive" />
               Confirmar Eliminación
             </DialogTitle>
             <DialogDescription>

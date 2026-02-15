@@ -3,12 +3,15 @@
 import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { 
-  DollarSign, 
-  Receipt, 
+import { Button } from '@/components/ui/button'
+import {
+  DollarSign,
+  Receipt,
   TrendingUp,
   Clock,
-  AlertCircle
+  AlertCircle,
+  FileText,
+  X
 } from 'lucide-react'
 
 interface TaxPayment {
@@ -21,6 +24,11 @@ interface TaxPayment {
   description?: string
   notes?: string
   created_at: string
+  payment_receipts?: Array<{
+    id: string
+    file_url: string
+    file_name: string
+  }>
 }
 
 interface ProjectEconomicInfoProps {
@@ -62,10 +70,134 @@ const formatCurrency = (amount: number) => {
   }).format(amount)
 }
 
+// Componente para mostrar recibos
+const ReceiptViewModal = ({ isOpen, onClose, receiptUrl }: { isOpen: boolean, onClose: () => void, receiptUrl: string }) => {
+  const [isLoading, setIsLoading] = useState(true)
+
+  if (!isOpen) return null
+
+  const isPDF = receiptUrl.toLowerCase().includes('.pdf') || receiptUrl.includes('application/pdf')
+  const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(receiptUrl)
+
+  const handleDownload = () => {
+    const link = document.createElement('a')
+    link.href = receiptUrl
+    link.download = 'comprobante.pdf'
+    link.click()
+  }
+
+  const handleOpenExternal = () => {
+    window.open(receiptUrl, '_blank')
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-0 max-w-[95vw] w-[95vw] max-h-[90vh] overflow-hidden">
+        <div className="p-6 pb-4 border-b border-gray-200 bg-[#1B293F] text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold">Comprobante de Pago</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownload}
+                className="bg-white/10 text-white border-white/30 hover:bg-white/20"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Descargar
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleOpenExternal}
+                className="bg-white/10 text-white border-white/30 hover:bg-white/20"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Abrir
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onClose}
+                className="bg-white/10 text-white border-white/30 hover:bg-white/20"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex-1 p-6 overflow-auto">
+          {isLoading && (
+            <div className="flex items-center justify-center h-64">
+              <Clock className="h-8 w-8 animate-spin text-[#1B293F] mr-2" />
+              <span className="text-gray-600">Cargando vista previa...</span>
+            </div>
+          )}
+
+          {isPDF && (
+            <iframe
+              src={`${receiptUrl}#toolbar=1&navpanes=1&scrollbar=1`}
+              className="w-full h-[600px] border border-gray-200 rounded-lg"
+              onLoad={() => setIsLoading(false)}
+              style={{ display: isLoading ? 'none' : 'block' }}
+              title="Comprobante de pago"
+            />
+          )}
+
+          {isImage && (
+            <div className="flex justify-center">
+              <img
+                src={receiptUrl}
+                alt="Comprobante de pago"
+                className="max-w-full max-h-[600px] object-contain rounded-lg shadow-lg"
+                onLoad={() => setIsLoading(false)}
+                style={{ display: isLoading ? 'none' : 'block' }}
+              />
+            </div>
+          )}
+
+          {!isPDF && !isImage && (
+            <div className="flex flex-col items-center justify-center h-64 text-center">
+              <FileText className="h-16 w-16 text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Vista previa no disponible
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Este tipo de archivo no se puede previsualizar en el navegador.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleDownload}
+                  className="bg-[#1B293F] text-white hover:bg-[#1B293F]/90"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Descargar archivo
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleOpenExternal}
+                  className="border-[#1B293F] text-[#1B293F] hover:bg-gray-50"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Abrir en nueva ventana
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function ProjectEconomicInfo({ projectId }: ProjectEconomicInfoProps) {
   const [payments, setPayments] = useState<TaxPayment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedReceiptUrl, setSelectedReceiptUrl] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchPayments = async () => {
@@ -223,7 +355,103 @@ export default function ProjectEconomicInfo({ projectId }: ProjectEconomicInfoPr
             </div>
           </div>
         )}
+
+        {/* Listado de pagos individuales */}
+        {payments.length > 0 && (
+          <div className="space-y-4 mt-6 pt-6 border-t border-gray-200">
+            <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+              <Receipt className="h-5 w-5 text-[#1B293F]" />
+              Detalle de Pagos
+            </h4>
+            <div className="space-y-3">
+              {payments.map((payment) => (
+                <div
+                  key={payment.id}
+                  className="bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    {/* Payment info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge
+                          variant="outline"
+                          className={getPaymentTypeBadgeClass(payment.payment_type)}
+                        >
+                          {getPaymentTypeLabel(payment.payment_type)}
+                        </Badge>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-sm text-gray-600 mb-1">
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {new Date(payment.payment_date).toLocaleDateString('es-AR', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                          })}
+                        </div>
+                        {payment.receipt_number && (
+                          <div className="flex items-center gap-1">
+                            <Receipt className="h-3 w-3" />
+                            Comprobante #{payment.receipt_number}
+                          </div>
+                        )}
+                      </div>
+
+                      {payment.description && (
+                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                          {payment.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Amount and action */}
+                    <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
+                      <div className="text-right">
+                        <p className="text-xl font-bold text-gray-900">
+                          {formatCurrency(payment.amount)}
+                        </p>
+                      </div>
+
+                      {/* View receipt button */}
+                      {payment.payment_receipts && payment.payment_receipts.length > 0 ? (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            const receipt = payment.payment_receipts![0]
+                            setSelectedReceiptUrl(receipt.file_url)
+                          }}
+                          className="bg-[#1B293F] text-white hover:bg-[#1B293F]/90 whitespace-nowrap"
+                        >
+                          <FileText className="h-4 w-4 mr-1" />
+                          Ver comprobante
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          disabled
+                          variant="outline"
+                          className="text-gray-400 border-gray-200 whitespace-nowrap"
+                        >
+                          <FileText className="h-4 w-4 mr-1" />
+                          Sin comprobante
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Receipt preview modal */}
+      <ReceiptViewModal
+        isOpen={selectedReceiptUrl !== null}
+        onClose={() => setSelectedReceiptUrl(null)}
+        receiptUrl={selectedReceiptUrl || ''}
+      />
     </Card>
   )
 }

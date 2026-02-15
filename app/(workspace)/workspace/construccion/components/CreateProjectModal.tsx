@@ -369,11 +369,11 @@ export default function CreateProjectModal({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <CardHeader className="sticky top-0 bg-white border-b z-10">
+        <CardHeader className="sticky top-0 bg-card border-b z-10">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Building className="h-6 w-6 text-blue-600" />
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Building className="h-6 w-6 text-primary" />
               </div>
               <div>
                 <h2 className="text-xl font-bold">Crear Nuevo Proyecto</h2>
@@ -391,37 +391,37 @@ export default function CreateProjectModal({
             {/* Información básica */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
-                <Building className="h-5 w-5 text-blue-600" />
+                <Building className="h-5 w-5 text-primary" />
                 <h3 className="text-lg font-semibold">Información Básica</h3>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <Label htmlFor="name">
-                    Nombre del Proyecto <span className="text-red-500">*</span>
+                    Nombre del Proyecto <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="name"
                     value={formData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
                     placeholder="Ej: Edificio Residencial Palermo"
-                    className={errors.name ? 'border-red-500' : ''}
+                    className={errors.name ? 'border-destructive' : ''}
                   />
-                  {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
+                  {errors.name && <p className="text-sm text-destructive mt-1">{errors.name}</p>}
                 </div>
 
                 <div className="md:col-span-2">
                   <Label htmlFor="address">
-                    Dirección <span className="text-red-500">*</span>
+                    Dirección <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="address"
                     value={formData.address || ''}
                     onChange={(e) => handleInputChange('address', e.target.value)}
                     placeholder="Ej: Av. Santa Fe 1234"
-                    className={errors.address ? 'border-red-500' : ''}
+                    className={errors.address ? 'border-destructive' : ''}
                   />
-                  {errors.address && <p className="text-sm text-red-500 mt-1">{errors.address}</p>}
+                  {errors.address && <p className="text-sm text-destructive mt-1">{errors.address}</p>}
                 </div>
 
                 <div>
@@ -452,20 +452,20 @@ export default function CreateProjectModal({
                     value={formData.surface || ''}
                     onChange={(e) => handleInputChange('surface', e.target.value ? Number(e.target.value) : undefined)}
                     placeholder="120"
-                    className={errors.surface ? 'border-red-500' : ''}
+                    className={errors.surface ? 'border-destructive' : ''}
                   />
-                  {errors.surface && <p className="text-sm text-red-500 mt-1">{errors.surface}</p>}
+                  {errors.surface && <p className="text-sm text-destructive mt-1">{errors.surface}</p>}
                 </div>
 
                 <div>
                   <Label htmlFor="client">
-                    Cliente <span className="text-red-500">*</span>
+                    Cliente <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={formData.client_id || ''}
                     onValueChange={(value) => handleInputChange('client_id', value)}
                   >
-                    <SelectTrigger className={errors.client_id ? 'border-red-500' : ''}>
+                    <SelectTrigger className={errors.client_id ? 'border-destructive' : ''}>
                       <SelectValue placeholder="Seleccionar cliente" />
                     </SelectTrigger>
                     <SelectContent>
@@ -476,7 +476,7 @@ export default function CreateProjectModal({
                       ))}
                     </SelectContent>
                   </Select>
-                  {errors.client_id && <p className="text-sm text-red-500 mt-1">{errors.client_id}</p>}
+                  {errors.client_id && <p className="text-sm text-destructive mt-1">{errors.client_id}</p>}
                 </div>
               </div>
             </div>
@@ -484,13 +484,13 @@ export default function CreateProjectModal({
             {/* Imagen del proyecto */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
-                <ImageIcon className="h-5 w-5 text-blue-600" />
+                <ImageIcon className="h-5 w-5 text-primary" />
                 <h3 className="text-lg font-semibold">Imagen del Proyecto</h3>
               </div>
               
               <div className="space-y-4">
                 <Label htmlFor="project-image">Imagen de portada (opcional)</Label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                <div className="border-2 border-dashed border-border rounded-lg p-6">
                   {imagePreview ? (
                     <div className="space-y-4">
                       <div className="relative w-full h-48 rounded-lg overflow-hidden">
@@ -518,13 +518,13 @@ export default function CreateProjectModal({
                     </div>
                   ) : (
                     <div className="text-center">
-                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                      <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
                       <div className="mt-4">
                         <Label htmlFor="project-image" className="cursor-pointer">
-                          <span className="text-blue-600 hover:text-blue-500 font-medium">
+                          <span className="text-primary hover:text-primary/80 font-medium">
                             Seleccionar imagen
                           </span>
-                          <span className="text-gray-500"> o arrastrar aquí</span>
+                          <span className="text-muted-foreground"> o arrastrar aquí</span>
                         </Label>
                         <Input
                           id="project-image"
@@ -534,13 +534,13 @@ export default function CreateProjectModal({
                           className="hidden"
                         />
                       </div>
-                      <p className="text-xs text-gray-500 mt-2">
+                      <p className="text-xs text-muted-foreground mt-2">
                         PNG, JPG, GIF hasta 50MB
                       </p>
                     </div>
                   )}
                 </div>
-                {errors.image && <p className="text-sm text-red-500">{errors.image}</p>}
+                {errors.image && <p className="text-sm text-destructive">{errors.image}</p>}
               </div>
             </div>
 
@@ -549,10 +549,10 @@ export default function CreateProjectModal({
             {/* Información básica */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
-                <Building className="h-5 w-5 text-blue-600" />
+                <Building className="h-5 w-5 text-primary" />
                 <h3 className="text-lg font-semibold">Información Básica</h3>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
                   <Label htmlFor="current_stage">Etapa Inicial</Label>
@@ -580,7 +580,7 @@ export default function CreateProjectModal({
             {/* Detalles técnicos */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
-                <Settings className="h-5 w-5 text-blue-600" />
+                <Settings className="h-5 w-5 text-primary" />
                 <h3 className="text-lg font-semibold">Detalles Técnicos</h3>
               </div>
               
@@ -593,9 +593,9 @@ export default function CreateProjectModal({
                     value={formData.budget || ''}
                     onChange={(e) => handleInputChange('budget', e.target.value ? Number(e.target.value) : undefined)}
                     placeholder="Ej: 5000000"
-                    className={errors.budget ? 'border-red-500' : ''}
+                    className={errors.budget ? 'border-destructive' : ''}
                   />
-                  {errors.budget && <p className="text-sm text-red-500 mt-1">{errors.budget}</p>}
+                  {errors.budget && <p className="text-sm text-destructive mt-1">{errors.budget}</p>}
                 </div>
 
                 <div>
@@ -641,7 +641,7 @@ export default function CreateProjectModal({
             {/* Información profesional */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
-                <User className="h-5 w-5 text-blue-600" />
+                <User className="h-5 w-5 text-primary" />
                 <h3 className="text-lg font-semibold">Profesionales</h3>
               </div>
               
@@ -719,7 +719,7 @@ export default function CreateProjectModal({
                           variant="outline"
                           size="sm"
                           onClick={() => removeProfesional(index)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -746,7 +746,7 @@ export default function CreateProjectModal({
             {/* Fechas y documentación */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
-                <Calendar className="h-5 w-5 text-blue-600" />
+                <Calendar className="h-5 w-5 text-primary" />
                 <h3 className="text-lg font-semibold">Fechas y Documentación</h3>
               </div>
               
@@ -779,16 +779,16 @@ export default function CreateProjectModal({
             {/* Gestión de Tasas Gubernamentales */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
-                <Calculator className="h-5 w-5 text-blue-600" />
+                <Calculator className="h-5 w-5 text-primary" />
                 <h3 className="text-lg font-semibold">Gestión de Tasas Gubernamentales</h3>
               </div>
               
               <div className="space-y-4">
-                <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-3 p-4 bg-primary/10 rounded-lg border border-primary/20">
+                  <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
-                    <h4 className="font-medium text-blue-900 mb-1">Gestión Automática de Tasas</h4>
-                    <p className="text-sm text-blue-700">
+                    <h4 className="font-medium text-foreground mb-1">Gestión Automática de Tasas</h4>
+                    <p className="text-sm text-muted-foreground">
                       Active esta opción para gestionar automáticamente las tasas profesionales (CPAU/CPIC), 
                       derechos de construcción y plusvalía. Se calculará en base al presupuesto o superficie del proyecto.
                     </p>
@@ -801,7 +801,7 @@ export default function CreateProjectModal({
                     id="enable-tax-management"
                     checked={enableTaxManagement}
                     onChange={(e) => setEnableTaxManagement(e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                    className="rounded border-border text-primary shadow-sm focus:border-primary focus:ring focus:ring-primary/20 focus:ring-opacity-50"
                   />
                   <Label htmlFor="enable-tax-management" className="flex items-center gap-2 cursor-pointer">
                     <CheckCircle className="h-4 w-4 text-green-600" />
@@ -812,10 +812,10 @@ export default function CreateProjectModal({
                 {enableTaxManagement && (() => {
                   const estimates = calculateTaxEstimates()
                   return (
-                    <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
-                      <h4 className="font-medium text-green-900 mb-3">Estimación de Tasas</h4>
-                      
-                      <div className="text-sm text-green-700 mb-3">
+                    <div className="mt-4 p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                      <h4 className="font-medium text-foreground mb-3">Estimación de Tasas</h4>
+
+                      <div className="text-sm text-muted-foreground mb-3">
                         <strong>Método de cálculo:</strong> {estimates.method}
                       </div>
 
@@ -823,39 +823,39 @@ export default function CreateProjectModal({
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div className="space-y-2">
                             <div className="flex justify-between">
-                              <span className="text-sm text-green-700">Tasas Profesionales:</span>
-                              <span className="font-medium text-green-900">{formatCurrency(estimates.professional_fees)}</span>
+                              <span className="text-sm text-muted-foreground">Tasas Profesionales:</span>
+                              <span className="font-medium text-foreground">{formatCurrency(estimates.professional_fees)}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-sm text-green-700">Derechos de Construcción:</span>
-                              <span className="font-medium text-green-900">{formatCurrency(estimates.construction_rights)}</span>
+                              <span className="text-sm text-muted-foreground">Derechos de Construcción:</span>
+                              <span className="font-medium text-foreground">{formatCurrency(estimates.construction_rights)}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-sm text-green-700">Plusvalía:</span>
-                              <span className="font-medium text-green-900">{formatCurrency(estimates.surplus_value)}</span>
+                              <span className="text-sm text-muted-foreground">Plusvalía:</span>
+                              <span className="font-medium text-foreground">{formatCurrency(estimates.surplus_value)}</span>
                             </div>
                           </div>
                           <div className="md:text-right">
-                            <div className="p-3 bg-white rounded-lg border border-green-300">
-                              <div className="text-sm text-green-700 mb-1">Total Estimado</div>
-                              <div className="text-xl font-bold text-green-900">{formatCurrency(estimates.total)}</div>
+                            <div className="p-3 bg-card rounded-lg border border-emerald-500/30">
+                              <div className="text-sm text-muted-foreground mb-1">Total Estimado</div>
+                              <div className="text-xl font-bold text-foreground">{formatCurrency(estimates.total)}</div>
                             </div>
                           </div>
                         </div>
                       ) : (
-                        <div className="text-sm text-green-600 space-y-2">
-                          <p><strong>💡 Para obtener estimaciones precisas:</strong></p>
+                        <div className="text-sm text-muted-foreground space-y-2">
+                          <p><strong>Para obtener estimaciones precisas:</strong></p>
                           <ul className="text-xs space-y-1 ml-4">
-                            <li>• <strong>Recomendado:</strong> Ingrese el presupuesto total de la obra</li>
-                            <li>• <strong>Alternativo:</strong> Ingrese la superficie en m²</li>
+                            <li>- <strong>Recomendado:</strong> Ingrese el presupuesto total de la obra</li>
+                            <li>- <strong>Alternativo:</strong> Ingrese la superficie en m2</li>
                           </ul>
-                          <p className="text-xs text-green-500 mt-2">
+                          <p className="text-xs text-muted-foreground mt-2">
                             <em>Las estimaciones se actualizarán automáticamente al completar estos campos</em>
                           </p>
                         </div>
                       )}
                       
-                      <div className="mt-3 p-2 bg-green-100 rounded text-xs text-green-600">
+                      <div className="mt-3 p-2 bg-muted rounded text-xs text-muted-foreground">
                         <strong>Nota:</strong> Esta es una estimación inicial. Los montos exactos se calcularán según los parámetros vigentes al momento del pago.
                       </div>
                     </div>

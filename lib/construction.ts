@@ -98,6 +98,11 @@ export type Project = {
   inhibition_report_file_url?: string | null
   inhibition_report_upload_date?: string | null
   inhibition_report_notes?: string | null
+
+  // Contrato de Obra
+  construction_contract_file_url?: string | null
+  construction_contract_upload_date?: string | null
+  construction_contract_notes?: string | null
   
   // Tasas y Gravámenes Gubernamentales
   projected_total_cost?: number | null

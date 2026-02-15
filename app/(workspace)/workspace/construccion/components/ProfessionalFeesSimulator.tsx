@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Calculator, FileText, CheckCircle, AlertCircle, Plus, Minus } from 'lucide-react'
+import { toast } from 'sonner'
 import { Project } from '@/lib/construction'
 interface ProfessionalFeesSimulatorProps {
   project: Project
@@ -134,10 +135,10 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
   const [cpauCatalog, setCpauCatalog] = useState<CpauCatalog | null>(null)
   const [cpicCatalog, setCpicCatalog] = useState<CpicCatalog | null>(null)
   const [catalogLoading, setCatalogLoading] = useState(true)
-  
+
   // Estado para las encomiendas del proyecto
   const [encomiendas, setEncomiendas] = useState<Encomienda[]>([])
-  
+
   // Estados para formularios de nueva encomienda
   const [nuevaEncomienda, setNuevaEncomienda] = useState({
     consejo: 'CPAU' as 'CPAU' | 'CPIC',
@@ -147,7 +148,7 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
     otroTramiteSeleccionado: '',
     cantidadFrente: 1
   })
-  
+
   const [calculation, setCalculation] = useState<ProfessionalFeesCalculation | null>(null)
 
   // Cargar catálogos al montar el componente
@@ -167,7 +168,7 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
 
   // Obtener catálogo activo según selección
   const activeCatalog = nuevaEncomienda.consejo === 'CPAU' ? cpauCatalog : cpicCatalog
-  
+
   // Obtener categorías del catálogo activo
   const getCategory = (id: string) => {
     if (nuevaEncomienda.consejo === 'CPAU') {
@@ -176,7 +177,7 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
       // Mapear IDs de CPAU a CPIC
       const cpicIdMap: Record<string, string> = {
         'obra': 'obra_nueva',
-        'instalaciones': 'instalaciones_obra', 
+        'instalaciones': 'instalaciones_obra',
         'habilitaciones': 'habilitaciones',
         'frentes_fachadas': 'ley257_fachadas',
         'otros_tramites': 'otros_fijos',
@@ -225,7 +226,7 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
     if (!breakpoints || breakpoints.length === 0) {
       return 0
     }
-    
+
     for (const bp of breakpoints) {
       if (bp.max_m2 !== null && m2 <= bp.max_m2 && bp.price_ars !== null) {
         return bp.price_ars
@@ -239,10 +240,10 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
   // Función para agregar nueva encomienda
   const agregarEncomienda = () => {
     const { consejo, categoria, m2, instalacionesSeleccionadas, otroTramiteSeleccionado, cantidadFrente } = nuevaEncomienda
-    
+
     if (categoria === 'obra') {
       if (encomiendas.some(e => e.categoria === 'obra')) {
-        alert('Solo puede haber una encomienda de Obra por proyecto')
+        toast.error('Solo puede haber una encomienda de Obra por proyecto')
         return
       }
       const precio = resolverTramo(OBRA_RATES, m2)
@@ -262,14 +263,14 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
       }
       setEncomiendas([...encomiendas, nuevaEnc])
     }
-    
+
     else if (categoria === 'instalaciones') {
       if (instalacionesSeleccionadas.length === 0) {
-        alert('Debe seleccionar al menos un tipo de instalación')
+        toast.error('Debe seleccionar al menos un tipo de instalación')
         return
       }
       const precioUnitario = resolverTramo(INSTALACIONES_RATES, m2)
-      
+
       // Crear una encomienda separada para cada tipo de instalación
       const nuevasEncomiendas: Encomienda[] = instalacionesSeleccionadas.map(instalacionId => {
         const tipoInstalacion = TIPOS_INSTALACIONES.find(t => t.id === instalacionId)
@@ -289,13 +290,13 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
           }
         }
       })
-      
+
       setEncomiendas([...encomiendas, ...nuevasEncomiendas])
     }
-    
+
     else if (categoria === 'habilitaciones') {
       if (encomiendas.some(e => e.categoria === 'habilitaciones')) {
-        alert('Solo puede haber una encomienda de Habilitación por proyecto')
+        toast.error('Solo puede haber una encomienda de Habilitación por proyecto')
         return
       }
       const precio = resolverTramo(HABILITACIONES_RATES, m2)
@@ -315,7 +316,7 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
       }
       setEncomiendas([...encomiendas, nuevaEnc])
     }
-    
+
     else if (categoria === 'frentes_fachadas') {
       const precio = resolverTramo(FRENTES_FACHADAS_RATES, m2)
       const nuevaEnc: Encomienda = {
@@ -334,11 +335,11 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
       }
       setEncomiendas([...encomiendas, nuevaEnc])
     }
-    
+
     else if (categoria === 'otros') {
       const tramite = OTROS_TRAMITES.find(t => t.id === otroTramiteSeleccionado)
       if (!tramite) {
-        alert('Debe seleccionar un tipo de trámite')
+        toast.error('Debe seleccionar un tipo de trámite')
         return
       }
       const nuevaEnc: Encomienda = {
@@ -357,7 +358,7 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
       }
       setEncomiendas([...encomiendas, nuevaEnc])
     }
-    
+
     // Resetear formulario
     setNuevaEncomienda({
       consejo: 'CPAU' as 'CPAU' | 'CPIC',
@@ -398,11 +399,11 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
   useEffect(() => {
     const cpauEncomiendas = encomiendas.filter(enc => enc.consejo === 'CPAU')
     const cpicEncomiendas = encomiendas.filter(enc => enc.consejo === 'CPIC')
-    
+
     const totalCpauFees = cpauEncomiendas.reduce((sum, enc) => sum + enc.precio_total_item, 0)
     const totalCpicFees = cpicEncomiendas.reduce((sum, enc) => sum + enc.precio_total_item, 0)
     const totalFees = totalCpauFees + totalCpicFees
-    
+
     const breakdown: FeeBreakdown[] = encomiendas.map(enc => ({
       category: enc.consejo,
       subcategory: `${enc.categoria.charAt(0).toUpperCase() + enc.categoria.slice(1).replace('_', ' ')}${enc.subtipo ? ` - ${enc.subtipo}` : ''}`,
@@ -410,7 +411,7 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
       required: enc.categoria === 'obra',
       selected: true
     }))
-    
+
     const newCalculation: ProfessionalFeesCalculation = {
       encomiendas: encomiendas,
       totalFees: totalFees,
@@ -418,9 +419,9 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
       totalCpicFees: totalCpicFees,
       breakdown: breakdown
     }
-    
+
     setCalculation(newCalculation)
-    
+
     // Llamar al callback memoizado
     memoizedOnCalculationUpdate({
       totalFees: totalFees,
@@ -433,7 +434,7 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
   const handleInstalacionChange = (instalacionId: string, checked: boolean) => {
     setNuevaEncomienda(prev => ({
       ...prev,
-      instalacionesSeleccionadas: checked 
+      instalacionesSeleccionadas: checked
         ? [...prev.instalacionesSeleccionadas, instalacionId]
         : prev.instalacionesSeleccionadas.filter(id => id !== instalacionId)
     }))
@@ -456,8 +457,8 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
-          <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-4" />
-          <p className="text-red-600 font-medium">Error al cargar el catálogo CPAU</p>
+          <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-4" />
+          <p className="text-destructive font-medium">Error al cargar el catálogo CPAU</p>
           <p className="text-muted-foreground text-sm">Por favor, verifique que el archivo catalogo_CPAU.json esté disponible.</p>
         </div>
       </div>
@@ -494,9 +495,9 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
                 <Label htmlFor="consejo">Consejo Profesional</Label>
                 <Select
                   value={nuevaEncomienda.consejo}
-                  onValueChange={(value: 'CPAU' | 'CPIC') => 
-                    setNuevaEncomienda(prev => ({ 
-                      ...prev, 
+                  onValueChange={(value: 'CPAU' | 'CPIC') =>
+                    setNuevaEncomienda(prev => ({
+                      ...prev,
                       consejo: value,
                       categoria: 'obra', // Reset categoría al cambiar consejo
                       instalacionesSeleccionadas: [],
@@ -518,7 +519,7 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
                 <Label htmlFor="categoria">Categoría</Label>
                 <Select
                   value={nuevaEncomienda.categoria}
-                  onValueChange={(value: 'obra' | 'instalaciones' | 'habilitaciones' | 'frentes_fachadas' | 'otros') => 
+                  onValueChange={(value: 'obra' | 'instalaciones' | 'habilitaciones' | 'frentes_fachadas' | 'otros') =>
                     setNuevaEncomienda(prev => ({ ...prev, categoria: value }))
                   }
                 >
@@ -547,9 +548,9 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
                 </Select>
               </div>
 
-              {(nuevaEncomienda.categoria === 'obra' || 
-                nuevaEncomienda.categoria === 'instalaciones' || 
-                nuevaEncomienda.categoria === 'habilitaciones' || 
+              {(nuevaEncomienda.categoria === 'obra' ||
+                nuevaEncomienda.categoria === 'instalaciones' ||
+                nuevaEncomienda.categoria === 'habilitaciones' ||
                 nuevaEncomienda.categoria === 'frentes_fachadas') && (
                 <div>
                   <Label htmlFor="m2">Superficie (m²)</Label>
@@ -644,7 +645,7 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
               ) : (
                 <div className="space-y-2">
                   {encomiendas.map(enc => (
-                    <div key={enc.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div key={enc.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
                       <div className="flex-1">
                         <div className="font-medium text-sm">
                           {enc.categoria.charAt(0).toUpperCase() + enc.categoria.slice(1).replace('_', ' ')}
@@ -660,7 +661,7 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
                         variant="ghost"
                         size="sm"
                         onClick={() => eliminarEncomienda(enc.id)}
-                        className="text-red-600 hover:text-red-700"
+                        className="text-destructive hover:text-destructive"
                       >
                         <Minus className="h-4 w-4" />
                       </Button>
@@ -683,7 +684,7 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
               </p>
             </CardHeader>
             <CardContent>
-               <div className="text-3xl font-bold text-blue-600">
+               <div className="text-3xl font-bold text-primary">
                  {formatCurrency(calculation?.totalCpauFees || 0)}
                </div>
                <p className="text-muted-foreground mt-2">
@@ -746,13 +747,13 @@ export default function ProfessionalFeesSimulator({ project, onCalculationUpdate
                <CardContent>
                  <div className="space-y-3">
                    {encomiendas.map((enc, index) => (
-                     <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                     <div key={index} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                        <div className="flex items-center gap-2">
                          <CheckCircle className="h-4 w-4 text-green-600" />
                          <div>
                            <span className="font-medium">
                              <span className={`inline-block px-2 py-1 rounded text-xs font-semibold mr-2 ${
-                               enc.consejo === 'CPAU' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                               enc.consejo === 'CPAU' ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300' : 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300'
                              }`}>
                                {enc.consejo}
                              </span>

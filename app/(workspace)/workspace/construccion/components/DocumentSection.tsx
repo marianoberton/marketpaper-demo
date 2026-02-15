@@ -10,10 +10,10 @@ import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { formatFileSize } from '@/lib/storage'
-import { 
-  formatArgentinaDate, 
+import {
+  formatArgentinaDate,
   calculateDaysUntilExpiration,
-  getTodayInputValue 
+  getTodayInputValue
 } from '@/lib/utils/date-utils'
 import { calculateExpirationDate } from '@/lib/document-expiration-config'
 import DocumentPreviewModal from './DocumentPreviewModal'
@@ -102,7 +102,7 @@ export default function DocumentSection({
     if (!uploadDate) {
       return { days: 0, isExpired: false, isExpiringSoon: false };
     }
-    
+
     try {
       // Calcular fecha de vencimiento usando la configuración específica por tipo de documento
       const expirationDate = calculateExpirationDate(uploadDate, sectionName);
@@ -112,12 +112,6 @@ export default function DocumentSection({
       return { days: 0, isExpired: false, isExpiringSoon: false };
     }
   }
-
-  // Debug: Log del estado de las props relacionadas con completitud
-  console.log(`🔍 [DocumentSection] "${sectionName}" - Props recibidas:`)
-  console.log(`🔍 [DocumentSection] isStageCompleted: ${isStageCompleted}`)
-  console.log(`🔍 [DocumentSection] isTogglingCompletion: ${isTogglingCompletion}`)
-  console.log(`🔍 [DocumentSection] onStageCompletionToggle: ${typeof onStageCompletionToggle}`)
 
   // Calcular días restantes para mostrar en el contador
   const daysInfo = savedUploadDate ? calculateDaysRemaining(savedUploadDate) : null
@@ -161,14 +155,14 @@ export default function DocumentSection({
 
   return (
     <Card className={`mb-3 overflow-hidden transition-all duration-200 hover:shadow-md ${
-      noDocumentationRequired 
-        ? 'ring-2 ring-gray-200' 
-        : hasDocuments 
-          ? 'ring-2 ring-green-200' 
+      noDocumentationRequired
+        ? 'ring-2 ring-border'
+        : hasDocuments
+          ? 'ring-2 ring-emerald-500/30'
           : ''
     }`}>
       {/* Header con título y controles */}
-      <div className="p-4 border-b bg-gray-50">
+      <div className="p-4 border-b bg-muted/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button
@@ -183,12 +177,12 @@ export default function DocumentSection({
                 <ChevronRight className="h-4 w-4" />
               )}
             </Button>
-            
+
             <div className="flex items-center gap-3">
-              <h3 className={`text-sm font-medium ${isStageCompleted ? 'text-green-700' : 'text-gray-900'}`}>
+              <h3 className={`text-sm font-medium ${isStageCompleted ? 'text-green-700 dark:text-green-400' : 'text-foreground'}`}>
                 {title}
               </h3>
-              
+
               {/* Botón de check para marcar etapa como completada */}
               {onStageCompletionToggle && (
                 <Button
@@ -198,9 +192,9 @@ export default function DocumentSection({
                   disabled={isTogglingCompletion}
                   className={`
                     flex items-center gap-2 text-xs px-3 py-1 h-7
-                    ${isStageCompleted 
-                      ? 'bg-green-600 hover:bg-green-700 text-white border-green-600' 
-                      : 'text-gray-600 hover:text-green-600 hover:border-green-300'
+                    ${isStageCompleted
+                      ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                      : 'text-muted-foreground hover:text-green-600 hover:border-green-300'
                     }
                   `}
                   title={isStageCompleted ? "Marcar como pendiente" : "Marcar como completada"}
@@ -217,7 +211,7 @@ export default function DocumentSection({
               )}
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2">
             {/* Badge de estado de documentos */}
             {hasDocuments && (
@@ -227,7 +221,7 @@ export default function DocumentSection({
             )}
             {/* Mostrar badge incluso cuando no hay documentos para indicar sección vacía */}
             {!hasDocuments && (
-              <Badge variant="outline" className="text-xs text-gray-400 border-gray-200">
+              <Badge variant="outline" className="text-xs text-muted-foreground border-border">
                 Vacío
               </Badge>
             )}
@@ -237,18 +231,18 @@ export default function DocumentSection({
 
       {/* Contenido expandible */}
        {isExpanded && (
-         <div className="p-4 space-y-4 bg-white">
+         <div className="p-4 space-y-4 bg-card">
            {/* Checkbox "No requiere documentación" */}
            {showNoDocumentationCheckbox && (
-             <div className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg border">
+             <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-lg border">
                <Checkbox
                  id={`no-docs-${sectionName}`}
                  checked={noDocumentationRequired}
                  onCheckedChange={(checked) => onNoDocumentationChange?.(checked as boolean)}
                />
-               <Label 
+               <Label
                  htmlFor={`no-docs-${sectionName}`}
-                 className="text-sm font-medium text-gray-700 cursor-pointer"
+                 className="text-sm font-medium text-muted-foreground cursor-pointer"
                >
                  {noDocumentationLabel}
                </Label>
@@ -262,9 +256,9 @@ export default function DocumentSection({
                <div
                  className={`
                    relative border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all duration-200
-                   ${dragOver 
-                     ? 'border-blue-400 bg-blue-50 scale-[1.02]' 
-                     : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                   ${dragOver
+                     ? 'border-primary bg-primary/10 scale-[1.02]'
+                     : 'border-border hover:border-muted-foreground hover:bg-muted/50'
                    }
                    ${uploadProgress > 0 && uploadProgress < 100 ? 'pointer-events-none opacity-60' : ''}
                    ${noDocumentationRequired ? 'opacity-50 pointer-events-none' : ''}
@@ -294,32 +288,32 @@ export default function DocumentSection({
                  <div className="flex flex-col items-center gap-2">
                    <div className={`
                      p-2 rounded-full transition-colors duration-200
-                     ${dragOver ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-500'}
+                     ${dragOver ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}
                    `}>
                      <Upload className="h-5 w-5" />
                    </div>
                    <div>
-                     <p className="text-sm font-medium text-gray-700">
-                       {noDocumentationRequired 
-                         ? 'Carga deshabilitada' 
-                         : dragOver 
-                           ? 'Suelta los archivos aquí' 
+                     <p className="text-sm font-medium text-muted-foreground">
+                       {noDocumentationRequired
+                         ? 'Carga deshabilitada'
+                         : dragOver
+                           ? 'Suelta los archivos aquí'
                            : 'Arrastra archivos aquí o haz clic'
                        }
                      </p>
-                     <p className="text-xs text-gray-500 mt-1">
+                     <p className="text-xs text-muted-foreground mt-1">
                        Formatos: .pdf, .png, .jpg, .docx • Máximo 100MB
                      </p>
                    </div>
                  </div>
                </div>
-     
+
                {/* Barra de progreso mejorada */}
                {uploadProgress > 0 && uploadProgress < 100 && !noDocumentationRequired && (
                  <div className="mt-3 space-y-2">
                    <div className="flex items-center justify-between text-sm">
-                     <span className="text-gray-600">Subiendo archivo...</span>
-                     <span className="text-gray-500">{uploadProgress}%</span>
+                     <span className="text-muted-foreground">Subiendo archivo...</span>
+                     <span className="text-muted-foreground">{uploadProgress}%</span>
                    </div>
                    <Progress value={uploadProgress} className="h-2" />
                  </div>
@@ -332,7 +326,7 @@ export default function DocumentSection({
                {showExpirationDate && !isStageCompleted && (
                  <div className="space-y-2">
                    <div className="flex items-center justify-between">
-                     <Label htmlFor={`upload-date-${sectionName}`} className="text-sm font-medium text-gray-700">
+                     <Label htmlFor={`upload-date-${sectionName}`} className="text-sm font-medium text-muted-foreground">
                        {expirationDateLabel}
                      </Label>
                      <Button
@@ -346,13 +340,13 @@ export default function DocumentSection({
                      </Button>
                    </div>
                    <div className="flex items-center gap-2">
-                     <Calendar className="h-4 w-4 text-gray-500" />
+                     <Calendar className="h-4 w-4 text-muted-foreground" />
                      <Input
                        id={`upload-date-${sectionName}`}
                        type="date"
                        value={uploadDate}
                        onChange={(e) => onUploadDateChange?.(e.target.value)}
-                       className={`flex-1 ${savedUploadDate ? 'border-green-300 bg-green-50' : ''}`}
+                       className={`flex-1 ${savedUploadDate ? 'border-green-300 bg-emerald-500/10' : ''}`}
                        placeholder="Seleccionar fecha de carga"
                        max={getTodayInputValue()}
                      />
@@ -371,20 +365,20 @@ export default function DocumentSection({
                      </Button>
                    </div>
                    {savedUploadDate && (
-                     <div className="p-3 bg-green-50 border border-green-200 rounded-lg space-y-2">
-                       <div className="flex items-center gap-2 text-sm text-green-700 font-medium">
+                     <div className="p-3 bg-emerald-500/10 border border-green-200 dark:border-green-800 rounded-lg space-y-2">
+                       <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400 font-medium">
                          <Check className="h-4 w-4" />
                          <span>Fecha de carga guardada: {formatArgentinaDate(savedUploadDate)}</span>
                        </div>
-                       <div className="text-sm text-gray-600">
+                       <div className="text-sm text-muted-foreground">
                          <span>Vence: {formatArgentinaDate(calculateExpirationDate(savedUploadDate, sectionName))}</span>
                          {daysInfo && (
-                           <Badge 
+                           <Badge
                              variant={daysInfo.isExpired ? "destructive" : daysInfo.isExpiringSoon ? "secondary" : "outline"}
                              className="ml-2"
                            >
-                             {daysInfo.isExpired 
-                               ? `Vencido hace ${Math.abs(daysInfo.days)} días` 
+                             {daysInfo.isExpired
+                               ? `Vencido hace ${Math.abs(daysInfo.days)} días`
                                : `${daysInfo.days} días restantes`
                              }
                            </Badge>
@@ -394,33 +388,33 @@ export default function DocumentSection({
                    )}
                  </div>
                )}
-               
+
                {/* Mensaje cuando la etapa está completada */}
                {isStageCompleted && (
-                 <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                   <div className="flex items-center gap-2 text-sm text-green-700">
+                 <div className="p-3 bg-emerald-500/10 border border-green-200 dark:border-green-800 rounded-lg">
+                   <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
                      <CheckCircle2 className="h-4 w-4" />
                      <span className="font-medium">Etapa completada</span>
                    </div>
-                   <p className="text-xs text-green-600 mt-1">
+                   <p className="text-xs text-green-600 dark:text-green-500 mt-1">
                      Las fechas de vigencia están ocultas para esta etapa.
                    </p>
                  </div>
                )}
              </div>
            </div>
-   
+
            {/* Lista de documentos mejorada */}
            {hasDocuments && (
              <div className="mt-6 space-y-3">
                <div className="flex items-center gap-2 mb-4">
-                 <FileText className="h-4 w-4 text-gray-500" />
-                 <h4 className="text-sm font-medium text-gray-700">Documentos cargados</h4>
+                 <FileText className="h-4 w-4 text-muted-foreground" />
+                 <h4 className="text-sm font-medium text-muted-foreground">Documentos cargados</h4>
                  <Badge variant="secondary" className="text-xs">
                    {documents.length}
                  </Badge>
                </div>
-               
+
                <div className="space-y-2">
                  {documents.map((doc) => (
                    <Card key={doc.id} className="p-4 hover:shadow-md transition-shadow duration-200">
@@ -428,14 +422,14 @@ export default function DocumentSection({
                        <div className="flex items-center gap-3 flex-1 min-w-0">
                          <DocumentThumbnail doc={doc} />
                          <div className="flex-1 min-w-0">
-                           <p className="text-sm font-medium text-gray-900 truncate">
+                           <p className="text-sm font-medium text-foreground truncate">
                              {doc.name}
                            </p>
                            <div className="flex items-center gap-4 mt-1">
-                             <span className="text-xs text-gray-500">
+                             <span className="text-xs text-muted-foreground">
                                {formatFileSize(doc.size)}
                              </span>
-                             <div className="flex items-center gap-1 text-xs text-gray-500">
+                             <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                <Calendar className="h-3 w-3" />
                                {new Date(doc.uploadDate).toLocaleDateString('es-ES', {
                                  day: '2-digit',
@@ -448,13 +442,13 @@ export default function DocumentSection({
                            </div>
                          </div>
                        </div>
-                       
+
                        <div className="flex items-center gap-2 ml-4">
                          <Button
                            variant="outline"
                            size="sm"
                            onClick={() => setPreviewDocument(doc)}
-                           className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                           className="text-primary hover:text-primary hover:bg-primary/10 border-primary/30"
                          >
                            Ver
                          </Button>
@@ -462,7 +456,7 @@ export default function DocumentSection({
                            variant="outline"
                            size="sm"
                            onClick={() => onDocumentDelete(doc.id)}
-                           className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                           className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
                          >
                            <X className="h-4 w-4" />
                          </Button>
@@ -489,49 +483,49 @@ export default function DocumentSection({
 // Función para obtener el icono según el tipo de documento
 const getDocumentIcon = (fileName: string, type: string) => {
   const extension = fileName.toLowerCase().split('.').pop()
-  
+
   // Iconos específicos por tipo de archivo
   if (type.includes('pdf') || extension === 'pdf') {
     return <FileText className="h-4 w-4 text-red-600" />
   }
-  
+
   if (type.includes('image') || ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'].includes(extension || '')) {
     return <FileImage className="h-4 w-4 text-green-600" />
   }
-  
+
   if (type.includes('word') || type.includes('document') || ['doc', 'docx'].includes(extension || '')) {
     return <FileText className="h-4 w-4 text-blue-600" />
   }
-  
+
   if (type.includes('excel') || type.includes('spreadsheet') || ['xls', 'xlsx'].includes(extension || '')) {
     return <FileSpreadsheet className="h-4 w-4 text-green-700" />
   }
-  
+
   // Icono por defecto
-  return <File className="h-4 w-4 text-gray-600" />
+  return <File className="h-4 w-4 text-muted-foreground" />
 }
 
 // Función para obtener el color de fondo según el tipo de documento
 const getDocumentBgColor = (fileName: string, type: string) => {
   const extension = fileName.toLowerCase().split('.').pop()
-  
+
   if (type.includes('pdf') || extension === 'pdf') {
-    return 'bg-red-50'
+    return 'bg-destructive/10'
   }
-  
+
   if (type.includes('image') || ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'].includes(extension || '')) {
-    return 'bg-green-50'
+    return 'bg-emerald-500/10'
   }
-  
+
   if (type.includes('word') || type.includes('document') || ['doc', 'docx'].includes(extension || '')) {
-    return 'bg-blue-50'
+    return 'bg-primary/10'
   }
-  
+
   if (type.includes('excel') || type.includes('spreadsheet') || ['xls', 'xlsx'].includes(extension || '')) {
-    return 'bg-green-50'
+    return 'bg-emerald-500/10'
   }
-  
-  return 'bg-gray-50'
+
+  return 'bg-muted/50'
 }
 
 // Función para determinar si un documento puede mostrar miniatura
@@ -544,7 +538,7 @@ const canShowThumbnail = (fileName: string, type: string) => {
 const DocumentThumbnail = ({ doc }: { doc: DisplayDocument }) => {
   if (canShowThumbnail(doc.name, doc.type)) {
     return (
-      <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-gray-100 border">
+      <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-muted border">
         <img
           src={doc.url}
           alt={doc.name}
@@ -562,7 +556,7 @@ const DocumentThumbnail = ({ doc }: { doc: DisplayDocument }) => {
       </div>
     )
   }
-  
+
   return (
     <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${getDocumentBgColor(doc.name, doc.type)}`}>
       {getDocumentIcon(doc.name, doc.type)}

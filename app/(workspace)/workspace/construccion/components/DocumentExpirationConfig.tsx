@@ -7,11 +7,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { 
-  DOCUMENT_EXPIRATION_CONFIG, 
+import {
+  DOCUMENT_EXPIRATION_CONFIG,
   DocumentExpirationConfig as ConfigType,
   getAllConfigurations,
-  getConfigsByCategory 
+  getConfigsByCategory
 } from '@/lib/document-expiration-config'
 import { Calendar, Clock, FileText, Settings, AlertTriangle } from 'lucide-react'
 
@@ -30,8 +30,8 @@ export default function DocumentExpirationConfig({ onConfigChange }: DocumentExp
   }
 
   const handleSave = (sectionName: string) => {
-    const updatedConfigs = configs.map(config => 
-      config.sectionName === sectionName 
+    const updatedConfigs = configs.map(config =>
+      config.sectionName === sectionName
         ? { ...config, expirationDays: editingDays }
         : config
     )
@@ -57,11 +57,11 @@ export default function DocumentExpirationConfig({ onConfigChange }: DocumentExp
 
   const getCategoryColor = (category: ConfigType['category']) => {
     switch (category) {
-      case 'permiso': return 'bg-blue-100 text-blue-800'
-      case 'obra': return 'bg-green-100 text-green-800'
-      case 'informe': return 'bg-yellow-100 text-yellow-800'
-      case 'tasa': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'permiso': return 'bg-primary/10 text-primary'
+      case 'obra': return 'bg-emerald-500/10 text-green-700 dark:text-green-400'
+      case 'informe': return 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400'
+      case 'tasa': return 'bg-destructive/10 text-destructive'
+      default: return 'bg-muted text-muted-foreground'
     }
   }
 
@@ -69,7 +69,7 @@ export default function DocumentExpirationConfig({ onConfigChange }: DocumentExp
     if (days >= 365) {
       const years = Math.floor(days / 365)
       const remainingDays = days % 365
-      return remainingDays > 0 
+      return remainingDays > 0
         ? `${years} año${years > 1 ? 's' : ''} y ${remainingDays} día${remainingDays > 1 ? 's' : ''}`
         : `${years} año${years > 1 ? 's' : ''}`
     } else if (days >= 30) {
@@ -94,7 +94,7 @@ export default function DocumentExpirationConfig({ onConfigChange }: DocumentExp
             Configuración de Períodos de Vencimiento
           </CardTitle>
           <CardDescription>
-            Configure los períodos de vencimiento para cada tipo de documento. 
+            Configure los períodos de vencimiento para cada tipo de documento.
             Los documentos se considerarán vencidos después del período especificado desde su fecha de carga.
           </CardDescription>
         </CardHeader>
@@ -118,7 +118,7 @@ export default function DocumentExpirationConfig({ onConfigChange }: DocumentExp
                       {categoryConfigs.length} documento{categoryConfigs.length > 1 ? 's' : ''}
                     </Badge>
                   </div>
-                  
+
                   <div className="grid gap-3">
                     {categoryConfigs.map(config => (
                       <div key={config.sectionName} className="flex items-center justify-between p-3 border rounded-lg">
@@ -126,7 +126,7 @@ export default function DocumentExpirationConfig({ onConfigChange }: DocumentExp
                           <div className="font-medium">{config.sectionName}</div>
                           <div className="text-sm text-muted-foreground">{config.description}</div>
                         </div>
-                        
+
                         <div className="flex items-center gap-3">
                           {editingId === config.sectionName ? (
                             <div className="flex items-center gap-2">
@@ -160,7 +160,7 @@ export default function DocumentExpirationConfig({ onConfigChange }: DocumentExp
                       </div>
                     ))}
                   </div>
-                  
+
                   {category !== 'tasa' && <Separator />}
                 </div>
               )

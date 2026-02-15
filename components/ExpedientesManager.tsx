@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Trash2, Plus, Edit2, Check, X } from 'lucide-react'
-import { ProjectExpediente, CreateExpedienteData, UpdateExpedienteData, createExpediente, updateExpediente, deleteExpediente, getProjectById } from '@/lib/construction'
+import { ProjectExpediente, CreateExpedienteData, UpdateExpedienteData, createExpediente, updateExpediente, deleteExpediente } from '@/lib/construction'
 import { toast } from 'sonner'
 
 interface ExpedientesManagerProps {
@@ -48,11 +48,6 @@ export default function ExpedientesManager({
   const [editingExpediente, setEditingExpediente] = useState<Partial<UpdateExpedienteData>>({})
   const [loading, setLoading] = useState(false)
 
-  // Debug: Log de los expedientes recibidos
-  console.log('🔍 DEBUG ExpedientesManager: projectId:', projectId)
-  console.log('🔍 DEBUG ExpedientesManager: expedientes recibidos:', expedientes)
-  console.log('🔍 DEBUG ExpedientesManager: expedientes.length:', expedientes?.length || 0)
-
   const handleAddExpediente = async () => {
     if (!newExpediente.expediente_number) {
       toast.error('Por favor ingrese el número de expediente')
@@ -75,7 +70,6 @@ export default function ExpedientesManager({
         }
         
         const updatedExpedientes = [...expedientes, newExpedienteLocal]
-        console.log('🔍 DEBUG: Actualizando expedientes localmente:', updatedExpedientes)
         onExpedientesChange(updatedExpedientes)
         
         setNewExpediente({
@@ -94,25 +88,18 @@ export default function ExpedientesManager({
         status: 'Pendiente'
       }
 
-      console.log('🔍 DEBUG: Creando expediente en BD:', expedienteData)
-      const newExpedienteCreated = await createExpediente(expedienteData)
-      console.log('🔍 DEBUG: Expediente creado:', newExpedienteCreated)
-      
-      // Actualizar inmediatamente el estado local con el nuevo expediente
-      const updatedExpedientes = [...expedientes, newExpedienteCreated]
-      console.log('🔍 DEBUG: Estado actual de expedientes:', expedientes)
-      console.log('🔍 DEBUG: Nuevos expedientes a enviar:', updatedExpedientes)
-      
-      onExpedientesChange(updatedExpedientes)
-      
+      await createExpediente(expedienteData)
+
       setNewExpediente({
         expediente_number: ''
       })
       setIsAdding(false)
       toast.success('Expediente agregado correctamente')
-      
-      // NO llamar a onProjectReload para evitar conflictos
-      console.log('🔍 DEBUG: Expediente agregado sin recargar proyecto')
+
+      // Recargar proyecto desde BD para sincronizar estado
+      if (onProjectReload) {
+        await onProjectReload()
+      }
       
     } catch (error) {
       console.error('Error adding expediente:', error)
@@ -135,15 +122,16 @@ export default function ExpedientesManager({
         ...editingExpediente
       }
 
-      const updatedExpediente = await updateExpediente(updateData)
-      const updatedExpedientes = expedientes.map(exp => 
-        exp.id === expedienteId ? updatedExpediente : exp
-      )
-      onExpedientesChange(updatedExpedientes)
-      
+      await updateExpediente(updateData)
+
       setEditingId(null)
       setEditingExpediente({})
       toast.success('Expediente actualizado correctamente')
+
+      // Recargar proyecto desde BD para sincronizar estado
+      if (onProjectReload) {
+        await onProjectReload()
+      }
     } catch (error) {
       console.error('Error updating expediente:', error)
       toast.error('Error al actualizar el expediente')
@@ -160,9 +148,12 @@ export default function ExpedientesManager({
     setLoading(true)
     try {
       await deleteExpediente(expedienteId)
-      const updatedExpedientes = expedientes.filter(exp => exp.id !== expedienteId)
-      onExpedientesChange(updatedExpedientes)
       toast.success('Expediente eliminado correctamente')
+
+      // Recargar proyecto desde BD para sincronizar estado
+      if (onProjectReload) {
+        await onProjectReload()
+      }
     } catch (error) {
       console.error('Error deleting expediente:', error)
       toast.error('Error al eliminar el expediente')

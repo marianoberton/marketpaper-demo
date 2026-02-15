@@ -108,7 +108,7 @@ export function DeadlineClientPanel({ project, className = '' }: DeadlineClientP
           </div>
         ) : error ? (
           <div className="text-center py-4">
-            <p className="text-red-600">{error}</p>
+            <p className="text-destructive">{error}</p>
           </div>
         ) : filteredUploadDates.length === 0 ? (
           <div className="text-center py-4">
@@ -124,11 +124,11 @@ export function DeadlineClientPanel({ project, className = '' }: DeadlineClientP
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {filteredUploadDates.slice(0, 10).map((date) => {
                 const getBadgeColor = (daysRemaining: number) => {
-                  if (daysRemaining < 0) return 'bg-red-100 text-red-800 border-red-200';
+                  if (daysRemaining < 0) return 'bg-destructive/10 text-destructive border-destructive/20';
                   if (daysRemaining === 0) return 'bg-orange-100 text-orange-800 border-orange-200';
                   if (daysRemaining <= 3) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-                  if (daysRemaining <= 7) return 'bg-blue-100 text-blue-800 border-blue-200';
-                  return 'bg-green-100 text-green-800 border-green-200';
+                  if (daysRemaining <= 7) return 'bg-primary/10 text-primary border-primary/20';
+                  return 'bg-emerald-500/10 text-emerald-700 border-emerald-500/20';
                 };
 
                 const getStatusText = (daysRemaining: number) => {
@@ -138,7 +138,7 @@ export function DeadlineClientPanel({ project, className = '' }: DeadlineClientP
                 };
 
                 return (
-                  <div key={date.id} className="flex items-center justify-between text-xs p-2 bg-gray-50 rounded">
+                  <div key={date.id} className="flex items-center justify-between text-xs p-2 bg-muted/50 rounded">
                     <div className="flex-1 mr-2">
                       <span className="font-medium truncate block">
                         {date.section_name}

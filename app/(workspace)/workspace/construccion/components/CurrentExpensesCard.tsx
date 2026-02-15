@@ -42,11 +42,11 @@ export default function CurrentExpensesCard({ project }: CurrentExpensesCardProp
       try {
         setLoading(true)
         const response = await fetch(`/api/workspace/construction/tax-payments?projectId=${project.id}`)
-        
+
         if (!response.ok) {
           throw new Error('Error al cargar los pagos')
         }
-        
+
         const data = await response.json()
         setTaxPayments(data.payments || [])
       } catch (err) {
@@ -67,18 +67,18 @@ export default function CurrentExpensesCard({ project }: CurrentExpensesCardProp
 
   if (loading) {
     return (
-      <Card className="border-blue-200 bg-blue-50/30">
+      <Card className="border-primary/30 bg-primary/5">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold text-gray-900">
+          <CardTitle className="text-lg font-semibold text-foreground">
             Información Económica
           </CardTitle>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             Gestión financiera y control de costos del proyecto
           </p>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse">
-            <div className="h-20 bg-gray-200 rounded"></div>
+            <div className="h-20 bg-muted rounded"></div>
           </div>
         </CardContent>
       </Card>
@@ -86,31 +86,31 @@ export default function CurrentExpensesCard({ project }: CurrentExpensesCardProp
   }
 
   return (
-    <Card className="border-blue-200 bg-blue-50/30">
+    <Card className="border-primary/30 bg-primary/5">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-semibold text-gray-900">
+        <CardTitle className="text-lg font-semibold text-foreground">
           Información Económica
         </CardTitle>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-muted-foreground">
           Gestión financiera y control de costos del proyecto
         </p>
       </CardHeader>
       <CardContent>
-        <div className="bg-white border border-blue-200 rounded-lg p-4">
+        <div className="bg-card border border-border rounded-lg p-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700">Gastos Actuales</span>
+              <span className="text-sm font-medium text-muted-foreground">Gastos Actuales</span>
             </div>
-            <div className="p-2 bg-blue-50 rounded-lg">
-              <DollarSign className="h-5 w-5 text-blue-600" />
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <DollarSign className="h-5 w-5 text-primary" />
             </div>
           </div>
-          
+
           <div className="space-y-1">
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-2xl font-bold text-foreground">
               {formatCurrency(totalGastosActuales)}
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               {cantidadPagos} pago{cantidadPagos !== 1 ? 's' : ''} registrado{cantidadPagos !== 1 ? 's' : ''}
             </p>
           </div>

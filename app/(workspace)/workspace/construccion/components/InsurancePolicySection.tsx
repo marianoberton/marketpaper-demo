@@ -8,13 +8,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
-import { 
-  Shield, 
-  Upload, 
-  Download, 
-  Calendar, 
-  Clock, 
-  AlertTriangle, 
+import {
+  Shield,
+  Upload,
+  Download,
+  Calendar,
+  Clock,
+  AlertTriangle,
   CheckCircle,
   Eye,
   RefreshCw,
@@ -25,6 +25,7 @@ import { Project, formatInsurancePolicyStatus, calculateInsurancePolicyDaysRemai
 import { useDirectFileUpload } from '@/lib/hooks/useDirectFileUpload'
 import { useWorkspace } from '@/components/workspace-context'
 import { sanitizeFileName, generateUniqueFilePath } from '@/lib/utils/file-utils'
+import { toast } from 'sonner'
 
 interface InsurancePolicySectionProps {
   project: Project
@@ -33,13 +34,13 @@ interface InsurancePolicySectionProps {
 
 export default function InsurancePolicySection({ project, onProjectUpdate }: InsurancePolicySectionProps) {
   const [uploading, setUploading] = useState(false)
-  
+
   // Hook para obtener el workspace actual
   const { companyId } = useWorkspace()
-  
+
   // Hook para manejar subidas de archivos con Supabase Storage
   const { uploadFile, progress: hookUploadProgress, isUploading: hookIsUploading } = useDirectFileUpload()
-  
+
   const handleUploadSuccess = async (fileUrl: string, fileName: string) => {
       try {
         // Usar las fechas ingresadas por el usuario
@@ -68,39 +69,39 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
         }
 
         const data = await response.json()
-        
+
         if (onProjectUpdate) {
           onProjectUpdate(data.project)
         }
 
         setShowUploadForm(false)
         setSelectedFile(null) // Limpiar archivo seleccionado
-        
-        alert(`✅ Póliza de seguro subida exitosamente\n\n📅 Fecha de emisión: ${new Date(issueDate).toLocaleDateString('es-AR')}\n⏰ Válida hasta: ${new Date(expiryDate).toLocaleDateString('es-AR')}\n🏢 Aseguradora: ${insuranceCompany}\n📋 Número: ${policyNumber}`)
+
+        toast.success(`Póliza de seguro subida exitosamente. Emisión: ${new Date(issueDate).toLocaleDateString('es-AR')}. Válida hasta: ${new Date(expiryDate).toLocaleDateString('es-AR')}. Aseguradora: ${insuranceCompany}. Número: ${policyNumber}`)
       } catch (error) {
         console.error('Error updating project with insurance policy:', error)
-        alert('Error al actualizar el proyecto con la póliza. Por favor, inténtalo de nuevo.')
+        toast.error('Error al actualizar el proyecto con la póliza. Por favor, inténtalo de nuevo.')
       }
   }
-  
+
   const handleUploadError = (error: string) => {
-      alert(`❌ Error al subir la póliza de seguro\n\nDetalles: ${error}\n\n💡 Verifica:\n• Que el archivo sea un PDF válido\n• Que tengas conexión a internet\n• Que las fechas sean correctas`)
+      toast.error(`Error al subir la póliza de seguro: ${error}`)
     }
-  
+
   // Sincronizar estado del hook con estado local
   useEffect(() => {
     setUploading(hookIsUploading)
   }, [hookIsUploading])
-  
+
   const [notes, setNotes] = useState(project.insurance_policy_notes || '')
   const [showUploadForm, setShowUploadForm] = useState(!project.insurance_policy_file_url)
   const [issueDate, setIssueDate] = useState(
-    project.insurance_policy_issue_date 
+    project.insurance_policy_issue_date
       ? new Date(project.insurance_policy_issue_date).toISOString().split('T')[0]
       : ''
   )
   const [expiryDate, setExpiryDate] = useState(
-    project.insurance_policy_expiry_date 
+    project.insurance_policy_expiry_date
       ? new Date(project.insurance_policy_expiry_date).toISOString().split('T')[0]
       : ''
   )
@@ -111,13 +112,13 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
 
   // Calcular estado de la póliza
   const policyStatus = formatInsurancePolicyStatus(project.insurance_policy_expiry_date || null)
-  
+
   const handleFileUpload = async (file: File) => {
     if (!file) return
 
     // Validar que las fechas estén completas
     if (!issueDate || !expiryDate) {
-      alert('❌ Error: Debes ingresar tanto la fecha de emisión como la fecha de vencimiento.')
+      toast.error('Debes ingresar tanto la fecha de emisión como la fecha de vencimiento.')
       return
     }
 
@@ -126,15 +127,15 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
     const expiryDateObj = new Date(expiryDate)
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    
+
     if (issueDateObj > today) {
-      alert('❌ Error: La fecha de emisión no puede ser futura.')
+      toast.error('La fecha de emisión no puede ser futura.')
       return
     }
 
     // Validar que la fecha de vencimiento sea posterior a la de emisión
     if (expiryDateObj <= issueDateObj) {
-      alert('❌ Error: La fecha de vencimiento debe ser posterior a la fecha de emisión.')
+      toast.error('La fecha de vencimiento debe ser posterior a la fecha de emisión.')
       return
     }
 
@@ -143,7 +144,7 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
       if (!companyId) {
         throw new Error('Faltan datos requeridos para Supabase Storage: companyId no disponible')
       }
-      
+
       // Generar ruta única para el archivo
       const path = generateUniqueFilePath({
         companyId: companyId,
@@ -151,14 +152,14 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
         section: 'insurance-policies',
         fileName: file.name
       })
-      
+
       // Subir archivo usando el sistema de upload directo a Supabase Storage
       const result = await uploadFile({
         bucket: 'construction-documents',
         path,
         file
       })
-      
+
       // Manejar éxito de la subida
       if (result.success && result.publicUrl) {
         await handleUploadSuccess(result.publicUrl, file.name)
@@ -177,7 +178,7 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
 
     // Validar que se hayan ingresado las fechas
     if (!issueDate || !expiryDate) {
-      alert('❌ Error: Debes ingresar las fechas de emisión y vencimiento antes de seleccionar el archivo.')
+      toast.error('Debes ingresar las fechas de emisión y vencimiento antes de seleccionar el archivo.')
       return
     }
 
@@ -208,12 +209,12 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
     setSelectedFile(null)
     setNotes(project.insurance_policy_notes || '')
     setIssueDate(
-      project.insurance_policy_issue_date 
+      project.insurance_policy_issue_date
         ? new Date(project.insurance_policy_issue_date).toISOString().split('T')[0]
         : ''
     )
     setExpiryDate(
-      project.insurance_policy_expiry_date 
+      project.insurance_policy_expiry_date
         ? new Date(project.insurance_policy_expiry_date).toISOString().split('T')[0]
         : ''
     )
@@ -223,9 +224,9 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
 
   const handleDeletePolicy = async () => {
     const confirmDelete = window.confirm(
-      '⚠️ ¿Estás seguro de que quieres eliminar esta póliza de seguro?\n\nEsta acción no se puede deshacer.'
+      '¿Estás seguro de que quieres eliminar esta póliza de seguro?\n\nEsta acción no se puede deshacer.'
     )
-    
+
     if (!confirmDelete) return
 
     try {
@@ -250,16 +251,16 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
       }
 
       const data = await response.json()
-      
+
       if (onProjectUpdate) {
         onProjectUpdate(data.project)
       }
 
       setShowUploadForm(true)
-      alert('✅ Póliza de seguro eliminada exitosamente')
+      toast.success('Póliza de seguro eliminada exitosamente')
     } catch (error) {
       console.error('Error deleting insurance policy:', error)
-      alert('❌ Error al eliminar la póliza. Por favor, inténtalo de nuevo.')
+      toast.error('Error al eliminar la póliza. Por favor, inténtalo de nuevo.')
     }
   }
 
@@ -274,8 +275,8 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
                 <Shield className="h-4 w-4" />
                 <span className="font-medium">Estado de la Póliza</span>
               </div>
-              <Badge 
-                variant={policyStatus.status === 'valid' ? 'default' : 
+              <Badge
+                variant={policyStatus.status === 'valid' ? 'default' :
                         policyStatus.status === 'expiring' ? 'destructive' : 'secondary'}
                 className="flex items-center gap-1"
               >
@@ -287,24 +288,24 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
             </div>
 
             {/* Información de la póliza */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
               {project.insurance_policy_issue_date && (
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-gray-600">Fecha de Emisión</p>
+                    <p className="text-sm text-muted-foreground">Fecha de Emisión</p>
                     <p className="font-medium">
                       {new Date(project.insurance_policy_issue_date).toLocaleDateString('es-AR')}
                     </p>
                   </div>
                 </div>
               )}
-              
+
               {project.insurance_policy_expiry_date && (
                 <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-gray-500" />
+                  <Clock className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-gray-600">Fecha de Vencimiento</p>
+                    <p className="text-sm text-muted-foreground">Fecha de Vencimiento</p>
                     <p className="font-medium">
                       {new Date(project.insurance_policy_expiry_date).toLocaleDateString('es-AR')}
                     </p>
@@ -314,9 +315,9 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
 
               {project.insurance_company && (
                 <div className="flex items-center gap-2">
-                  <Building className="h-4 w-4 text-gray-500" />
+                  <Building className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-gray-600">Aseguradora</p>
+                    <p className="text-sm text-muted-foreground">Aseguradora</p>
                     <p className="font-medium">{project.insurance_company}</p>
                   </div>
                 </div>
@@ -324,9 +325,9 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
 
               {project.insurance_policy_number && (
                 <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-gray-500" />
+                  <Shield className="h-4 w-4 text-muted-foreground" />
                   <div>
-                    <p className="text-sm text-gray-600">Número de Póliza</p>
+                    <p className="text-sm text-muted-foreground">Número de Póliza</p>
                     <p className="font-medium">{project.insurance_policy_number}</p>
                   </div>
                 </div>
@@ -335,49 +336,49 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
 
             {/* Notas */}
             {project.insurance_policy_notes && (
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm text-gray-600 mb-1">Notas</p>
+              <div className="p-3 bg-primary/10 rounded-lg">
+                <p className="text-sm text-muted-foreground mb-1">Notas</p>
                 <p className="text-sm">{project.insurance_policy_notes}</p>
               </div>
             )}
 
             {/* Acciones */}
             <div className="flex flex-wrap gap-2">
-              <Button 
+              <Button
                 onClick={handleDownload}
-                variant="outline" 
+                variant="outline"
                 size="sm"
                 className="flex items-center gap-2"
               >
                 <Download className="h-4 w-4" />
                 Descargar
               </Button>
-              
-              <Button 
+
+              <Button
                 onClick={() => project.insurance_policy_file_url && window.open(project.insurance_policy_file_url, '_blank')}
-                variant="outline" 
+                variant="outline"
                 size="sm"
                 className="flex items-center gap-2"
               >
                 <Eye className="h-4 w-4" />
                 Ver
               </Button>
-              
-              <Button 
+
+              <Button
                 onClick={handleNewUpload}
-                variant="outline" 
+                variant="outline"
                 size="sm"
                 className="flex items-center gap-2"
               >
                 <RefreshCw className="h-4 w-4" />
                 {project.insurance_policy_file_url ? 'Subir Nueva Póliza' : 'Subir Póliza de Seguro'}
               </Button>
-              
-              <Button 
+
+              <Button
                 onClick={handleDeletePolicy}
-                variant="outline" 
+                variant="outline"
                 size="sm"
-                className="flex items-center gap-2 text-red-600 hover:text-red-700"
+                className="flex items-center gap-2 text-destructive hover:text-destructive"
               >
                 <Trash2 className="h-4 w-4" />
                 Eliminar
@@ -388,14 +389,14 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
           // Formulario de subida
           <div className="space-y-6">
             {/* Header mejorado sin borde punteado */}
-            <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
-                <Shield className="h-8 w-8 text-blue-600" />
+            <div className="text-center p-6 bg-primary/10 rounded-xl border border-primary/30">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
+                <Shield className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              <h3 className="text-xl font-semibold text-foreground mb-2">
                 {project.insurance_policy_file_url ? 'Actualizar Póliza de Seguro' : 'Agregar Póliza de Seguro'}
               </h3>
-              <p className="text-sm text-gray-600 max-w-md mx-auto">
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
                 Complete la información de la póliza y suba el documento en formato PDF para mantener actualizada la cobertura del proyecto
               </p>
             </div>
@@ -412,7 +413,7 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
                   required
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="expiryDate">Fecha de Vencimiento *</Label>
                 <Input
@@ -423,7 +424,7 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
                   required
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="insuranceCompany">Aseguradora</Label>
                 <Input
@@ -434,7 +435,7 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
                   placeholder="Ej: La Caja ART"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="policyNumber">Número de Póliza</Label>
                 <Input
@@ -463,7 +464,7 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
             {/* Selección de archivo mejorada */}
             <div className="space-y-3">
               <Label htmlFor="file" className="text-base font-medium">Archivo de la Póliza (PDF) *</Label>
-              
+
               {!selectedFile ? (
                 <div className="relative">
                   <Input
@@ -475,28 +476,28 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
                     disabled={uploading}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                   />
-                  <div className="flex items-center justify-center p-6 bg-gray-50 border-2 border-gray-200 border-solid rounded-lg hover:bg-gray-100 hover:border-blue-300 transition-all duration-200 cursor-pointer">
+                  <div className="flex items-center justify-center p-6 bg-muted/50 border-2 border-border border-solid rounded-lg hover:bg-muted hover:border-primary/30 transition-all duration-200 cursor-pointer">
                     <div className="text-center">
-                      <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                      <p className="text-sm font-medium text-gray-700 mb-1">
+                      <Upload className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                      <p className="text-sm font-medium text-muted-foreground mb-1">
                         Haga clic para seleccionar archivo
                       </p>
-                      <p className="text-xs text-gray-500">
-                        Solo archivos PDF • Máximo 20MB
+                      <p className="text-xs text-muted-foreground">
+                        Solo archivos PDF - Máximo 20MB
                       </p>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="p-4 bg-emerald-500/10 border border-green-200 dark:border-green-800 rounded-lg">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-10 h-10 bg-green-100 rounded-full">
+                      <div className="flex items-center justify-center w-10 h-10 bg-emerald-500/10 rounded-full">
                         <Shield className="h-5 w-5 text-green-600" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-sm font-medium text-foreground">{selectedFile.name}</p>
+                        <p className="text-xs text-muted-foreground">
                           {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                         </p>
                       </div>
@@ -505,7 +506,7 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
                       onClick={handleCancelFile}
                       variant="ghost"
                       size="sm"
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -521,9 +522,9 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
                   <span>Subiendo póliza...</span>
                   <span>{Math.round(hookUploadProgress)}%</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div
+                    className="bg-primary h-2 rounded-full transition-all duration-300"
                     style={{ width: `${hookUploadProgress}%` }}
                   />
                 </div>
@@ -541,7 +542,7 @@ export default function InsurancePolicySection({ project, onProjectUpdate }: Ins
                 <Upload className="h-4 w-4" />
                 {uploading ? 'Subiendo...' : 'Subir Póliza'}
               </Button>
-              
+
               {showUploadForm && project.insurance_policy_file_url && (
                 <Button
                   onClick={() => setShowUploadForm(false)}

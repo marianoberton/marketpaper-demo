@@ -50,7 +50,7 @@ export default function DocumentPreviewModal({
               <DialogTitle className="text-lg font-semibold">
                 {doc.name}
               </DialogTitle>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 Subido el {new Date(doc.uploadDate).toLocaleDateString('es-ES', {
                   year: 'numeric',
                   month: 'long',
@@ -94,8 +94,8 @@ export default function DocumentPreviewModal({
         <div className="flex-1 p-6 overflow-auto">
           {isLoading && (
             <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="ml-2 text-gray-600">Cargando vista previa...</span>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              <span className="ml-2 text-muted-foreground">Cargando vista previa...</span>
             </div>
           )}
 
@@ -124,10 +124,10 @@ export default function DocumentPreviewModal({
           {!isPDF && !isImage && (
             <div className="flex flex-col items-center justify-center h-64 text-center">
               <div className="text-6xl mb-4">📄</div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <h3 className="text-lg font-medium text-foreground mb-2">
                 Vista previa no disponible
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-muted-foreground mb-4">
                 Este tipo de archivo no se puede previsualizar en el navegador.
               </p>
               <div className="flex gap-2">

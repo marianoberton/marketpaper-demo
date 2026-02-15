@@ -19,7 +19,8 @@ import {
   Plus,
   UserPlus,
   Package,
-  Ticket
+  Ticket,
+  Bot,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -70,6 +71,12 @@ const navigation = [
     href: '/admin/tickets',
     icon: Ticket,
     badge: null // Se puede agregar badge dinámico después
+  },
+  {
+    name: 'Nexus AI',
+    href: '/admin/nexus',
+    icon: Bot,
+    badge: null,
   },
   {
     name: 'Configuración',

@@ -57,7 +57,7 @@ export default function PaymentFormModal({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [filePreview, setFilePreview] = useState<string>('')
-  
+
   const { uploadFile, isUploading, progress } = useDirectFileUpload()
 
   // Reset form when modal opens/closes
@@ -144,7 +144,7 @@ export default function PaymentFormModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validateForm()) {
       return
     }
@@ -193,7 +193,7 @@ export default function PaymentFormModal({
               </SelectContent>
             </Select>
             {errors.payment_type && (
-              <p className="text-sm text-red-500 flex items-center gap-1">
+              <p className="text-sm text-destructive flex items-center gap-1">
                 <AlertCircle className="h-4 w-4" />
                 {errors.payment_type}
               </p>
@@ -210,7 +210,7 @@ export default function PaymentFormModal({
               placeholder="Ej: Arquitecto, Ingeniero, Tasas municipales..."
             />
             {errors.rubro && (
-              <p className="text-sm text-red-500 flex items-center gap-1">
+              <p className="text-sm text-destructive flex items-center gap-1">
                 <AlertCircle className="h-4 w-4" />
                 {errors.rubro}
               </p>
@@ -233,12 +233,12 @@ export default function PaymentFormModal({
                 placeholder="0.00"
               />
               {formData.amount > 0 && (
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   {formatCurrency(formData.amount)}
                 </p>
               )}
               {errors.amount && (
-                <p className="text-sm text-red-500 flex items-center gap-1">
+                <p className="text-sm text-destructive flex items-center gap-1">
                   <AlertCircle className="h-4 w-4" />
                   {errors.amount}
                 </p>
@@ -254,7 +254,7 @@ export default function PaymentFormModal({
                 onChange={(e) => handleInputChange('payment_date', e.target.value)}
               />
               {errors.payment_date && (
-                <p className="text-sm text-red-500 flex items-center gap-1">
+                <p className="text-sm text-destructive flex items-center gap-1">
                   <AlertCircle className="h-4 w-4" />
                   {errors.payment_date}
                 </p>
@@ -284,7 +284,7 @@ export default function PaymentFormModal({
               rows={3}
             />
             {errors.description && (
-              <p className="text-sm text-red-500 flex items-center gap-1">
+              <p className="text-sm text-destructive flex items-center gap-1">
                 <AlertCircle className="h-4 w-4" />
                 {errors.description}
               </p>
@@ -306,15 +306,15 @@ export default function PaymentFormModal({
           {/* Upload de Comprobante */}
           <div className="space-y-2">
             <Label>Comprobante (Opcional)</Label>
-            <Card className="border-dashed border-2 border-gray-300 hover:border-gray-400 transition-colors">
+            <Card className="border-dashed border-2 border-border hover:border-muted-foreground transition-colors">
               <CardContent className="p-6">
                 {!selectedFile ? (
                   <div className="text-center">
-                    <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-600 mb-2">
+                    <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground mb-2">
                       Arrastra un archivo aquí o haz clic para seleccionar
                     </p>
-                    <p className="text-xs text-gray-500 mb-4">
+                    <p className="text-xs text-muted-foreground mb-4">
                       PDF, JPG, JPEG, PNG (máx. 10MB)
                     </p>
                     <input
@@ -336,10 +336,10 @@ export default function PaymentFormModal({
                 ) : (
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <FileText className="h-8 w-8 text-blue-500" />
+                      <FileText className="h-8 w-8 text-primary" />
                       <div>
                         <p className="font-medium text-sm">{selectedFile.name}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-muted-foreground">
                           {formatFileSize(selectedFile.size)}
                         </p>
                       </div>
@@ -354,11 +354,11 @@ export default function PaymentFormModal({
                     </Button>
                   </div>
                 )}
-                
+
                 {isUploading && (
                   <div className="mt-4">
                     <Progress value={progress} className="w-full" />
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Subiendo archivo... {Math.round(progress)}%
                     </p>
                   </div>
@@ -366,7 +366,7 @@ export default function PaymentFormModal({
               </CardContent>
             </Card>
             {errors.file && (
-              <p className="text-sm text-red-500 flex items-center gap-1">
+              <p className="text-sm text-destructive flex items-center gap-1">
                 <AlertCircle className="h-4 w-4" />
                 {errors.file}
               </p>

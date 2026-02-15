@@ -83,22 +83,22 @@ export default function ProjectDocumentsTab({
   }
 
   const handleDeleteDocument = async (documentId: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este documento?')) {
+    if (!confirm('¿Estas seguro de que quieres eliminar este documento?')) {
       return
     }
 
     setIsDeleting(true)
-    
+
     try {
       await deleteProjectDocument(documentId)
-      
+
       toast.success('Documento eliminado exitosamente')
-      
+
       // Llamar a la función de recarga si está disponible
       if (onDocumentDeleted) {
         onDocumentDeleted()
       }
-      
+
     } catch (error: any) {
       console.error('Error deleting document:', error)
       toast.error(`Error al eliminar el documento: ${error.message}`)
@@ -112,11 +112,11 @@ export default function ProjectDocumentsTab({
       {/* Encabezado de la pestaña */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <FileText className="h-6 w-6" />
             Biblioteca de Documentos
           </h2>
-          <p className="text-gray-600 mt-1">
+          <p className="text-muted-foreground mt-1">
             Archivo central con todos los documentos del proyecto organizados.
           </p>
         </div>

@@ -20,8 +20,8 @@ export default function ClientInfoCard({ project }: ClientInfoCardProps) {
       <CardContent>
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-blue-100 rounded-full">
-              <User className="h-6 w-6 text-blue-600" />
+            <div className="p-3 bg-primary/10 rounded-full">
+              <User className="h-6 w-6 text-primary" />
             </div>
             <div>
               <h3 className="font-semibold text-lg">{project.client?.name || 'Sin cliente'}</h3>

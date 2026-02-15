@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { 
+import {
   FileText,
   Clock,
   Receipt,
@@ -67,13 +67,13 @@ export default function PaymentsList({
   const getPaymentTypeBadgeClass = (type: string) => {
     switch (type) {
       case 'professional_commission':
-        return 'border-blue-200 bg-blue-50 text-blue-700'
+        return 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-300'
       case 'construction_rights':
-        return 'border-green-200 bg-green-50 text-green-700'
+        return 'border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950 dark:text-green-300'
       case 'surplus_value':
-        return 'border-purple-200 bg-purple-50 text-purple-700'
+        return 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800 dark:bg-purple-950 dark:text-purple-300'
       default:
-        return 'border-gray-200 bg-gray-50 text-gray-700'
+        return 'border-border bg-muted text-muted-foreground'
     }
   }
 
@@ -88,15 +88,15 @@ export default function PaymentsList({
         </CardHeader>
         <CardContent className="p-0">
           <div className="text-center py-12 px-6">
-            <FileText className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No hay pagos registrados</h3>
-            <p className="text-gray-500 mb-6 max-w-md mx-auto">
+            <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground/50" />
+            <h3 className="text-lg font-medium text-foreground mb-2">No hay pagos registrados</h3>
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
               Comienza registrando el primer pago para hacer seguimiento económico del proyecto
             </p>
-            <Button 
+            <Button
               onClick={onNewPayment}
               size="lg"
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <Plus className="h-4 w-4 mr-2" />
               Registrar Primer Pago
@@ -116,22 +116,22 @@ export default function PaymentsList({
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-border">
           {visiblePayments.map((payment) => (
-            <div key={payment.id} className="p-6 hover:bg-gray-50 transition-colors">
+            <div key={payment.id} className="p-6 hover:bg-muted transition-colors">
               <div className="flex items-start justify-between">
                 {/* Información principal del pago */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2">
-                    <Badge 
-                      variant="outline" 
+                    <Badge
+                      variant="outline"
                       className={`font-medium ${getPaymentTypeBadgeClass(payment.payment_type)}`}
                     >
                       {getPaymentTypeLabel(payment.payment_type)}
                     </Badge>
                   </div>
-                  
-                  <div className="flex items-center gap-4 text-sm text-gray-600 mb-1">
+
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground mb-1">
                     <div className="flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       {new Date(payment.payment_date).toLocaleDateString('es-AR', {
@@ -147,25 +147,25 @@ export default function PaymentsList({
                       </div>
                     )}
                   </div>
-                  
+
                   {payment.description && (
-                    <p className="text-sm text-gray-700 mt-1 line-clamp-2">
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                       {payment.description}
                     </p>
                   )}
                 </div>
-                
+
                 {/* Monto y acciones */}
                 <div className="flex items-center gap-4 ml-6">
                   <div className="text-right">
-                    <p className="text-2xl font-bold text-gray-900">
+                    <p className="text-2xl font-bold text-foreground">
                       {formatCurrency(payment.amount)}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       {payment.payment_receipts && payment.payment_receipts.length > 0 ? 'Con comprobante' : 'Sin comprobante'}
                     </p>
                   </div>
-                  
+
                   {/* Botones de acción */}
                   <div className="flex items-center gap-2">
                     {/* Botón de comprobante */}
@@ -177,7 +177,7 @@ export default function PaymentsList({
                           const receipt = payment.payment_receipts![0]
                           onViewReceipt(receipt.file_url)
                         }}
-                        className="text-green-600 border-green-200 hover:bg-green-50"
+                        className="text-green-600 border-green-200 hover:bg-green-50 dark:border-green-800 dark:hover:bg-green-950"
                       >
                         <FileText className="h-4 w-4 mr-1" />
                         Ver
@@ -187,23 +187,23 @@ export default function PaymentsList({
                         variant="outline"
                         size="sm"
                         disabled
-                        className="text-gray-400 border-gray-200"
+                        className="text-muted-foreground border-border"
                       >
                         <FileText className="h-4 w-4 mr-1" />
                         Sin archivo
                       </Button>
                     )}
-                    
+
                     {/* Botón de eliminar */}
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => onDeletePayment(payment.id)}
                       disabled={isDeletingPayment === payment.id}
-                      className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+                      className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50"
                     >
                       {isDeletingPayment === payment.id ? (
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-red-500 border-t-transparent"></div>
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-destructive border-t-transparent"></div>
                       ) : (
                         <Trash2 className="h-4 w-4" />
                       )}
@@ -213,12 +213,12 @@ export default function PaymentsList({
               </div>
             </div>
           ))}
-          
+
           {/* Mostrar más pagos */}
           {hasMorePayments && (
-            <div className="p-6 bg-gray-50 border-t">
+            <div className="p-6 bg-muted/50 border-t border-border">
               <div className="text-center">
-                <Button variant="outline" size="sm" className="text-gray-600">
+                <Button variant="outline" size="sm" className="text-muted-foreground">
                   Ver todos los pagos ({taxPayments.length - maxVisible} más)
                 </Button>
               </div>

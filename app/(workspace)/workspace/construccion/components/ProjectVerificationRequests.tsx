@@ -63,14 +63,10 @@ export function ProjectVerificationRequests({
         const response = await fetch(`/api/workspace/construction/stage-completions?projectId=${project.id}`)
         if (response.ok) {
           const data = await response.json()
-          console.log('🔄 Datos iniciales recibidos:', data)
-          
           // Extraer solo los stage_name de las etapas que están completadas
           const completedStageNames = (data.completedStages || [])
             .filter((stage: any) => stage.completed === true)
             .map((stage: any) => stage.stage_name as string)
-          
-          console.log('🔄 Etapas completadas iniciales:', completedStageNames)
           setCompletedStages(new Set<string>(completedStageNames))
         } else {
           console.error('Error al cargar etapas completadas:', response.statusText)
@@ -89,13 +85,8 @@ export function ProjectVerificationRequests({
 
   // Función para manejar el toggle de completado de etapas
   const handleStageCompletionToggle = useCallback(async (stageName: string) => {
-    console.log('🔄 handleStageCompletionToggle llamado para:', stageName)
-    console.log('📋 Project ID:', project.id)
-    
     const isCurrentlyCompleted = completedStages.has(stageName)
     const newCompletedState = !isCurrentlyCompleted
-    
-    console.log('📊 Estado actual:', isCurrentlyCompleted, '→ Nuevo estado:', newCompletedState)
 
     // Marcar como "toggling" para mostrar loading
     setTogglingStages(prev => new Set(prev).add(stageName))
@@ -107,12 +98,7 @@ export function ProjectVerificationRequests({
         stageName,
         completed: newCompletedState
       }
-      
-      console.log('🌐 Haciendo petición POST a:', url)
-      console.log('📦 Payload:', payload)
-      console.log('🔍 window.location.origin:', window.location.origin)
-      
-      console.log('🚀 Iniciando fetch...')
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -120,40 +106,25 @@ export function ProjectVerificationRequests({
         },
         body: JSON.stringify(payload)
       })
-      console.log('🎯 Fetch completado!')
-
-      console.log('📡 Respuesta recibida:', response.status, response.statusText)
-      console.log('🔍 response.ok:', response.ok)
 
       if (response.ok) {
-        console.log('✅ Respuesta OK, parseando JSON...')
         const data = await response.json()
-        console.log('✅ Datos recibidos:', data)
-        console.log('📋 completedStages array:', data.completedStages)
-        
+
         // Extraer solo los stage_name de las etapas que están completadas
         const completedStageNames = data.completedStages
           .filter((stage: any) => stage.completed === true)
           .map((stage: any) => stage.stage_name as string)
-        
-        console.log('🔄 Etapas completadas filtradas:', completedStageNames)
-        console.log('🔄 Actualizando estado local con:', completedStageNames)
-        
+
         // Actualizar el estado local con las etapas completadas
         const newCompletedStages = new Set<string>(completedStageNames)
-        console.log('🎯 Nuevo Set de etapas completadas:', newCompletedStages)
-        console.log('🔄 Llamando setCompletedStages...')
         setCompletedStages(newCompletedStages)
-        console.log('✅ setCompletedStages llamado exitosamente')
       } else {
-        console.error('❌ Respuesta no OK, parseando error...')
         const errorData = await response.json()
-        console.error('❌ Error al actualizar estado de etapa:', errorData.error)
-        console.error('❌ Status:', response.status, response.statusText)
+        console.error('Error al actualizar estado de etapa:', errorData.error)
         // TODO: Mostrar mensaje de error al usuario
       }
     } catch (error) {
-      console.error('💥 Error al actualizar estado de etapa:', error)
+      console.error('Error al actualizar estado de etapa:', error)
       // TODO: Mostrar mensaje de error al usuario
     } finally {
       // Quitar del estado de "toggling"
@@ -246,15 +217,12 @@ export function ProjectVerificationRequests({
                   }
                   isInitiallyExpanded={false}
                   externalDocuments={getSectionExternalDocs(request.name)}
-                  onDocumentUploaded={(document: any): void => {
-                    // Actualizar la lista de documentos de verificación
-                    console.log('Documento subido:', document)
+                  onDocumentUploaded={(): void => {
                     // Marcar que esta sección tiene documentos
                     handleDocumentUploaded(request.name);
                   }}
-                  onDocumentDeleted={(documentId: any): void => {
+                  onDocumentDeleted={(): void => {
                     // Manejar eliminación de documento
-                    console.log('Documento eliminado:', documentId)
                   }}
                   // Props para el sistema de etapas completadas
                   isStageCompleted={completedStages.has(request.name)}
@@ -282,8 +250,7 @@ export function ProjectVerificationRequests({
                   showNoDocumentationCheckbox={request.name === 'Excavación'}
                   noDocumentationLabel="No requiere documentación"
                   noDocumentationRequired={false}
-                  onNoDocumentationChange={(checked) => {
-                    console.log(`${request.name} no requiere documentación:`, checked);
+                  onNoDocumentationChange={() => {
                   }}
                   showExpirationDate={shouldShowUploadDate(request.name)}
                   expirationDateLabel="Fecha de carga"
@@ -293,8 +260,7 @@ export function ProjectVerificationRequests({
                   onSetOneYearExpiration={setTodayUploadDate}
                   isInitiallyExpanded={false}
                   externalDocuments={getSectionExternalDocs(request.name)}
-                  onDocumentUploaded={(document: any): void => {
-                    console.log('Documento subido:', document);
+                  onDocumentUploaded={(): void => {
                     loadProjectDocuments();
                     // Marcar que esta sección tiene documentos
                     handleDocumentUploaded(request.name);
@@ -319,7 +285,7 @@ export function ProjectVerificationRequests({
           </div>
           <div className="space-y-3 ml-6">
             {verificationRequests
-              .filter(req => ['Conforme de obra', 'MH-SUBDIVISION'].includes(req.name))
+              .filter(req => ['Conforme de obra', 'Conforme de obra - Plano', 'MH-SUBDIVISION', 'MH-SUBDIVISION - Plano'].includes(req.name))
               .map((request, index) => (
                 <DocumentUpload
                   key={index}
@@ -333,7 +299,11 @@ export function ProjectVerificationRequests({
                   onSetOneYearExpiration={setTodayUploadDate}
                   isSavingDate={savingDates[request.name] || false}
                   savedExpirationDate={savedUploadDates[request.name]}
-                  acceptedFileTypes={['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']}
+                  acceptedFileTypes={
+                    request.name.includes('Plano') ?
+                      ['application/pdf', 'application/dwg', 'image/jpeg', 'image/jpg', 'image/png'] :
+                      ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png']
+                  }
                   isInitiallyExpanded={false}
                   externalDocuments={getSectionExternalDocs(request.name)}
                   onDocumentUploaded={(): void => {

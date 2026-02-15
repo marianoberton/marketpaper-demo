@@ -8,13 +8,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
-import { 
-  FileText, 
-  Upload, 
-  Download, 
-  Calendar, 
-  Clock, 
-  AlertTriangle, 
+import {
+  FileText,
+  Upload,
+  Download,
+  Calendar,
+  Clock,
+  AlertTriangle,
   CheckCircle,
   Eye,
   RefreshCw,
@@ -24,6 +24,7 @@ import { Project, formatDomainReportStatus, calculateDomainReportDaysRemaining }
 import { useDirectFileUpload } from '@/lib/hooks/useDirectFileUpload'
 import { useWorkspace } from '@/components/workspace-context'
 import { sanitizeFileName, generateUniqueFilePath } from '@/lib/utils/file-utils'
+import { toast } from 'sonner'
 
 interface DomainReportSectionProps {
   project: Project
@@ -32,15 +33,37 @@ interface DomainReportSectionProps {
 
 export default function DomainReportSection({ project, onProjectUpdate }: DomainReportSectionProps) {
   const [uploading, setUploading] = useState(false)
-  
+
   // Hook para obtener el workspace actual
   const { companyId } = useWorkspace()
-  
+
   // Hook para manejar subidas de archivos con Supabase Storage
   const { uploadFile, progress: hookUploadProgress, isUploading: hookIsUploading } = useDirectFileUpload()
-  
+
   const handleUploadSuccess = async (fileUrl: string, fileName: string) => {
       try {
+        // Si ya existe un informe, guardarlo en historial antes de reemplazar
+        if (project.domain_report_file_url) {
+          try {
+            await fetch('/api/workspace/construction/documents', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                projectId: project.id,
+                sectionName: 'Informe de Dominio',
+                fileUrl: project.domain_report_file_url,
+                fileName: 'informe-dominio-anterior.pdf',
+                description: `Informe anterior - Fecha: ${project.domain_report_upload_date ? new Date(project.domain_report_upload_date).toLocaleDateString('es-AR') : 'No disponible'}`,
+                fileSize: 0,
+                mimeType: 'application/pdf'
+              })
+            })
+          } catch (err) {
+            console.error('Error archiving previous domain report:', err)
+            // No bloquear el upload por error en historial
+          }
+        }
+
         // Usar la fecha del documento ingresada por el usuario (no la fecha actual)
         const documentDateTime = new Date(documentDate + 'T12:00:00').toISOString() // Agregar hora del mediodía para evitar problemas de zona horaria
 
@@ -63,46 +86,105 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
         }
 
         const data = await response.json()
-        
+
         if (onProjectUpdate) {
           onProjectUpdate(data.project)
         }
 
         setShowUploadForm(false)
         setSelectedFile(null) // Limpiar archivo seleccionado
-        
+
+        // Refrescar historial
+        try {
+          const response2 = await fetch(`/api/workspace/construction/documents?projectId=${project.id}`)
+          if (response2.ok) {
+            const documents = await response2.json()
+            const domainReports = documents
+              .filter((doc: any) => doc.section_name === 'Informe de Dominio')
+              .map((doc: any) => ({
+                id: doc.id,
+                file_url: doc.file_url,
+                original_filename: doc.original_filename || doc.filename,
+                upload_date: doc.upload_date || doc.created_at,
+                description: doc.description
+              }))
+            setPreviousReports(domainReports)
+          }
+        } catch (err) {
+          console.error('Error refreshing domain report history:', err)
+        }
+
         // Calcular fecha de vencimiento para mostrar en el mensaje
         const selectedDate = new Date(documentDate)
         const expiryDate = new Date(selectedDate.getTime() + (90 * 24 * 60 * 60 * 1000))
-        
-        alert(`✅ Informe de dominio subido exitosamente\n\n📅 Fecha del documento: ${selectedDate.toLocaleDateString('es-AR')}\n⏰ Válido hasta: ${expiryDate.toLocaleDateString('es-AR')}\n\n💡 El informe tiene una validez de 90 días desde la fecha del documento.`)
+
+        toast.success(`Informe de dominio subido exitosamente. Fecha del documento: ${selectedDate.toLocaleDateString('es-AR')}. Válido hasta: ${expiryDate.toLocaleDateString('es-AR')}. El informe tiene una validez de 90 días desde la fecha del documento.`)
       } catch (error) {
         console.error('Error updating project with domain report:', error)
-        alert('Error al actualizar el proyecto con el informe. Por favor, inténtalo de nuevo.')
+        toast.error('Error al actualizar el proyecto con el informe. Por favor, inténtalo de nuevo.')
       }
   }
-  
+
   const handleUploadError = (error: string) => {
-      alert(`❌ Error al subir el informe de dominio\n\nDetalles: ${error}\n\n💡 Verifica:\n• Que el archivo sea un PDF válido\n• Que tengas conexión a internet\n• Que la fecha del documento sea correcta`)
+      toast.error(`Error al subir el informe de dominio: ${error}`)
     }
-  
+
   // Sincronizar estado del hook con estado local
   useEffect(() => {
     setUploading(hookIsUploading)
   }, [hookIsUploading])
+
+  // Cargar historial de informes anteriores
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (!project.id) return
+      setLoadingHistory(true)
+      try {
+        const response = await fetch(`/api/workspace/construction/documents?projectId=${project.id}`)
+        if (response.ok) {
+          const documents = await response.json()
+          // Filtrar solo informes de dominio del historial
+          const domainReports = documents
+            .filter((doc: any) => doc.section_name === 'Informe de Dominio')
+            .map((doc: any) => ({
+              id: doc.id,
+              file_url: doc.file_url,
+              original_filename: doc.original_filename || doc.filename,
+              upload_date: doc.upload_date || doc.created_at,
+              description: doc.description
+            }))
+          setPreviousReports(domainReports)
+        }
+      } catch (error) {
+        console.error('Error loading domain report history:', error)
+      } finally {
+        setLoadingHistory(false)
+      }
+    }
+    fetchHistory()
+  }, [project.id])
+
   const [notes, setNotes] = useState(project.domain_report_notes || '')
   const [showUploadForm, setShowUploadForm] = useState(!project.domain_report_file_url)
   const [documentDate, setDocumentDate] = useState(
-    project.domain_report_upload_date 
+    project.domain_report_upload_date
       ? new Date(project.domain_report_upload_date).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0]
   )
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [previousReports, setPreviousReports] = useState<Array<{
+    id: string
+    file_url: string
+    original_filename: string
+    upload_date: string
+    description?: string
+  }>>([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Calcular estado del informe
   const reportStatus = formatDomainReportStatus(project.domain_report_upload_date || null)
-  
+
   const handleFileUpload = async (file: File) => {
     if (!file) return
 
@@ -110,18 +192,18 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
     const selectedDate = new Date(documentDate)
     const today = new Date()
     today.setHours(0, 0, 0, 0) // Reset time to compare only dates
-    
+
     if (selectedDate > today) {
-      alert('❌ Error: La fecha del documento no puede ser futura.\n\n📅 Ingresa la fecha que aparece en el informe, no la fecha de hoy.')
+      toast.error('La fecha del documento no puede ser futura. Ingresa la fecha que aparece en el informe.')
       return
     }
 
     // Validar que la fecha no sea muy antigua (más de 2 años)
     const twoYearsAgo = new Date()
     twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2)
-    
+
     if (selectedDate < twoYearsAgo) {
-      const confirm = window.confirm('⚠️ Advertencia: La fecha del documento es de hace más de 2 años.\n\n¿Estás seguro que es correcta?')
+      const confirm = window.confirm('La fecha del documento es de hace más de 2 años. ¿Estás seguro que es correcta?')
       if (!confirm) {
         return
       }
@@ -132,7 +214,7 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
       if (!companyId) {
         throw new Error('Faltan datos requeridos para Supabase Storage: companyId no disponible')
       }
-      
+
       // Generar ruta única para el archivo usando la función estándar
       const path = generateUniqueFilePath({
         companyId: companyId,
@@ -140,14 +222,14 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
         section: 'domain-reports',
         fileName: file.name
       })
-      
+
       // Subir archivo usando el nuevo sistema de upload directo a Supabase Storage
       const result = await uploadFile({
         bucket: 'construction-documents',
         path,
         file
       })
-      
+
       // Manejar éxito de la subida
       if (result.success && result.publicUrl) {
         await handleUploadSuccess(result.publicUrl, file.name)
@@ -164,11 +246,9 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
     const file = event.target.files?.[0]
     if (!file) return
 
-    // Las validaciones de tipo y tamaño ahora se manejan en el hook useFileUpload
-
     // Validar que se haya ingresado la fecha del documento
     if (!documentDate || documentDate.trim() === '') {
-      alert('❌ Error: Debes ingresar la fecha del documento antes de seleccionar el archivo.\n\n📅 Revisa la fecha que aparece impresa en el informe de dominio.')
+      toast.error('Debes ingresar la fecha del documento antes de seleccionar el archivo.')
       return
     }
 
@@ -200,7 +280,7 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
     setNotes(project.domain_report_notes || '')
     // Al subir un nuevo informe, mantener la fecha actual del documento o fecha de hoy
     setDocumentDate(
-      project.domain_report_upload_date 
+      project.domain_report_upload_date
         ? new Date(project.domain_report_upload_date).toISOString().split('T')[0]
         : new Date().toISOString().split('T')[0]
     )
@@ -208,11 +288,9 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
 
   const handleDeleteReport = async () => {
     const confirmDelete = window.confirm(
-      '⚠️ ¿Estás seguro que quieres eliminar el informe de dominio?\n\n' +
-      '• Se eliminará el archivo y toda la información relacionada\n' +
-      '• Esta acción no se puede deshacer\n' +
-      '• Tendrás que volver a subir un informe si lo necesitas\n\n' +
-      '¿Proceder con la eliminación?'
+      '¿Estás seguro que quieres eliminar el informe de dominio?\n\n' +
+      'Se eliminará el archivo y toda la información relacionada.\n' +
+      'Esta acción no se puede deshacer.'
     )
 
     if (!confirmDelete) return
@@ -239,16 +317,16 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
       }
 
       const data = await response.json()
-      
+
       if (onProjectUpdate) {
         onProjectUpdate(data.project)
       }
 
-      alert('✅ Informe de dominio eliminado exitosamente')
-      
+      toast.success('Informe de dominio eliminado exitosamente')
+
     } catch (error) {
       console.error('Error deleting domain report:', error)
-      alert(`❌ Error al eliminar el informe de dominio\n\nDetalles: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+      toast.error(`Error al eliminar el informe de dominio: ${error instanceof Error ? error.message : 'Error desconocido'}`)
     } finally {
       setUploading(false)
     }
@@ -263,20 +341,20 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
       case 'expired':
         return <AlertTriangle className="h-5 w-5 text-red-600" />
       default:
-        return <FileText className="h-5 w-5 text-gray-400" />
+        return <FileText className="h-5 w-5 text-muted-foreground" />
     }
   }
 
   const getStatusColor = () => {
     switch (reportStatus.status) {
       case 'valid':
-        return 'bg-green-100 text-green-800 border-green-200'
+        return 'bg-emerald-500/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800'
       case 'expiring':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+        return 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800'
       case 'expired':
-        return 'bg-red-100 text-red-800 border-red-200'
+        return 'bg-destructive/10 text-destructive border-destructive/30'
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200'
+        return 'bg-muted text-muted-foreground border-border'
     }
   }
 
@@ -306,14 +384,14 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span>
-                    {project.domain_report_upload_date 
+                    {project.domain_report_upload_date
                       ? new Date(project.domain_report_upload_date).toLocaleDateString('es-AR')
                       : 'No disponible'
                     }
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  📄 Fecha de emisión del informe
+                  Fecha de emisión del informe
                 </p>
               </div>
 
@@ -324,24 +402,24 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <span>
-                    {project.domain_report_upload_date 
+                    {project.domain_report_upload_date
                       ? new Date(new Date(project.domain_report_upload_date).getTime() + (90 * 24 * 60 * 60 * 1000)).toLocaleDateString('es-AR')
                       : 'No disponible'
                     }
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  ⏰ 90 días desde la emisión
+                  90 días desde la emisión
                 </p>
               </div>
             </div>
 
             {/* Días restantes */}
             {reportStatus.daysRemaining !== undefined && (
-              <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="p-4 bg-muted/50 rounded-lg">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-gray-600" />
+                    <Clock className="h-5 w-5 text-muted-foreground" />
                     <span className="font-medium">Días restantes:</span>
                   </div>
                   <span className={`text-lg font-bold ${
@@ -351,11 +429,11 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
                     {reportStatus.daysRemaining} días
                   </span>
                 </div>
-                
+
                 {/* Barra de progreso visual */}
                 <div className="mt-3">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div
                       className={`h-2 rounded-full transition-all duration-300 ${
                         reportStatus.daysRemaining > 10 ? 'bg-green-500' :
                         reportStatus.daysRemaining > 0 ? 'bg-yellow-500' : 'bg-red-500'
@@ -373,7 +451,7 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
                 <Label className="text-sm font-medium text-muted-foreground">
                   Notas
                 </Label>
-                <p className="text-sm p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm p-3 bg-muted/50 rounded-lg">
                   {project.domain_report_notes}
                 </p>
               </div>
@@ -385,17 +463,17 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
                 <Download className="h-4 w-4 mr-2" />
                 Descargar Informe
               </Button>
-              
+
               <Button onClick={handleNewUpload} variant="outline" size="sm">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Subir Nuevo Informe
               </Button>
 
-              <Button 
-                onClick={handleDeleteReport} 
+              <Button
+                onClick={handleDeleteReport}
                 variant="outline"
                 size="sm"
-                className="border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300"
+                className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive/50"
                 disabled={uploading}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
@@ -405,12 +483,12 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
 
             {/* Alertas importantes */}
             {reportStatus.status === 'expiring' && (
-              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="p-4 bg-yellow-500/10 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5" />
                   <div>
-                    <h4 className="font-medium text-yellow-800">Informe próximo a vencer</h4>
-                    <p className="text-sm text-yellow-700 mt-1">
+                    <h4 className="font-medium text-yellow-700 dark:text-yellow-400">Informe próximo a vencer</h4>
+                    <p className="text-sm text-yellow-600 dark:text-yellow-500 mt-1">
                       El informe vence en {reportStatus.daysRemaining} días. Te recomendamos renovarlo pronto para evitar retrasos en los trámites.
                     </p>
                   </div>
@@ -419,12 +497,12 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
             )}
 
             {reportStatus.status === 'expired' && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
+                  <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
                   <div>
-                    <h4 className="font-medium text-red-800">Informe vencido</h4>
-                    <p className="text-sm text-red-700 mt-1">
+                    <h4 className="font-medium text-destructive">Informe vencido</h4>
+                    <p className="text-sm text-destructive/80 mt-1">
                       El informe de dominio ha vencido. Es necesario subir uno nuevo para continuar con los trámites.
                     </p>
                   </div>
@@ -444,8 +522,8 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
           </CardHeader>
           <CardContent className="space-y-6">
             {/* PASO 1: Fecha del documento (OBLIGATORIO) */}
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h4 className="font-medium text-blue-800 mb-3 flex items-center gap-2">
+            <div className="p-4 bg-primary/10 border border-primary/30 rounded-lg">
+              <h4 className="font-medium text-primary mb-3 flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
                 PASO 1: Fecha del Documento (Obligatorio)
               </h4>
@@ -462,78 +540,78 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
                   required
                   className="font-medium"
                 />
-                <p className="text-xs text-blue-700">
-                  📄 Esta fecha determina cuando vence el informe (90 días desde la emisión)
+                <p className="text-xs text-primary/80">
+                  Esta fecha determina cuando vence el informe (90 días desde la emisión)
                 </p>
               </div>
             </div>
 
             {/* PASO 2: Seleccionar Archivo PDF */}
             <div className={`${!documentDate ? 'opacity-50 pointer-events-none' : ''}`}>
-              <h4 className="font-medium text-gray-800 mb-3 flex items-center gap-2">
+              <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
                 <Upload className="h-5 w-5" />
                 PASO 2: Seleccionar Archivo PDF
-                {!documentDate && <span className="text-red-500 text-sm">(Primero ingresa la fecha)</span>}
+                {!documentDate && <span className="text-destructive text-sm">(Primero ingresa la fecha)</span>}
               </h4>
-              
+
               {!selectedFile ? (
                 // Mostrar drag & drop area cuando no hay archivo seleccionado
-                <div 
+                <div
                   className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-                    documentDate 
-                      ? 'border-gray-300 hover:border-blue-400' 
-                      : 'border-gray-200 bg-gray-50'
+                    documentDate
+                      ? 'border-border hover:border-primary'
+                      : 'border-border bg-muted/50'
                   }`}
                   onClick={() => documentDate && fileInputRef.current?.click()}
                 >
                   <div className="space-y-4">
                     <div className={`mx-auto w-12 h-12 rounded-lg flex items-center justify-center ${
-                      documentDate ? 'bg-blue-100' : 'bg-gray-200'
+                      documentDate ? 'bg-primary/10' : 'bg-muted'
                     }`}>
-                      <Upload className={`h-6 w-6 ${documentDate ? 'text-blue-600' : 'text-gray-400'}`} />
+                      <Upload className={`h-6 w-6 ${documentDate ? 'text-primary' : 'text-muted-foreground'}`} />
                     </div>
-                    
+
                     <div>
-                      <p className={`text-lg font-medium ${documentDate ? 'text-gray-900' : 'text-gray-500'}`}>
+                      <p className={`text-lg font-medium ${documentDate ? 'text-foreground' : 'text-muted-foreground'}`}>
                         {documentDate ? 'Seleccionar archivo PDF' : 'Primero ingresa la fecha del documento'}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {documentDate 
+                        {documentDate
                           ? 'Haz clic aquí o arrastra el archivo del informe de dominio'
                           : 'La fecha del documento es obligatoria antes de subir el archivo'
                         }
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Máximo 50MB • Solo archivos PDF
+                        Máximo 50MB - Solo archivos PDF
                       </p>
                     </div>
                   </div>
                 </div>
               ) : (
                 // Mostrar preview del archivo seleccionado
-                <div className="border-2 border-green-300 bg-green-50 rounded-lg p-6">
+                <div className="border-2 border-green-300 dark:border-green-700 bg-emerald-500/10 rounded-lg p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                      <div className="w-12 h-12 bg-emerald-500/10 rounded-lg flex items-center justify-center">
                         <FileText className="h-6 w-6 text-green-600" />
                       </div>
                       <div>
-                        <p className="font-medium text-green-800">{selectedFile.name}</p>
-                        <p className="text-sm text-green-600">
+                        <p className="font-medium text-green-700 dark:text-green-400">{selectedFile.name}</p>
+                        <p className="text-sm text-green-600 dark:text-green-500">
                           {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
                         </p>
                       </div>
                     </div>
                     <CheckCircle className="h-8 w-8 text-green-600" />
                   </div>
-                  
-                  <div className="mt-4 pt-4 border-t border-green-200">
-                    <p className="text-sm text-green-700 mb-4">
-                      ✅ Archivo seleccionado correctamente. Revisa los datos antes de subir.
+
+                  <div className="mt-4 pt-4 border-t border-green-200 dark:border-green-800">
+                    <p className="text-sm text-green-700 dark:text-green-400 mb-4">
+                      Archivo seleccionado correctamente. Revisa los datos antes de subir.
                     </p>
-                    
+
                     <div className="flex flex-wrap gap-2">
-                      <Button 
+                      <Button
                         onClick={handleConfirmUpload}
                         disabled={uploading}
                         size="sm"
@@ -551,13 +629,13 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
                           </>
                         )}
                       </Button>
-                      
-                      <Button 
+
+                      <Button
                         variant="outline"
                         onClick={handleCancelFile}
                         disabled={uploading}
                         size="sm"
-                        className="border-red-200 text-red-700 hover:bg-red-50"
+                        className="border-destructive/30 text-destructive hover:bg-destructive/10"
                       >
                         <RefreshCw className="h-4 w-4 mr-2" />
                         Cambiar Archivo
@@ -594,47 +672,47 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
             </div>
 
             {/* Información adicional */}
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <h4 className="font-medium text-blue-800 mb-2">📋 Sobre el Informe de Dominio</h4>
-              <ul className="text-sm text-blue-700 space-y-1">
-                <li>• <strong>Fecha importante:</strong> Ingresar la fecha que aparece EN el documento</li>
-                <li>• <strong>Vigencia:</strong> 90 días desde la fecha de emisión del informe</li>
-                <li>• <strong>Reutilización:</strong> Puede servir para múltiples trámites del mismo proyecto</li>
-                <li>• <strong>Renovación:</strong> Se puede reemplazar cuando esté próximo a vencer</li>
-                <li>• <strong>Uso:</strong> Requerido antes del Registro de Etapa de Proyecto</li>
+            <div className="p-4 bg-primary/10 border border-primary/30 rounded-lg">
+              <h4 className="font-medium text-primary mb-2">Sobre el Informe de Dominio</h4>
+              <ul className="text-sm text-primary/80 space-y-1">
+                <li>- <strong>Fecha importante:</strong> Ingresar la fecha que aparece EN el documento</li>
+                <li>- <strong>Vigencia:</strong> 90 días desde la fecha de emisión del informe</li>
+                <li>- <strong>Reutilización:</strong> Puede servir para múltiples trámites del mismo proyecto</li>
+                <li>- <strong>Renovación:</strong> Se puede reemplazar cuando esté próximo a vencer</li>
+                <li>- <strong>Uso:</strong> Requerido antes del Registro de Etapa de Proyecto</li>
               </ul>
             </div>
 
             {/* Estado del formulario */}
-            <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <div className="p-4 bg-muted/50 border border-border rounded-lg">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   {documentDate ? (
                     <>
                       <CheckCircle className="h-5 w-5 text-green-600" />
-                      <span className="text-sm font-medium text-green-700">
+                      <span className="text-sm font-medium text-green-700 dark:text-green-400">
                         Fecha configurada: {new Date(documentDate).toLocaleDateString('es-AR')}
                       </span>
                     </>
                   ) : (
                     <>
                       <AlertTriangle className="h-5 w-5 text-orange-600" />
-                      <span className="text-sm font-medium text-orange-700">
+                      <span className="text-sm font-medium text-orange-700 dark:text-orange-400">
                         Fecha del documento requerida
                       </span>
                     </>
                   )}
                 </div>
-                
+
                 {project.domain_report_file_url && (
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => {
                       setShowUploadForm(false)
                       setSelectedFile(null)
                       // Restaurar la fecha original del documento al cancelar
                       setDocumentDate(
-                        project.domain_report_upload_date 
+                        project.domain_report_upload_date
                           ? new Date(project.domain_report_upload_date).toISOString().split('T')[0]
                           : new Date().toISOString().split('T')[0]
                       )
@@ -645,11 +723,11 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
                   </Button>
                 )}
               </div>
-              
+
               {documentDate && (
-                <div className="mt-3 pt-3 border-t border-gray-300">
-                  <p className="text-xs text-gray-600">
-                    ✅ El informe vencerá el: <strong>{new Date(new Date(documentDate).getTime() + (90 * 24 * 60 * 60 * 1000)).toLocaleDateString('es-AR')}</strong> (90 días desde la emisión)
+                <div className="mt-3 pt-3 border-t border-border">
+                  <p className="text-xs text-muted-foreground">
+                    El informe vencerá el: <strong>{new Date(new Date(documentDate).getTime() + (90 * 24 * 60 * 60 * 1000)).toLocaleDateString('es-AR')}</strong> (90 días desde la emisión)
                   </p>
                 </div>
               )}
@@ -658,6 +736,71 @@ export default function DomainReportSection({ project, onProjectUpdate }: Domain
         </Card>
       )}
 
+      {/* Historial de Informes Anteriores */}
+      {previousReports.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Clock className="h-4 w-4" />
+              Historial de Informes ({previousReports.length} anterior{previousReports.length !== 1 ? 'es' : ''})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {previousReports.map((report) => (
+                <div key={report.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border border-border">
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">
+                        {report.original_filename || 'Informe de Dominio'}
+                      </p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        <span>
+                          {report.upload_date
+                            ? new Date(report.upload_date).toLocaleDateString('es-AR')
+                            : 'Fecha no disponible'
+                          }
+                        </span>
+                        <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/30">
+                          Vencido
+                        </Badge>
+                      </div>
+                      {report.description && (
+                        <p className="text-xs text-muted-foreground mt-1">{report.description}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(report.file_url, '_blank')}
+                    >
+                      <Eye className="h-3 w-3 mr-1" />
+                      Ver
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const link = document.createElement('a')
+                        link.href = report.file_url
+                        link.download = report.original_filename || 'informe-dominio.pdf'
+                        link.click()
+                      }}
+                    >
+                      <Download className="h-3 w-3 mr-1" />
+                      Descargar
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
     </div>
   )

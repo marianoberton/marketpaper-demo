@@ -13,25 +13,24 @@ import {
   Upload,
   Download,
   Calendar,
-  Clock,
-  AlertTriangle,
   CheckCircle,
+  AlertTriangle,
   Eye,
   RefreshCw,
   Trash2
 } from 'lucide-react'
-import { Project, formatInhibitionReportStatus, calculateInhibitionReportDaysRemaining } from '@/lib/construction'
+import { Project } from '@/lib/construction'
 import { useDirectFileUpload } from '@/lib/hooks/useDirectFileUpload'
 import { useWorkspace } from '@/components/workspace-context'
-import { sanitizeFileName, generateUniqueFilePath } from '@/lib/utils/file-utils'
+import { generateUniqueFilePath } from '@/lib/utils/file-utils'
 import { toast } from 'sonner'
 
-interface InhibitionReportSectionProps {
+interface ContractSectionProps {
   project: Project
   onProjectUpdate?: (updatedProject: Project) => void
 }
 
-export default function InhibitionReportSection({ project, onProjectUpdate }: InhibitionReportSectionProps) {
+export default function ContractSection({ project, onProjectUpdate }: ContractSectionProps) {
   const [uploading, setUploading] = useState(false)
 
   // Hook para obtener el workspace actual
@@ -41,102 +40,104 @@ export default function InhibitionReportSection({ project, onProjectUpdate }: In
   const { uploadFile, progress: hookUploadProgress, isUploading: hookIsUploading } = useDirectFileUpload()
 
   const handleUploadSuccess = async (fileUrl: string, fileName: string) => {
-      try {
-        // Usar la fecha del documento ingresada por el usuario (no la fecha actual)
-        const documentDateTime = new Date(documentDate + 'T12:00:00').toISOString() // Agregar hora del mediodía para evitar problemas de zona horaria
+    try {
+      // Usar la fecha del documento ingresada por el usuario
+      const documentDateTime = new Date(documentDate + 'T12:00:00').toISOString()
 
-        // 1. Actualizar proyecto con nuevo informe
-        const response = await fetch('/api/workspace/construction/projects', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            id: project.id,
-            inhibition_report_file_url: fileUrl,
-            inhibition_report_upload_date: documentDateTime, // Esta es la fecha del documento
-            inhibition_report_notes: notes.trim() || null
-          }),
-        })
+      // 1. Actualizar proyecto con nuevo contrato
+      const response = await fetch('/api/workspace/construction/projects', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: project.id,
+          construction_contract_file_url: fileUrl,
+          construction_contract_upload_date: documentDateTime,
+          construction_contract_notes: notes.trim() || null
+        }),
+      })
 
-        if (!response.ok) {
-          const errorText = await response.text()
-          console.error('API Response error:', errorText)
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('API Response error:', errorText)
 
-          let errorData
-          try {
-            errorData = JSON.parse(errorText)
-          } catch {
-            errorData = { error: errorText }
-          }
-
-          throw new Error(errorData.error || `Error ${response.status}: ${errorText}`)
+        let errorData
+        try {
+          errorData = JSON.parse(errorText)
+        } catch {
+          errorData = { error: errorText }
         }
 
-        const data = await response.json()
-
-        // 2. Guardar el documento en la tabla project_documents para que aparezca en la biblioteca
-        const documentResponse = await fetch('/api/workspace/construction/documents', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            fileUrl: fileUrl,
-            fileName: fileName,
-            originalFileName: selectedFile?.name || fileName,
-            projectId: project.id,
-            sectionName: 'Informe de Inhibición',
-            description: notes.trim() || 'Documento que certifica la ausencia de inhibiciones legales sobre el inmueble o las personas involucradas en el proyecto.',
-            fileSize: selectedFile?.size || 0,
-            mimeType: selectedFile?.type || 'application/pdf'
-          })
-        })
-
-        if (!documentResponse.ok) {
-          const errorData = await documentResponse.json().catch(() => ({ error: 'Error desconocido' }))
-          console.error('Error al guardar en project_documents:', errorData.error)
-          // No fallar la operación principal, solo advertir
-        }
-
-        if (onProjectUpdate) {
-          onProjectUpdate(data.project)
-        }
-
-        setShowUploadForm(false)
-        setSelectedFile(null) // Limpiar archivo seleccionado
-
-        const selectedDate = new Date(documentDate)
-        const expiryDate = new Date(selectedDate.getTime() + (90 * 24 * 60 * 60 * 1000))
-
-        toast.success(`Informe de inhibición subido exitosamente. Fecha del documento: ${selectedDate.toLocaleDateString('es-AR')}. Válido hasta: ${expiryDate.toLocaleDateString('es-AR')}. El informe tiene una validez de 90 días desde la fecha del documento.`)
-      } catch (error: any) {
-        console.error('Error updating project with inhibition report:', error)
-        toast.error(`Error al actualizar el proyecto con el informe: ${error.message}`)
+        throw new Error(errorData.error || `Error ${response.status}: ${errorText}`)
       }
+
+      const data = await response.json()
+
+      // 2. Guardar el documento en la tabla project_documents para que aparezca en la biblioteca
+      const documentResponse = await fetch('/api/workspace/construction/documents', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileUrl: fileUrl,
+          fileName: fileName,
+          originalFileName: selectedFile?.name || fileName,
+          projectId: project.id,
+          sectionName: 'Contrato de Obra',
+          description: notes.trim() || 'Contrato de obra del proyecto de construcción.',
+          fileSize: selectedFile?.size || 0,
+          mimeType: selectedFile?.type || 'application/pdf'
+        })
+      })
+
+      if (!documentResponse.ok) {
+        const errorData = await documentResponse.json().catch(() => ({ error: 'Error desconocido' }))
+        console.error('Error al guardar en project_documents:', errorData.error)
+        // No fallar la operación principal, solo advertir
+      }
+
+      if (onProjectUpdate) {
+        onProjectUpdate(data.project)
+      }
+
+      setShowUploadForm(false)
+      setSelectedFile(null)
+
+      const selectedDate = new Date(documentDate)
+      toast.success(`Contrato de obra subido exitosamente. Fecha del documento: ${selectedDate.toLocaleDateString('es-AR')}.`)
+    } catch (error: any) {
+      console.error('Error updating project with construction contract:', error)
+      toast.error(`Error al actualizar el proyecto con el contrato: ${error.message}`)
+    }
   }
 
   const handleUploadError = (error: string) => {
-      toast.error(`Error al subir el informe de inhibición: ${error}`)
-    }
+    toast.error(`Error al subir el contrato de obra: ${error}`)
+  }
 
   // Sincronizar estado del hook con estado local
   useEffect(() => {
     setUploading(hookIsUploading)
   }, [hookIsUploading])
 
-  const [notes, setNotes] = useState(project.inhibition_report_notes || '')
-  const [showUploadForm, setShowUploadForm] = useState(!project.inhibition_report_file_url)
+  const [notes, setNotes] = useState(project.construction_contract_notes || '')
+  const [showUploadForm, setShowUploadForm] = useState(!project.construction_contract_file_url)
   const [documentDate, setDocumentDate] = useState(
-    project.inhibition_report_upload_date
-      ? new Date(project.inhibition_report_upload_date).toISOString().split('T')[0]
+    project.construction_contract_upload_date
+      ? new Date(project.construction_contract_upload_date).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0]
   )
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Calcular estado del informe (se actualiza automáticamente cuando cambia project.inhibition_report_upload_date)
-  const reportStatus = formatInhibitionReportStatus(project.inhibition_report_upload_date || null)
+  const acceptedFileTypes = '.pdf,.doc,.docx'
+  const acceptedMimeTypes = [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ]
 
   const handleFileUpload = async (file: File) => {
     if (!file) return
@@ -162,9 +163,9 @@ export default function InhibitionReportSection({ project, onProjectUpdate }: In
     try {
       setUploading(true)
 
-      // Validar que sea un PDF
-      if (file.type !== 'application/pdf') {
-        toast.error('Solo se permiten archivos PDF')
+      // Validar tipo de archivo (PDF, DOC, DOCX)
+      if (!acceptedMimeTypes.includes(file.type)) {
+        toast.error('Solo se permiten archivos PDF, DOC o DOCX')
         return
       }
 
@@ -178,7 +179,7 @@ export default function InhibitionReportSection({ project, onProjectUpdate }: In
       const uniqueFilePath = generateUniqueFilePath({
         companyId: companyId || '',
         projectId: project.id,
-        section: 'inhibition-reports',
+        section: 'contracts',
         fileName: file.name
       })
 
@@ -195,7 +196,7 @@ export default function InhibitionReportSection({ project, onProjectUpdate }: In
         throw new Error(result.error || 'Error al subir archivo')
       }
     } catch (error) {
-      console.error('Error uploading inhibition report:', error)
+      console.error('Error uploading construction contract:', error)
       handleUploadError(error instanceof Error ? error.message : 'Error desconocido')
     } finally {
       setUploading(false)
@@ -222,17 +223,6 @@ export default function InhibitionReportSection({ project, onProjectUpdate }: In
     }
   }
 
-  const handleDownload = () => {
-    if (project.inhibition_report_file_url) {
-      const link = document.createElement('a')
-      link.href = project.inhibition_report_file_url
-      link.download = `informe-inhibicion-${project.name}.pdf`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-    }
-  }
-
   const handleNewUpload = () => {
     setShowUploadForm(true)
     setSelectedFile(null)
@@ -241,8 +231,8 @@ export default function InhibitionReportSection({ project, onProjectUpdate }: In
     }
   }
 
-  const handleDeleteReport = async () => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este informe de inhibición?')) {
+  const handleDeleteContract = async () => {
+    if (!confirm('¿Estás seguro de que quieres eliminar este contrato de obra?')) {
       return
     }
 
@@ -254,14 +244,14 @@ export default function InhibitionReportSection({ project, onProjectUpdate }: In
         },
         body: JSON.stringify({
           id: project.id,
-          inhibition_report_file_url: null,
-          inhibition_report_upload_date: null,
-          inhibition_report_notes: null
+          construction_contract_file_url: null,
+          construction_contract_upload_date: null,
+          construction_contract_notes: null
         }),
       })
 
       if (!response.ok) {
-        throw new Error('Error al eliminar el informe')
+        throw new Error('Error al eliminar el contrato')
       }
 
       const data = await response.json()
@@ -272,32 +262,11 @@ export default function InhibitionReportSection({ project, onProjectUpdate }: In
 
       setShowUploadForm(true)
       setNotes('')
-      toast.success('Informe de inhibición eliminado exitosamente')
+      toast.success('Contrato de obra eliminado exitosamente')
     } catch (error) {
-      console.error('Error deleting inhibition report:', error)
-      toast.error('Error al eliminar el informe. Por favor, inténtalo de nuevo.')
+      console.error('Error deleting construction contract:', error)
+      toast.error('Error al eliminar el contrato. Por favor, inténtalo de nuevo.')
     }
-  }
-
-  // Funciones para obtener el ícono y color del estado
-  const getStatusIcon = () => {
-    if (!project.inhibition_report_file_url) return AlertTriangle
-
-    const daysRemaining = calculateInhibitionReportDaysRemaining(project.inhibition_report_upload_date || null)
-
-    if (daysRemaining === null || daysRemaining < 0) return AlertTriangle
-    if (daysRemaining <= 15) return Clock
-    return CheckCircle
-  }
-
-  const getStatusColor = () => {
-    if (!project.inhibition_report_file_url) return 'text-yellow-600'
-
-    const daysRemaining = calculateInhibitionReportDaysRemaining(project.inhibition_report_upload_date || null)
-
-    if (daysRemaining === null || daysRemaining < 0) return 'text-red-600'
-    if (daysRemaining <= 15) return 'text-yellow-600'
-    return 'text-green-600'
   }
 
   const handleUpdateNotes = async () => {
@@ -309,7 +278,7 @@ export default function InhibitionReportSection({ project, onProjectUpdate }: In
         },
         body: JSON.stringify({
           id: project.id,
-          inhibition_report_notes: notes.trim() || null
+          construction_contract_notes: notes.trim() || null
         }),
       })
 
@@ -325,59 +294,58 @@ export default function InhibitionReportSection({ project, onProjectUpdate }: In
 
       toast.success('Notas actualizadas exitosamente')
     } catch (error) {
-      console.error('Error updating inhibition report notes:', error)
+      console.error('Error updating construction contract notes:', error)
       toast.error('Error al actualizar las notas. Por favor, inténtalo de nuevo.')
     }
   }
 
   const openFile = () => {
-    if (project.inhibition_report_file_url) {
-      window.open(project.inhibition_report_file_url, '_blank')
+    if (project.construction_contract_file_url) {
+      window.open(project.construction_contract_file_url, '_blank')
     }
   }
 
   const downloadFile = () => {
-    if (project.inhibition_report_file_url) {
+    if (project.construction_contract_file_url) {
       const link = document.createElement('a')
-      link.href = project.inhibition_report_file_url
-      link.download = `informe-inhibicion-${project.name || project.id}.pdf`
+      link.href = project.construction_contract_file_url
+      const extension = project.construction_contract_file_url.split('.').pop() || 'pdf'
+      link.download = `contrato-obra-${project.name || project.id}.${extension}`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
     }
   }
 
-  const StatusIcon = getStatusIcon()
+  // Determinar icono y color de estado (sin lógica de vencimiento)
+  const hasContract = !!project.construction_contract_file_url
+  const StatusIcon = hasContract ? CheckCircle : AlertTriangle
+  const statusColor = hasContract ? 'text-green-600' : 'text-yellow-600'
 
   return (
     <Card className="w-full">
       <CardHeader className="pb-4">
         <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg bg-primary/10 ${getStatusColor()}`}>
+          <div className={`p-2 rounded-lg bg-primary/10 ${statusColor}`}>
             <StatusIcon className="h-5 w-5" />
           </div>
           <div className="flex-1">
             <CardTitle className="text-lg font-semibold text-foreground">
-              Informe de Inhibición
+              Contrato de Obra
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Certificación de ausencia de inhibiciones legales
+              Contrato de obra del proyecto de construcción
             </p>
           </div>
-          <Badge variant={
-            !project.inhibition_report_file_url ? 'secondary' :
-            calculateInhibitionReportDaysRemaining(project.inhibition_report_upload_date || null) === null ||
-            calculateInhibitionReportDaysRemaining(project.inhibition_report_upload_date || null)! < 0 ? 'destructive' :
-            calculateInhibitionReportDaysRemaining(project.inhibition_report_upload_date || null)! <= 15 ? 'secondary' : 'default'
-          }>
-            {reportStatus.status}
+          <Badge variant={hasContract ? 'default' : 'secondary'}>
+            {hasContract ? 'Cargado' : 'Pendiente'}
           </Badge>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-6">
-        {/* Estado actual del informe */}
-        {project.inhibition_report_file_url ? (
+        {/* Estado actual del contrato */}
+        {project.construction_contract_file_url ? (
           <div className="space-y-4">
             {/* Información del archivo actual */}
             <div className="bg-muted/50 rounded-lg p-4">
@@ -385,14 +353,11 @@ export default function InhibitionReportSection({ project, onProjectUpdate }: In
                 <div className="flex items-start gap-3">
                   <FileText className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-foreground">Informe actual</h4>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {reportStatus.message}
-                    </p>
-                    {project.inhibition_report_upload_date && (
+                    <h4 className="font-medium text-foreground">Contrato actual</h4>
+                    {project.construction_contract_upload_date && (
                       <p className="text-xs text-muted-foreground mt-1">
                         <Calendar className="h-3 w-3 inline mr-1" />
-                        Fecha de carga: {new Date(project.inhibition_report_upload_date).toLocaleDateString('es-AR')}
+                        Fecha del documento: {new Date(project.construction_contract_upload_date).toLocaleDateString('es-AR')}
                       </p>
                     )}
                   </div>
@@ -428,7 +393,7 @@ export default function InhibitionReportSection({ project, onProjectUpdate }: In
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleDeleteReport}
+                    onClick={handleDeleteContract}
                     className="text-destructive hover:text-destructive text-xs px-2 py-1 h-7"
                   >
                     <Trash2 className="h-3 w-3 mr-1" />
@@ -438,14 +403,14 @@ export default function InhibitionReportSection({ project, onProjectUpdate }: In
               </div>
             </div>
 
-            {/* Notas del informe */}
+            {/* Notas del contrato */}
             <div className="space-y-3">
-              <Label htmlFor="inhibition-notes" className="text-sm font-medium text-muted-foreground">
+              <Label htmlFor="contract-notes" className="text-sm font-medium text-muted-foreground">
                 Notas adicionales
               </Label>
               <Textarea
-                id="inhibition-notes"
-                placeholder="Agregar notas sobre el informe de inhibición..."
+                id="contract-notes"
+                placeholder="Agregar notas sobre el contrato de obra..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="min-h-[80px] resize-none"
@@ -473,17 +438,17 @@ export default function InhibitionReportSection({ project, onProjectUpdate }: In
                 <span className="text-sm font-medium text-yellow-700 dark:text-yellow-400">Pendiente</span>
               </div>
               <p className="text-sm text-yellow-600 dark:text-yellow-500">
-                Se requiere subir el informe de inhibición para continuar con el proyecto.
+                Se requiere subir el contrato de obra para el proyecto.
               </p>
             </div>
 
             <div className="space-y-4">
               <div>
-                <Label htmlFor="document-date" className="text-sm font-medium text-muted-foreground">
+                <Label htmlFor="contract-document-date" className="text-sm font-medium text-muted-foreground">
                   Fecha del documento *
                 </Label>
                 <Input
-                  id="document-date"
+                  id="contract-document-date"
                   type="date"
                   value={documentDate}
                   onChange={(e) => setDocumentDate(e.target.value)}
@@ -491,22 +456,22 @@ export default function InhibitionReportSection({ project, onProjectUpdate }: In
                   max={new Date().toISOString().split('T')[0]}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Ingresa la fecha que aparece en el documento, no la fecha de hoy
+                  Ingresa la fecha que aparece en el contrato
                 </p>
               </div>
 
               <div>
-                <Label htmlFor="file-upload" className="text-sm font-medium text-muted-foreground">
-                  Archivo PDF *
+                <Label htmlFor="contract-file-upload" className="text-sm font-medium text-muted-foreground">
+                  Archivo (PDF, DOC, DOCX) *
                 </Label>
                 <div className="mt-1">
                   {!selectedFile ? (
                     <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-muted-foreground transition-colors">
                       <input
                         ref={fileInputRef}
-                        id="file-upload"
+                        id="contract-file-upload"
                         type="file"
-                        accept=".pdf"
+                        accept={acceptedFileTypes}
                         onChange={handleFileSelect}
                         className="hidden"
                       />
@@ -520,7 +485,7 @@ export default function InhibitionReportSection({ project, onProjectUpdate }: In
                         Seleccionar archivo
                       </Button>
                       <p className="text-sm text-muted-foreground mt-2">
-                        Sin archivos seleccionados
+                        PDF, DOC o DOCX (máx. 10MB)
                       </p>
                     </div>
                   ) : (
@@ -550,12 +515,12 @@ export default function InhibitionReportSection({ project, onProjectUpdate }: In
               </div>
 
               <div>
-                <Label htmlFor="notes" className="text-sm font-medium text-muted-foreground">
+                <Label htmlFor="contract-notes-upload" className="text-sm font-medium text-muted-foreground">
                   Notas adicionales
                 </Label>
                 <Textarea
-                  id="notes"
-                  placeholder="Agregar notas sobre el informe de inhibición..."
+                  id="contract-notes-upload"
+                  placeholder="Agregar notas sobre el contrato de obra..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   className="mt-1 min-h-[80px] resize-none"
@@ -570,12 +535,12 @@ export default function InhibitionReportSection({ project, onProjectUpdate }: In
                 {uploading ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Subiendo informe...
+                    Subiendo contrato...
                   </>
                 ) : (
                   <>
                     <Upload className="h-4 w-4 mr-2" />
-                    Subir informe
+                    Subir contrato
                   </>
                 )}
               </Button>

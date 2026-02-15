@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
 export type TabId = 'summary' | 'stages-documents' | 'team' | 'documents' | 'economic'
@@ -27,8 +26,8 @@ interface ProjectTabsProps {
 
 export default function ProjectTabs({ activeTab, onTabChange, className }: ProjectTabsProps) {
   return (
-    <div className={cn("sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm", className)}>
-      <div className="mx-auto px-6">
+    <div className={cn("sticky top-0 z-10 bg-card border-b border-border shadow-sm", className)}>
+      <div className="mx-auto px-6 overflow-x-auto">
         <nav className="flex space-x-8" aria-label="Tabs">
           {tabs.map((tab) => (
             <button
@@ -37,15 +36,15 @@ export default function ProjectTabs({ activeTab, onTabChange, className }: Proje
               className={cn(
                 "py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors duration-200",
                 activeTab === tab.id
-                  ? "border-blue-500 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
               )}
               aria-current={activeTab === tab.id ? 'page' : undefined}
             >
               <div className="flex flex-col items-center space-y-1">
                 <span>{tab.label}</span>
                 {tab.description && (
-                  <span className="text-xs text-gray-400 hidden sm:block">
+                  <span className="text-xs text-muted-foreground hidden sm:block">
                     {tab.description}
                   </span>
                 )}

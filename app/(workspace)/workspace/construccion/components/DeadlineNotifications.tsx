@@ -119,7 +119,7 @@ export function DeadlineNotifications({
       case 'warning':
         return <Clock className="h-4 w-4 text-yellow-500" />
       default:
-        return <Bell className="h-4 w-4 text-blue-500" />
+        return <Bell className="h-4 w-4 text-primary" />
     }
   }
 
@@ -196,7 +196,7 @@ export function DeadlineNotifications({
                   <div
                     key={notification.id}
                     className={`p-3 border-b border-border hover:bg-muted/50 cursor-pointer transition-colors ${
-                      !notification.isRead ? 'bg-blue-50/50' : ''
+                      !notification.isRead ? 'bg-primary/5' : ''
                     }`}
                     onClick={() => handleNotificationClick(notification)}
                   >
@@ -215,7 +215,7 @@ export function DeadlineNotifications({
                              notification.type === 'warning' ? 'Atención' : 'Info'}
                           </Badge>
                           {!notification.isRead && (
-                            <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                            <div className="w-2 h-2 bg-primary rounded-full" />
                           )}
                         </div>
                         

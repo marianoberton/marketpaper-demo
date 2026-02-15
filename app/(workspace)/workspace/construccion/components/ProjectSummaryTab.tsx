@@ -18,8 +18,8 @@ interface ProjectSummaryTabProps {
   handleProjectReload?: () => void
 }
 
-export default function ProjectSummaryTab({ 
-  project, 
+export default function ProjectSummaryTab({
+  project,
   isEditing = false,
   editedProject = project,
   setEditedProject,
@@ -42,7 +42,7 @@ export default function ProjectSummaryTab({
       case 'Rechazado':
         return 'bg-red-500'
       default:
-        return 'bg-gray-500'
+        return 'bg-muted-foreground'
     }
   }
 

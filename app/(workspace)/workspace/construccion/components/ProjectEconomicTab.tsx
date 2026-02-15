@@ -7,12 +7,12 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { 
-  DollarSign, 
-  TrendingUp, 
-  TrendingDown, 
-  Calculator, 
-  PieChart, 
+import {
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  Calculator,
+  PieChart,
   BarChart3,
   AlertTriangle,
   CheckCircle,
@@ -25,6 +25,7 @@ import {
   Receipt,
   Trash2
 } from 'lucide-react'
+import { toast } from 'sonner'
 import PaymentFormModal from './PaymentFormModal'
 import { Project } from '@/lib/construction'
 import { formatCurrency } from '@/lib/formatters'
@@ -38,12 +39,12 @@ import TemporalAnalysis from './TemporalAnalysis'
 // Componente simple para mostrar recibos
 const ReceiptViewModal = ({ isOpen, onClose, receiptUrl }: { isOpen: boolean, onClose: () => void, receiptUrl: string }) => {
   const [isLoading, setIsLoading] = useState(true)
-  
+
   if (!isOpen) return null
-  
+
   const isPDF = receiptUrl.toLowerCase().includes('.pdf') || receiptUrl.includes('application/pdf')
   const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(receiptUrl)
-  
+
   const handleDownload = () => {
     const link = document.createElement('a')
     link.href = receiptUrl
@@ -54,11 +55,11 @@ const ReceiptViewModal = ({ isOpen, onClose, receiptUrl }: { isOpen: boolean, on
   const handleOpenExternal = () => {
     window.open(receiptUrl, '_blank')
   }
-  
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-0 max-w-[95vw] w-[95vw] max-h-[90vh] overflow-hidden">
-        <div className="p-6 pb-4 border-b">
+      <div className="bg-background rounded-lg p-0 max-w-[95vw] w-[95vw] max-h-[90vh] overflow-hidden">
+        <div className="p-6 pb-4 border-b border-border">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold">Comprobante de Pago</h3>
@@ -82,15 +83,15 @@ const ReceiptViewModal = ({ isOpen, onClose, receiptUrl }: { isOpen: boolean, on
         <div className="flex-1 p-6 overflow-auto">
           {isLoading && (
             <div className="flex items-center justify-center h-64">
-              <Clock className="h-8 w-8 animate-spin text-blue-600 mr-2" />
-              <span className="text-gray-600">Cargando vista previa...</span>
+              <Clock className="h-8 w-8 animate-spin text-primary mr-2" />
+              <span className="text-muted-foreground">Cargando vista previa...</span>
             </div>
           )}
 
           {isPDF && (
             <iframe
               src={`${receiptUrl}#toolbar=1&navpanes=1&scrollbar=1`}
-              className="w-full h-[600px] border rounded-lg"
+              className="w-full h-[600px] border border-border rounded-lg"
               onLoad={() => setIsLoading(false)}
               style={{ display: isLoading ? 'none' : 'block' }}
               title="Comprobante de pago"
@@ -111,15 +112,15 @@ const ReceiptViewModal = ({ isOpen, onClose, receiptUrl }: { isOpen: boolean, on
 
           {!isPDF && !isImage && (
             <div className="flex flex-col items-center justify-center h-64 text-center">
-              <FileText className="h-16 w-16 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <FileText className="h-16 w-16 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">
                 Vista previa no disponible
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-muted-foreground mb-4">
                 Este tipo de archivo no se puede previsualizar en el navegador.
               </p>
               <div className="flex gap-2">
-                <Button onClick={handleDownload} className="bg-blue-500 hover:bg-blue-600">
+                <Button onClick={handleDownload} className="bg-primary text-primary-foreground hover:bg-primary/90">
                   <FileText className="h-4 w-4 mr-2" />
                   Descargar archivo
                 </Button>
@@ -182,11 +183,11 @@ interface EconomicData {
   contingencias: number
 }
 
-export default function ProjectEconomicTab({ 
-  project, 
-  isEditing = false, 
-  editedProject, 
-  setEditedProject 
+export default function ProjectEconomicTab({
+  project,
+  isEditing = false,
+  editedProject,
+  setEditedProject
 }: ProjectEconomicTabProps) {
   const workspace = useWorkspace()
   const [taxPayments, setTaxPayments] = useState<TaxPayment[]>([])
@@ -208,11 +209,11 @@ export default function ProjectEconomicTab({
         const response = await fetch(`/api/workspace/construction/tax-payments?projectId=${project.id}`, {
           credentials: 'include', // Incluir cookies de sesión
         })
-        
+
         if (!response.ok) {
           throw new Error('Error al cargar los pagos')
         }
-        
+
         const data = await response.json()
         setTaxPayments(data.payments || [])
       } catch (err) {
@@ -263,7 +264,6 @@ export default function ProjectEconomicTab({
       }
 
       const newPayment = await paymentResponse.json()
-      console.log('Debug - newPayment response:', newPayment)
 
       // Upload receipt if provided using correct flow
       if (receiptFile) {
@@ -300,7 +300,7 @@ export default function ProjectEconomicTab({
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
           process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
         )
-        
+
         const { error: uploadError } = await supabase.storage
           .from('construction-documents')
           .uploadToSignedUrl(filePath, token, receiptFile)
@@ -315,14 +315,6 @@ export default function ProjectEconomicTab({
           .getPublicUrl(filePath)
 
         // Step 4: Create receipt record with metadata
-        console.log('Debug - Datos para payment-receipts:', {
-          tax_payment_id: newPayment.payment.id,  // Corregido: acceder a newPayment.payment.id
-          project_id: project.id,
-          file_name: receiptFile.name,
-          file_url: publicUrl,
-          receipt_type: 'comprobante_pago'
-        })
-
         const receiptResponse = await fetch('/api/workspace/construction/payment-receipts', {
           method: 'POST',
           headers: {
@@ -338,11 +330,8 @@ export default function ProjectEconomicTab({
           })
         })
 
-        console.log('Debug - Response status:', receiptResponse.status)
-        
         if (!receiptResponse.ok) {
           const errorData = await receiptResponse.json()
-          console.log('Debug - Error data:', errorData)
           throw new Error(errorData.error || 'Error al crear el registro del comprobante')
         }
       }
@@ -390,7 +379,7 @@ export default function ProjectEconomicTab({
       setTaxPayments(data.payments || [])
     } catch (error) {
       console.error('Error deleting payment:', error)
-      alert('Error al eliminar el pago. Por favor, inténtalo de nuevo.')
+      toast.error('Error al eliminar el pago. Por favor, inténtalo de nuevo.')
     } finally {
       setIsDeletingPayment(null)
     }
@@ -398,15 +387,15 @@ export default function ProjectEconomicTab({
 
   const calculateEconomicData = () => {
     const totalPagado = taxPayments.reduce((sum, payment) => sum + payment.amount, 0)
-    
+
     const honorariosProfesionales = taxPayments
       .filter(p => p.payment_type === 'professional_commission')
       .reduce((sum, p) => sum + p.amount, 0)
-    
+
     const derechoConstruccion = taxPayments
       .filter(p => p.payment_type === 'construction_rights')
       .reduce((sum, p) => sum + p.amount, 0)
-    
+
     const plusvalia = taxPayments
       .filter(p => p.payment_type === 'surplus_value')
       .reduce((sum, p) => sum + p.amount, 0)
@@ -425,39 +414,39 @@ export default function ProjectEconomicTab({
   const economicData = calculateEconomicData()
   const totalGastos = economicData.gastosActuales
   const presupuestoRestante = economicData.presupuestoInicial - totalGastos
-  const porcentajeEjecutado = economicData.presupuestoInicial > 0 
-    ? (totalGastos / economicData.presupuestoInicial) * 100 
+  const porcentajeEjecutado = economicData.presupuestoInicial > 0
+    ? (totalGastos / economicData.presupuestoInicial) * 100
     : 0
   const variacionPresupuesto = economicData.gastosProyectados - economicData.presupuestoInicial
-  const porcentajeVariacion = economicData.presupuestoInicial > 0 
-    ? (variacionPresupuesto / economicData.presupuestoInicial) * 100 
+  const porcentajeVariacion = economicData.presupuestoInicial > 0
+    ? (variacionPresupuesto / economicData.presupuestoInicial) * 100
     : 0
 
   // Desglose de costos basado en datos reales
   const costBreakdown = [
-    { 
-      category: 'Encomiendas Profesionales', 
-      amount: economicData.honorariosProfesionales, 
-      percentage: economicData.presupuestoInicial > 0 
-        ? (economicData.honorariosProfesionales / economicData.presupuestoInicial) * 100 
-        : 0, 
-      color: 'bg-blue-500' 
+    {
+      category: 'Encomiendas Profesionales',
+      amount: economicData.honorariosProfesionales,
+      percentage: economicData.presupuestoInicial > 0
+        ? (economicData.honorariosProfesionales / economicData.presupuestoInicial) * 100
+        : 0,
+      color: 'bg-blue-500'
     },
-    { 
-      category: 'Derecho de Construcción', 
-      amount: economicData.derechoConstruccion, 
-      percentage: economicData.presupuestoInicial > 0 
-        ? (economicData.derechoConstruccion / economicData.presupuestoInicial) * 100 
-        : 0, 
-      color: 'bg-green-500' 
+    {
+      category: 'Derecho de Construcción',
+      amount: economicData.derechoConstruccion,
+      percentage: economicData.presupuestoInicial > 0
+        ? (economicData.derechoConstruccion / economicData.presupuestoInicial) * 100
+        : 0,
+      color: 'bg-green-500'
     },
-    { 
-      category: 'Plusvalía', 
-      amount: economicData.plusvalia, 
-      percentage: economicData.presupuestoInicial > 0 
-        ? (economicData.plusvalia / economicData.presupuestoInicial) * 100 
-        : 0, 
-      color: 'bg-yellow-500' 
+    {
+      category: 'Plusvalía',
+      amount: economicData.plusvalia,
+      percentage: economicData.presupuestoInicial > 0
+        ? (economicData.plusvalia / economicData.presupuestoInicial) * 100
+        : 0,
+      color: 'bg-yellow-500'
     }
   ].filter(item => item.amount > 0) // Solo mostrar categorías con pagos
 
@@ -466,8 +455,8 @@ export default function ProjectEconomicTab({
       <div className="space-y-6 p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <Clock className="h-8 w-8 animate-spin mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-600">Cargando información económica...</p>
+            <Clock className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground">Cargando información económica...</p>
           </div>
         </div>
       </div>
@@ -479,11 +468,11 @@ export default function ProjectEconomicTab({
       <div className="space-y-6 p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Información Económica</h2>
-            <p className="text-gray-600">Gestión financiera y control de costos del proyecto</p>
+            <h2 className="text-2xl font-bold text-foreground">Información Económica</h2>
+            <p className="text-muted-foreground">Gestión financiera y control de costos del proyecto</p>
           </div>
           <div className="flex gap-2">
-            <Button 
+            <Button
               onClick={() => setShowPaymentModal(true)}
               size="sm"
             >
@@ -492,17 +481,17 @@ export default function ProjectEconomicTab({
             </Button>
           </div>
         </div>
-        
+
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <AlertTriangle className="h-8 w-8 mx-auto mb-4 text-red-500" />
-            <p className="text-red-600 mb-4">{error}</p>
+            <AlertTriangle className="h-8 w-8 mx-auto mb-4 text-destructive" />
+            <p className="text-destructive mb-4">{error}</p>
             <Button onClick={() => window.location.reload()}>
               Reintentar
             </Button>
           </div>
         </div>
-        
+
         <PaymentFormModal
           isOpen={showPaymentModal}
           onClose={() => setShowPaymentModal(false)}
@@ -515,19 +504,19 @@ export default function ProjectEconomicTab({
   }
 
   return (
-    <div className="space-y-8 p-6 bg-gray-50 min-h-screen">
+    <div className="space-y-8 p-6 bg-muted/50 min-h-screen">
       {/* Header con resumen económico */}
-      <div className="bg-white rounded-lg p-6 shadow-sm border">
+      <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Información Económica</h2>
-            <p className="text-gray-600 text-lg">Gestión financiera y control de costos del proyecto</p>
+            <h2 className="text-3xl font-bold text-foreground mb-2">Información Económica</h2>
+            <p className="text-muted-foreground text-lg">Gestión financiera y control de costos del proyecto</p>
           </div>
           <div className="flex gap-3">
-            <Button 
+            <Button
               onClick={() => setShowPaymentModal(true)}
               size="lg"
-              className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
             >
               <Plus className="h-5 w-5 mr-2" />
               Nuevo Pago
@@ -543,9 +532,9 @@ export default function ProjectEconomicTab({
             amount={totalGastos}
             description={`${taxPayments.length} pagos registrados`}
             icon={<DollarSign className="h-8 w-8" />}
-            iconColor="text-blue-600"
-            iconBgColor="bg-blue-50"
-            borderColor="border-blue-200"
+            iconColor="text-primary"
+            iconBgColor="bg-primary/10"
+            borderColor="border-primary/30"
             formatCurrency={formatCurrency}
           />
         </div>

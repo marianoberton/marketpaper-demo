@@ -175,7 +175,9 @@ export async function POST(request: NextRequest) {
       // 0005 enhance
       'client_id', 'start_date', 'end_date', 'budget', 'current_stage', 'permit_status', 'inspector_name', 'notes',
       // Campos ampliamente usados (si existen en DB, no fallarán por null)
-      'barrio', 'ciudad'
+      'barrio', 'ciudad',
+      // Contrato de Obra
+      'construction_contract_file_url', 'construction_contract_upload_date', 'construction_contract_notes'
     ] as const
 
     const insertData: Record<string, any> = {}
@@ -260,7 +262,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Obtener datos del proyecto del cuerpo de la petición
-    const { id, expedientes, ...projectData } = await request.json()
+    const { id, expedientes: _expedientes, ...projectData } = await request.json()
     
     console.log('PUT /api/workspace/construction/projects - ID:', id)
     console.log('PUT /api/workspace/construction/projects - Data:', projectData)
@@ -296,6 +298,7 @@ export async function PUT(request: NextRequest) {
       'insurance_policy_expiry_date', 'insurance_policy_is_valid', 'insurance_policy_notes',
       'insurance_policy_number', 'insurance_company',
       'inhibition_report_file_url', 'inhibition_report_upload_date', 'inhibition_report_notes',
+      'construction_contract_file_url', 'construction_contract_upload_date', 'construction_contract_notes',
       // Campos de compatibilidad temporal
       'architect', 'project_use', 'inspector_name'
     ]
@@ -351,75 +354,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Proyecto no encontrado' }, { status: 404 })
     }
 
-    // Manejar expedientes SOLO si se proporcionan explícitamente
-    // IMPORTANTE: No eliminar expedientes si no se envían en la actualización
-    let expedientesUpdated = false
-    if (expedientes !== undefined && Array.isArray(expedientes)) {
-      console.log('🔍 DEBUG PUT: Recibido array de expedientes. Cantidad:', expedientes.length)
-      console.log('🔍 DEBUG PUT: Contenido de expedientes:', JSON.stringify(expedientes, null, 2))
-      
-      // Primero eliminar expedientes existentes
-      const { error: deleteError } = await supabase
-        .from('project_expedientes')
-        .delete()
-        .eq('project_id', id)
-
-      if (deleteError) {
-        console.error('Error deleting existing expedientes:', deleteError)
-      } else {
-        console.log('🔍 DEBUG PUT: Expedientes anteriores eliminados correctamente')
-      }
-
-      // Luego insertar los nuevos expedientes
-      if (expedientes.length > 0) {
-        const expedientesData = expedientes.map((exp: any) => ({
-          project_id: id,
-          expediente_number: exp.expediente_number,
-          expediente_type: exp.expediente_type || 'Otros',
-          status: exp.status || 'Pendiente'
-        }))
-
-        console.log('🔍 DEBUG PUT: Insertando nuevos expedientes:', JSON.stringify(expedientesData, null, 2))
-
-        const { error: expedientesError } = await supabase
-          .from('project_expedientes')
-          .insert(expedientesData)
-
-        if (expedientesError) {
-          console.error('Error creating expedientes:', expedientesError)
-        } else {
-          console.log('🔍 DEBUG PUT: Nuevos expedientes insertados correctamente')
-          expedientesUpdated = true
-        }
-      } else {
-        // Si el array está vacío, significa que se eliminaron todos, por lo que hubo actualización
-        expedientesUpdated = true
-      }
-    } else {
-      console.log('🔍 DEBUG: No se enviaron expedientes en la actualización (undefined o no es array), manteniendo los existentes')
-      if (expedientes !== undefined) {
-        console.log('🔍 DEBUG: expedientes value:', expedientes)
-      }
-    }
-
-    // Si se actualizaron los expedientes, necesitamos recargar el proyecto
-    // para devolverlo con los expedientes actualizados
-    if (expedientesUpdated) {
-      const { data: projectWithExpedientes, error: reloadError } = await supabase
-        .from('projects')
-        .select(`
-          *,
-          client:clients(*),
-          expedientes:project_expedientes(*)
-        `)
-        .eq('id', id)
-        .single()
-      
-      if (!reloadError && projectWithExpedientes) {
-        console.log('🔍 DEBUG: Proyecto recargado con expedientes actualizados:', projectWithExpedientes.expedientes)
-        return NextResponse.json({ project: projectWithExpedientes })
-      }
-    }
+    // Los expedientes se manejan directamente via createExpediente/updateExpediente/deleteExpediente
+    // No se procesan en el PUT de projects para evitar race conditions
 
     console.log('Project updated successfully:', project.id)
     return NextResponse.json({ project })

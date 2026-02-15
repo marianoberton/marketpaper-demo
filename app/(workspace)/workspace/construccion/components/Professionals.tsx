@@ -43,7 +43,7 @@ const getRoleColor = (role: string) => {
     case 'Constructor': return 'bg-orange-100 text-orange-800'
     case 'Proyectista': return 'bg-indigo-100 text-indigo-800'
     case 'Estructuralista': return 'bg-red-100 text-red-800'
-    default: return 'bg-gray-100 text-gray-800'
+    default: return 'bg-muted text-foreground'
   }
 }
 
@@ -141,7 +141,7 @@ export default function Professionals({
                   className="font-semibold mb-1"
                 />
               ) : (
-                <h3 className="font-semibold text-gray-900">{professional.name}</h3>
+                <h3 className="font-semibold text-foreground">{professional.name}</h3>
               )}
               <Badge className={`text-xs ${getRoleColor(professional.role || 'Estructuralista')}`}>
                 {professional.role || 'Estructuralista'}
@@ -172,7 +172,7 @@ export default function Professionals({
               <Button 
                 size="sm" 
                 variant="ghost" 
-                className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
+                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
                 onClick={() => handleRemoveProfessional(index)}
               >
                 <Trash2 className="h-3 w-3" />
@@ -193,7 +193,7 @@ export default function Professionals({
               <Building className="h-5 w-5" />
               Profesionales
             </CardTitle>
-            <p className="text-gray-600 text-sm mt-1">
+            <p className="text-muted-foreground text-sm mt-1">
               Arquitectos, ingenieros, directores de obra y constructores principales
             </p>
           </div>
@@ -201,7 +201,7 @@ export default function Professionals({
             <Button 
               onClick={() => setShowAddForm(true)} 
               size="sm"
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               <Plus className="h-4 w-4 mr-2" />
               Agregar
@@ -212,7 +212,7 @@ export default function Professionals({
       <CardContent className="space-y-4">
         {/* Formulario para agregar profesional */}
         {showAddForm && (
-          <Card className="border-blue-200 bg-blue-50">
+          <Card className="border-primary/20 bg-primary/10">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center justify-between">
                 <span>Agregar Profesional</span>
@@ -282,8 +282,8 @@ export default function Professionals({
             })}
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-500">
-            <Building className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+          <div className="text-center py-8 text-muted-foreground">
+            <Building className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
             <p className="text-sm">No hay profesionales principales asignados</p>
             {isEditing && (
               <Button 

@@ -29,8 +29,8 @@ export function DeadlineStatus({
   if (daysRemaining === undefined || daysRemaining === null) {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
-        <Clock className="h-4 w-4 text-gray-400" />
-        <span className="text-sm text-gray-500">
+        <Clock className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">
           {compact ? 'Pendiente' : 'Plazo pendiente de cálculo'}
         </span>
       </div>
@@ -65,7 +65,7 @@ export function DeadlineStatus({
           ? <CheckCircle className="h-4 w-4 text-green-500" />
           : <Clock className="h-4 w-4 text-yellow-500" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-400" />;
+        return <Clock className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -101,7 +101,7 @@ export function DeadlineStatus({
             {getIcon()}
             <div>
               <h4 className="font-medium text-sm">Plazo de Obra</h4>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 {constructionEndDate 
                   ? `Vence: ${new Date(constructionEndDate).toLocaleDateString('es-ES')}`
                   : 'Fecha de vencimiento pendiente'
@@ -122,7 +122,7 @@ export function DeadlineStatus({
               {formatTimeRemaining(daysRemaining)}
             </span>
             {totalDays > 0 && (
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-muted-foreground">
                 {Math.round(progressPercentage)}% transcurrido
               </span>
             )}
@@ -143,7 +143,7 @@ export function DeadlineStatus({
         </div>
 
         {statusInfo.urgencyLevel === 'high' && (
-          <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-md">
+          <div className="mt-3 p-2 bg-destructive/10 border border-destructive/30 rounded-md">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-red-500" />
               <span className="text-xs text-red-700 font-medium">
@@ -196,7 +196,7 @@ export function DeadlineList({ projects, onProjectClick }: DeadlineListProps) {
 
   if (projects.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-muted-foreground">
         <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
         <p>No hay proyectos con plazos activos</p>
       </div>
@@ -217,7 +217,7 @@ export function DeadlineList({ projects, onProjectClick }: DeadlineListProps) {
       {projects.map((project) => (
         <div
           key={project.id}
-          className={`flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors ${
+          className={`flex items-center justify-between p-3 border rounded-lg hover:bg-muted transition-colors ${
             onProjectClick ? 'cursor-pointer' : ''
           }`}
           onClick={() => onProjectClick?.(project.id)}
@@ -225,7 +225,7 @@ export function DeadlineList({ projects, onProjectClick }: DeadlineListProps) {
           <div className="flex-1 min-w-0">
             <h4 className="font-medium text-sm truncate">{project.name}</h4>
             {project.constructionEndDate && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Vence: {new Date(project.constructionEndDate).toLocaleDateString('es-ES')}
               </p>
             )}

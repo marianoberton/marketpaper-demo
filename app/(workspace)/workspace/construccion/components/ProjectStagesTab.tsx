@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { 
-  Upload, 
+import {
+  Upload,
   FileText,
   CheckCircle,
   Clock,
@@ -101,7 +101,9 @@ const projectPhases = [
     status: 'pending' as const,
     subStages: [
       { name: 'Conforme de obra', required: true, status: 'pending' as const, responsible: 'Director de Obra' },
-      { name: 'MH-SUBDIVISION', required: true, status: 'pending' as const, responsible: 'Gestor' }
+      { name: 'Conforme de obra - Plano', required: true, status: 'pending' as const, responsible: 'Arquitecto' },
+      { name: 'MH-SUBDIVISION', required: true, status: 'pending' as const, responsible: 'Gestor' },
+      { name: 'MH-SUBDIVISION - Plano', required: true, status: 'pending' as const, responsible: 'Arquitecto' }
     ]
   }
 ]
@@ -110,10 +112,10 @@ type StageStatus = 'pending' | 'in_progress' | 'completed' | 'rejected'
 
 const getStatusColor = (status: StageStatus) => {
   switch (status) {
-    case 'completed': return 'bg-green-100 text-green-800 border-green-200'
-    case 'in_progress': return 'bg-blue-100 text-blue-800 border-blue-200'
-    case 'rejected': return 'bg-red-100 text-red-800 border-red-200'
-    default: return 'bg-gray-100 text-gray-800 border-gray-200'
+    case 'completed': return 'bg-emerald-500/10 text-emerald-600 border-emerald-200 dark:border-emerald-500/30'
+    case 'in_progress': return 'bg-primary/10 text-primary border-primary/20'
+    case 'rejected': return 'bg-destructive/10 text-destructive border-destructive/30'
+    default: return 'bg-muted text-muted-foreground border-border'
   }
 }
 
@@ -137,15 +139,15 @@ const getStatusText = (status: StageStatus) => {
 
 const getPhaseStatusColor = (status: StageStatus) => {
   switch (status) {
-    case 'completed': return 'border-green-500 bg-green-50'
-    case 'in_progress': return 'border-blue-500 bg-blue-50'
-    case 'rejected': return 'border-red-500 bg-red-50'
-    default: return 'border-gray-300 bg-gray-50'
+    case 'completed': return 'border-emerald-500 bg-emerald-500/10'
+    case 'in_progress': return 'border-primary bg-primary/10'
+    case 'rejected': return 'border-destructive bg-destructive/10'
+    default: return 'border-border bg-muted/50'
   }
 }
 
-export default function ProjectStagesTab({ 
-  project, 
+export default function ProjectStagesTab({
+  project,
   verificationRequests,
   documents = [],
   uploadingTo,
@@ -182,36 +184,18 @@ export default function ProjectStagesTab({
   const [openPhases, setOpenPhases] = useState<string[]>(['gestoria']) // Gestoría abierta por defecto
 
   const togglePhase = (phaseId: string) => {
-    setOpenPhases(prev => 
-      prev.includes(phaseId) 
+    setOpenPhases(prev =>
+      prev.includes(phaseId)
         ? prev.filter(id => id !== phaseId)
         : [...prev, phaseId]
     )
   }
 
-  // Simular documentos cargados (en una implementación real, esto vendría de props o estado)
-  const mockDocuments: Record<string, Array<{ name: string; uploadDate: string; size: string }>> = {
-    'Consulta DGIUR': [
-      { name: 'consulta-dgiur-2024.pdf', uploadDate: '2024-01-15', size: '1.2 MB' }
-    ],
-    'Registro etapa de proyecto - Informe': [
-      { name: 'registro-informe-v1.pdf', uploadDate: '2024-02-01', size: '2.1 MB' }
-    ]
-  }
-
-  const getSubStageDocuments = (stageName: string) => {
-    return mockDocuments[stageName] || []
-  }
-
-  const hasDocuments = (stageName: string) => {
-    return getSubStageDocuments(stageName).length > 0
-  }
-
   return (
     <div className="space-y-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Etapas y Documentos</h2>
-        <p className="text-gray-600">
+        <h2 className="text-2xl font-bold text-foreground mb-2">Etapas y Documentos</h2>
+        <p className="text-muted-foreground">
           Gestiona las fases del proyecto y sus documentos asociados de forma contextual.
         </p>
       </div>
@@ -230,7 +214,7 @@ export default function ProjectStagesTab({
             <Upload className="h-5 w-5" />
             Carga de Documentación
           </CardTitle>
-          <p className="text-gray-600 text-sm">
+          <p className="text-muted-foreground text-sm">
             Pedidos de verificaciones organizadas por categorías
           </p>
         </CardHeader>

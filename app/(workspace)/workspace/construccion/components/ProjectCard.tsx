@@ -50,13 +50,13 @@ export function ProjectCard({ project, onSelectProject }: ProjectCardProps) {
       <CardContent className="p-4 flex-grow">
         <CardTitle className="text-lg mb-1">{project.name}</CardTitle>
         <CardDescription>{project.address}</CardDescription>
-        <div className="mt-4 text-sm text-gray-600 dark:text-gray-400 space-y-2">
+        <div className="mt-4 text-sm text-muted-foreground space-y-2">
             <p><strong>Superficie:</strong> {project.surface} m²</p>
             <p><strong>Arquitecto:</strong> {project.architect}</p>
             <p><strong>Constructora:</strong> {project.builder}</p>
         </div>
       </CardContent>
-      <CardFooter className="p-4 bg-gray-50 dark:bg-gray-800">
+      <CardFooter className="p-4 bg-muted/50">
         <Button className="w-full" onClick={() => onSelectProject(project.id)}>
           Ver Detalle
         </Button>

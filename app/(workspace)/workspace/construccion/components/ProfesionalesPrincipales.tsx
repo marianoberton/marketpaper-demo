@@ -119,7 +119,7 @@ export default function ProfesionalesPrincipales({
                     variant="outline"
                     size="sm"
                     onClick={() => removeProfesional(index)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
                   >
                     <X className="h-4 w-4" />
                   </Button>

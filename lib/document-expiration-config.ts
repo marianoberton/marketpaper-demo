@@ -108,6 +108,32 @@ export const DOCUMENT_EXPIRATION_CONFIG: DocumentExpirationConfig[] = [
     category: 'obra'
   },
 
+  // Documentos de finalización
+  {
+    sectionName: 'Conforme de obra',
+    expirationDays: 0, // Sin vencimiento
+    description: 'Conforme de obra - documentación final',
+    category: 'obra'
+  },
+  {
+    sectionName: 'Conforme de obra - Plano',
+    expirationDays: 0, // Sin vencimiento
+    description: 'Conforme de obra - plano final',
+    category: 'obra'
+  },
+  {
+    sectionName: 'MH-SUBDIVISION',
+    expirationDays: 0, // Sin vencimiento
+    description: 'MH-SUBDIVISION - documentación de subdivisión',
+    category: 'obra'
+  },
+  {
+    sectionName: 'MH-SUBDIVISION - Plano',
+    expirationDays: 0, // Sin vencimiento
+    description: 'MH-SUBDIVISION - plano de subdivisión',
+    category: 'obra'
+  },
+
   // Informes especiales
   {
     sectionName: 'Informe de dominio',

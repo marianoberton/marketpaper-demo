@@ -19,9 +19,9 @@ export default function EconomicSummaryCard({
   amount,
   description,
   icon = <DollarSign className="h-8 w-8" />,
-  borderColor = 'border-l-blue-500',
-  iconBgColor = 'bg-blue-100',
-  iconColor = 'text-blue-600',
+  borderColor = 'border-l-primary',
+  iconBgColor = 'bg-primary/10',
+  iconColor = 'text-primary',
   formatCurrency
 }: EconomicSummaryCardProps) {
   return (
@@ -29,11 +29,11 @@ export default function EconomicSummaryCard({
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-            <p className="text-3xl font-bold text-gray-900 mb-2">
+            <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
+            <p className="text-3xl font-bold text-foreground mb-2">
               {formatCurrency(amount)}
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               {description}
             </p>
           </div>

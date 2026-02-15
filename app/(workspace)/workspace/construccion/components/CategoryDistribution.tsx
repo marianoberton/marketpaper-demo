@@ -17,10 +17,10 @@ interface CategoryDistributionProps {
   formatCurrency: (amount: number) => string
 }
 
-export default function CategoryDistribution({ 
-  costBreakdown, 
-  totalGastos, 
-  formatCurrency 
+export default function CategoryDistribution({
+  costBreakdown,
+  totalGastos,
+  formatCurrency
 }: CategoryDistributionProps) {
   return (
     <Card className="shadow-sm">
@@ -42,31 +42,31 @@ export default function CategoryDistribution({
                   </div>
                   <div className="text-right">
                     <p className="font-semibold">{formatCurrency(item.amount)}</p>
-                    <p className="text-sm text-gray-500">{item.percentage.toFixed(1)}%</p>
+                    <p className="text-sm text-muted-foreground">{item.percentage.toFixed(1)}%</p>
                   </div>
                 </div>
                 {/* Barra de progreso visual */}
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div
                     className={`h-2 rounded-full ${item.color}`}
                     style={{ width: `${Math.min(item.percentage, 100)}%` }}
                   ></div>
                 </div>
               </div>
             ))}
-            
+
             {/* Resumen total */}
             <Separator className="my-4" />
-            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-              <span className="font-semibold text-blue-900">Total Pagado</span>
-              <span className="font-bold text-blue-900">{formatCurrency(totalGastos)}</span>
+            <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
+              <span className="font-semibold text-foreground">Total Pagado</span>
+              <span className="font-bold text-foreground">{formatCurrency(totalGastos)}</span>
             </div>
           </div>
         ) : (
           <div className="text-center py-8">
-            <Receipt className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-600 mb-2">No hay pagos registrados</p>
-            <p className="text-sm text-gray-500">Comienza registrando el primer pago del proyecto</p>
+            <Receipt className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground mb-2">No hay pagos registrados</p>
+            <p className="text-sm text-muted-foreground">Comienza registrando el primer pago del proyecto</p>
           </div>
         )}
       </CardContent>
