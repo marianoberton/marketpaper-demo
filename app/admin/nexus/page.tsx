@@ -194,16 +194,16 @@ export default function NexusDashboard() {
               </div>
             </Link>
 
-            <Link href="/admin/nexus/activity" className="block group">
+            <Link href="/admin/nexus/approvals" className="block group">
               <div className="flex items-center gap-3 p-4 rounded-lg border hover:bg-primary/5 hover:border-primary/30 transition-all cursor-pointer">
                 <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
                   <Activity className="h-5 w-5 text-primary" />
                 </div>
                 <div>
                   <p className="font-medium group-hover:text-primary transition-colors">
-                    Actividad
+                    Aprobaciones
                   </p>
-                  <p className="text-xs text-muted-foreground">Traces y logs</p>
+                  <p className="text-xs text-muted-foreground">Acciones pendientes</p>
                 </div>
               </div>
             </Link>
