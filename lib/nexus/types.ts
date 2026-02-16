@@ -156,3 +156,151 @@ export interface NexusListResponse<T> {
   data: T[]
   total: number
 }
+
+// ─── Agent Create/Update Payloads ─────────────────────────────────
+
+export interface CreateAgentPayload {
+  name: string
+  description?: string
+  promptConfig: {
+    identity: string
+    instructions: string
+    safety: string
+  }
+  toolAllowlist?: string[]
+  limits?: {
+    maxTurns?: number
+    maxTokensPerTurn?: number
+    budgetPerDayUsd?: number
+  }
+}
+
+export interface UpdateAgentPayload extends Partial<CreateAgentPayload> {}
+
+// ─── Memory ───────────────────────────────────────────────────────
+
+export interface MemoryEntry {
+  id: string
+  projectId: string
+  content: string
+  category?: string
+  importance: number
+  metadata?: Record<string, unknown>
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateMemoryPayload {
+  content: string
+  category?: string
+  importance?: number
+  metadata?: Record<string, unknown>
+}
+
+// ─── Contacts ─────────────────────────────────────────────────────
+
+export interface Contact {
+  id: string
+  projectId: string
+  name: string
+  email?: string
+  phone?: string
+  company?: string
+  tags: string[]
+  customFields?: Record<string, unknown>
+  lastContactAt?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateContactPayload {
+  name: string
+  email?: string
+  phone?: string
+  company?: string
+  tags?: string[]
+  customFields?: Record<string, unknown>
+}
+
+// ─── Templates ────────────────────────────────────────────────────
+
+export interface Template {
+  id: string
+  projectId: string
+  name: string
+  content: string
+  variables: string[]
+  usageCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateTemplatePayload {
+  name: string
+  content: string
+  variables?: string[]
+}
+
+// ─── Catalog ──────────────────────────────────────────────────────
+
+export interface CatalogItem {
+  id: string
+  projectId: string
+  sku: string
+  name: string
+  description?: string
+  price?: number
+  category?: string
+  stock?: number
+  metadata?: Record<string, unknown>
+  createdAt: string
+}
+
+// ─── Tools ────────────────────────────────────────────────────────
+
+export interface Tool {
+  id: string
+  name: string
+  description: string
+  schema: object
+  riskLevel: 'low' | 'medium' | 'high' | 'critical'
+  isBuiltin: boolean
+  projectsUsing: number
+}
+
+export interface RegisterToolPayload {
+  id: string
+  name: string
+  description: string
+  schema: object
+  handler?: string
+}
+
+// ─── Stats ────────────────────────────────────────────────────────
+
+export interface ProjectStats {
+  totalSessions: number
+  activeSessions: number
+  totalCost: number
+  costToday: number
+  costThisMonth: number
+  totalTokens: number
+  avgTokensPerSession: number
+  costByDay: Array<{ date: string; cost: number }>
+}
+
+export interface AgentStats {
+  totalSessions: number
+  avgSessionDuration: number
+  totalCost: number
+  totalTokens: number
+  successRate: number
+  toolUsage: Record<string, number>
+}
+
+// ─── Session Create ───────────────────────────────────────────────
+
+export interface CreateSessionPayload {
+  agentId?: string
+  metadata?: Record<string, unknown>
+}

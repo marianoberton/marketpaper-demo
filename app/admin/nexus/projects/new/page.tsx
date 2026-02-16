@@ -138,6 +138,7 @@ export default function NewProjectPage() {
   async function handleCreate() {
     setCreating(true)
     try {
+      // 1. Crear proyecto
       const project = await nexusApi.createProject({
         name: state.name,
         description: state.description || null,
@@ -158,9 +159,49 @@ export default function NewProjectPage() {
           maxConcurrentSessions: state.maxConcurrentSessions,
         },
       })
+
+      // 2. Crear y activar prompt layers
+      const promptLayers = []
+
+      if (state.identityPrompt.trim()) {
+        promptLayers.push(
+          nexusApi.createPromptLayer(project.id, {
+            layerType: 'identity',
+            content: state.identityPrompt,
+            createdBy: 'admin',
+            changeReason: 'Initial setup from wizard',
+          }).then(layer => nexusApi.activatePromptLayer(layer.id))
+        )
+      }
+
+      if (state.instructionsPrompt.trim()) {
+        promptLayers.push(
+          nexusApi.createPromptLayer(project.id, {
+            layerType: 'instructions',
+            content: state.instructionsPrompt,
+            createdBy: 'admin',
+            changeReason: 'Initial setup from wizard',
+          }).then(layer => nexusApi.activatePromptLayer(layer.id))
+        )
+      }
+
+      if (state.safetyPrompt.trim()) {
+        promptLayers.push(
+          nexusApi.createPromptLayer(project.id, {
+            layerType: 'safety',
+            content: state.safetyPrompt,
+            createdBy: 'admin',
+            changeReason: 'Initial setup from wizard',
+          }).then(layer => nexusApi.activatePromptLayer(layer.id))
+        )
+      }
+
+      await Promise.all(promptLayers)
+
       toast.success('Proyecto creado exitosamente')
       router.push(`/admin/nexus/projects/${project.id}`)
-    } catch {
+    } catch (error) {
+      console.error('Error creating project:', error)
       toast.error('Error al crear proyecto')
     } finally {
       setCreating(false)

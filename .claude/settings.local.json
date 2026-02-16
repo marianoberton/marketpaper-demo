@@ -10,7 +10,15 @@
       "Bash(find:*)",
       "Bash(xargs:*)",
       "Bash(npm run test:run:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(npm run build:*)",
+      "Bash(\"c:/Users/Mariano/Documents/plataforma/marketpaper-demo/docs/modulos/workspace/tareas.md\":*)",
+      "Bash(\"c:/Users/Mariano/Documents/plataforma/marketpaper-demo/docs/modulos/workspace/oportunidades.md\":*)",
+      "Bash(\"c:/Users/Mariano/Documents/plataforma/marketpaper-demo/docs/modulos/workspace/cotizador.md\":*)",
+      "Bash(\"c:/Users/Mariano/Documents/plataforma/marketpaper-demo/docs/modulos/workspace/settings.md\":*)",
+      "Bash(\"c:/Users/Mariano/Documents/plataforma/marketpaper-demo/docs/nexus-ai/chat-y-websocket.md\":*)",
+      "Bash(ls:*)",
+      "Bash(npm install:*)"
     ]
   }
 }

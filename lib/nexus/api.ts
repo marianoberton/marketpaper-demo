@@ -56,10 +56,21 @@ export const nexusApi = {
   listProjects: () => request<{ data: NexusProject[] }>('/projects'),
   getProject: (id: string) => request<NexusProject>(`/projects/${id}`),
   createProject: (data: Partial<NexusProject>) => request<NexusProject>('/projects', { method: 'POST', body: JSON.stringify(data) }),
+  updateProject: (id: string, data: Partial<NexusProject>) => request<NexusProject>(`/projects/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteProject: (id: string) => request<void>(`/projects/${id}`, { method: 'DELETE' }),
+  pauseProject: (id: string) => request<NexusProject>(`/projects/${id}/pause`, { method: 'POST', body: '{}' }),
+  resumeProject: (id: string) => request<NexusProject>(`/projects/${id}/resume`, { method: 'POST', body: '{}' }),
+  getProjectStats: (projectId: string) => request<any>(`/projects/${projectId}/stats`),
 
   // ─── Agents ───────────────────────────────────────────────────
   listAgents: (projectId: string) => request<{ data: NexusAgent[] }>(`/projects/${projectId}/agents`),
   getAgent: (projectId: string, agentId: string) => request<NexusAgent>(`/projects/${projectId}/agents/${agentId}`),
+  createAgent: (projectId: string, data: any) => request<NexusAgent>(`/projects/${projectId}/agents`, { method: 'POST', body: JSON.stringify(data) }),
+  updateAgent: (projectId: string, agentId: string, data: any) => request<NexusAgent>(`/projects/${projectId}/agents/${agentId}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  deleteAgent: (projectId: string, agentId: string) => request<void>(`/projects/${projectId}/agents/${agentId}`, { method: 'DELETE' }),
+  pauseAgent: (projectId: string, agentId: string) => request<NexusAgent>(`/projects/${projectId}/agents/${agentId}/pause`, { method: 'POST', body: '{}' }),
+  resumeAgent: (projectId: string, agentId: string) => request<NexusAgent>(`/projects/${projectId}/agents/${agentId}/resume`, { method: 'POST', body: '{}' }),
+  getAgentStats: (projectId: string, agentId: string) => request<any>(`/projects/${projectId}/agents/${agentId}/stats`),
 
   // ─── Approvals ────────────────────────────────────────────────
   listApprovals: (status?: string) => {
@@ -94,6 +105,104 @@ export const nexusApi = {
     request<{ sessionId: string; response: string }>(`/projects/${projectId}/agents/${agentId}/chat`, {
       method: 'POST',
       body: JSON.stringify({ message }),
+    }),
+
+  // ─── Sessions ─────────────────────────────────────────────────
+  listSessions: (projectId: string, params?: Record<string, string>) => {
+    const query = params ? `?${new URLSearchParams(params)}` : ''
+    return request<{ data: any[] }>(`/projects/${projectId}/sessions${query}`)
+  },
+  getSession: (projectId: string, id: string) => request<any>(`/projects/${projectId}/sessions/${id}`),
+  createSession: (projectId: string, data: any) => request<any>(`/projects/${projectId}/sessions`, { method: 'POST', body: JSON.stringify(data) }),
+  terminateSession: (projectId: string, id: string) => request<any>(`/projects/${projectId}/sessions/${id}/terminate`, { method: 'POST', body: '{}' }),
+  getSessionTraces: (projectId: string, sessionId: string, limit?: number) => {
+    const query = limit ? `?limit=${limit}` : ''
+    return request<{ data: any[] }>(`/projects/${projectId}/sessions/${sessionId}/traces${query}`)
+  },
+
+  // ─── Memory ───────────────────────────────────────────────────
+  listMemory: (projectId: string, params?: Record<string, string>) => {
+    const query = params ? `?${new URLSearchParams(params)}` : ''
+    return request<{ data: any[] }>(`/projects/${projectId}/memory${query}`)
+  },
+  getMemoryEntry: (projectId: string, id: string) => request<any>(`/projects/${projectId}/memory/${id}`),
+  searchMemory: (projectId: string, query: string, limit = 20) =>
+    request<{ data: any[] }>(`/projects/${projectId}/memory/search`, {
+      method: 'POST',
+      body: JSON.stringify({ query, limit }),
+    }),
+  createMemoryEntry: (projectId: string, data: any) =>
+    request<any>(`/projects/${projectId}/memory`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updateMemoryEntry: (projectId: string, id: string, data: any) =>
+    request<any>(`/projects/${projectId}/memory/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+  deleteMemoryEntry: (projectId: string, id: string) =>
+    request<void>(`/projects/${projectId}/memory/${id}`, {
+      method: 'DELETE',
+    }),
+
+  // ─── Contacts ─────────────────────────────────────────────────
+  listContacts: (projectId: string) => request<{ data: any[] }>(`/projects/${projectId}/contacts`),
+  getContact: (projectId: string, id: string) => request<any>(`/projects/${projectId}/contacts/${id}`),
+  createContact: (projectId: string, data: any) =>
+    request<any>(`/projects/${projectId}/contacts`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updateContact: (projectId: string, id: string, data: any) =>
+    request<any>(`/projects/${projectId}/contacts/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+  deleteContact: (projectId: string, id: string) =>
+    request<void>(`/projects/${projectId}/contacts/${id}`, {
+      method: 'DELETE',
+    }),
+
+  // ─── Templates ────────────────────────────────────────────────
+  listTemplates: (projectId: string) => request<{ data: any[] }>(`/projects/${projectId}/templates`),
+  getTemplate: (projectId: string, id: string) => request<any>(`/projects/${projectId}/templates/${id}`),
+  createTemplate: (projectId: string, data: any) =>
+    request<any>(`/projects/${projectId}/templates`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updateTemplate: (projectId: string, id: string, data: any) =>
+    request<any>(`/projects/${projectId}/templates/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+  deleteTemplate: (projectId: string, id: string) =>
+    request<void>(`/projects/${projectId}/templates/${id}`, {
+      method: 'DELETE',
+    }),
+
+  // ─── Catalog ──────────────────────────────────────────────────
+  listCatalogItems: (projectId: string, params?: Record<string, string>) => {
+    const query = params ? `?${new URLSearchParams(params)}` : ''
+    return request<{ data: any[] }>(`/projects/${projectId}/catalog${query}`)
+  },
+  searchCatalog: (projectId: string, query: string) =>
+    request<{ data: any[] }>(
+      `/projects/${projectId}/catalog/search?q=${encodeURIComponent(query)}`
+    ),
+  deleteCatalogItem: (projectId: string, id: string) =>
+    request<void>(`/projects/${projectId}/catalog/${id}`, {
+      method: 'DELETE',
+    }),
+
+  // ─── Tools ────────────────────────────────────────────────────
+  listTools: () => request<{ data: any[] }>('/tools'),
+  getTool: (toolId: string) => request<any>(`/tools/${toolId}`),
+  registerTool: (data: any) =>
+    request<any>('/tools', {
+      method: 'POST',
+      body: JSON.stringify(data),
     }),
 }
 

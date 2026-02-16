@@ -23,6 +23,13 @@ import {
   Settings,
   Play,
   Pause,
+  Activity,
+  Brain,
+  Users,
+  FileCode,
+  ShoppingBag,
+  FileIcon,
+  Webhook,
 } from 'lucide-react'
 import { nexusApi } from '@/lib/nexus/api'
 import type { NexusProject, NexusAgent } from '@/lib/nexus/types'
@@ -108,6 +115,54 @@ export default function ProjectDetailPage() {
       icon: CalendarClock,
       label: 'Tareas Programadas',
       description: 'Cron jobs y tareas recurrentes',
+    },
+    {
+      href: `/admin/nexus/projects/${projectId}/traces`,
+      icon: Activity,
+      label: 'Traces',
+      description: 'Historial de ejecuciones',
+    },
+    {
+      href: `/admin/nexus/projects/${projectId}/sessions`,
+      icon: MessageSquare,
+      label: 'Sesiones',
+      description: 'Conversaciones activas',
+    },
+    {
+      href: `/admin/nexus/projects/${projectId}/memory`,
+      icon: Brain,
+      label: 'Memoria',
+      description: 'Base de conocimiento vectorial',
+    },
+    {
+      href: `/admin/nexus/projects/${projectId}/contacts`,
+      icon: Users,
+      label: 'Contactos',
+      description: 'Contactos multi-canal',
+    },
+    {
+      href: `/admin/nexus/projects/${projectId}/templates`,
+      icon: FileCode,
+      label: 'Plantillas',
+      description: 'Templates con variables',
+    },
+    {
+      href: `/admin/nexus/projects/${projectId}/catalog`,
+      icon: ShoppingBag,
+      label: 'Catálogo',
+      description: 'Productos con búsqueda semántica',
+    },
+    {
+      href: `/admin/nexus/projects/${projectId}/files`,
+      icon: FileIcon,
+      label: 'Archivos',
+      description: 'Archivos del proyecto',
+    },
+    {
+      href: `/admin/nexus/projects/${projectId}/webhooks`,
+      icon: Webhook,
+      label: 'Webhooks',
+      description: 'Endpoints para integraciones',
     },
   ]
 
@@ -272,7 +327,7 @@ export default function ProjectDetailPage() {
       </Card>
 
       {/* Navigation Cards */}
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         {navItems.map((item) => (
           <Link key={item.href} href={item.href} className="block group">
             <Card className="hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer h-full">
