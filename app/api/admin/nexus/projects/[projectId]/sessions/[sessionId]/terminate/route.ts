@@ -3,10 +3,10 @@ import { getCurrentUser } from '@/lib/auth-server'
 
 const NEXUS_URL = process.env.NEXUS_API_URL || 'http://localhost:3002'
 
-// POST /api/admin/nexus/sessions/[sessionId]/terminate
+// POST /api/admin/nexus/projects/[projectId]/sessions/[sessionId]/terminate
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ sessionId: string }> }
+  { params }: { params: Promise<{ projectId: string; sessionId: string }> }
 ) {
   try {
     const user = await getCurrentUser()
@@ -14,9 +14,9 @@ export async function POST(
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
     }
 
-    const { sessionId } = await params
+    const { projectId, sessionId } = await params
 
-    const res = await fetch(`${NEXUS_URL}/api/v1/sessions/${sessionId}/terminate`, {
+    const res = await fetch(`${NEXUS_URL}/api/v1/projects/${projectId}/sessions/${sessionId}/terminate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: '{}',
@@ -30,7 +30,7 @@ export async function POST(
     const data = await res.json()
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Error in POST /api/admin/nexus/sessions/[sessionId]/terminate:', error)
+    console.error('Error in POST /api/admin/nexus/projects/[projectId]/sessions/[sessionId]/terminate:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

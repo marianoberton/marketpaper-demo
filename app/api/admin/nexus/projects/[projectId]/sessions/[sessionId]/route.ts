@@ -3,10 +3,10 @@ import { getCurrentUser } from '@/lib/auth-server'
 
 const NEXUS_URL = process.env.NEXUS_API_URL || 'http://localhost:3002'
 
-// GET /api/admin/nexus/sessions/[sessionId]
+// GET /api/admin/nexus/projects/[projectId]/sessions/[sessionId]
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ sessionId: string }> }
+  { params }: { params: Promise<{ projectId: string; sessionId: string }> }
 ) {
   try {
     const user = await getCurrentUser()
@@ -14,9 +14,9 @@ export async function GET(
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
     }
 
-    const { sessionId } = await params
+    const { projectId, sessionId } = await params
 
-    const res = await fetch(`${NEXUS_URL}/api/v1/sessions/${sessionId}`, {
+    const res = await fetch(`${NEXUS_URL}/api/v1/projects/${projectId}/sessions/${sessionId}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     })
@@ -29,7 +29,7 @@ export async function GET(
     const data = await res.json()
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Error in GET /api/admin/nexus/sessions/[sessionId]:', error)
+    console.error('Error in GET /api/admin/nexus/projects/[projectId]/sessions/[sessionId]:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -11,7 +11,9 @@ import type {
 
 // ─── Config ───────────────────────────────────────────────────────
 
-const NEXUS_URL = process.env.NEXT_PUBLIC_NEXUS_API_URL || 'http://localhost:3002'
+// Use Next.js API proxy routes instead of calling fomo-core directly
+// This works in both dev and production, and adds auth validation
+const NEXUS_URL = '/api/admin/nexus'
 
 class NexusApiError extends Error {
   constructor(
@@ -26,7 +28,7 @@ class NexusApiError extends Error {
 // ─── Base Request ─────────────────────────────────────────────────
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${NEXUS_URL}/api/v1${path}`, {
+  const res = await fetch(`${NEXUS_URL}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
