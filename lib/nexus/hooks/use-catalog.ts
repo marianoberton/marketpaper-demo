@@ -13,7 +13,7 @@ export function useCatalog(projectId: string, filters?: Record<string, string>, 
     queryKey: [...catalogKeys.list(projectId), filters],
     queryFn: async () => {
       const result = await nexusApi.listCatalogItems(projectId, filters)
-      return result.data
+      return result.items || result.data || []
     },
     enabled: !!projectId && enabled,
   })

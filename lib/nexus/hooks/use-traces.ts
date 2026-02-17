@@ -12,7 +12,7 @@ export function useTraces(projectId: string, enabled = true) {
     queryKey: traceKeys.list(projectId),
     queryFn: async () => {
       const result = await nexusApi.listTraces(projectId)
-      return result.data
+      return result.items || result.data || []
     },
     enabled: !!projectId && enabled,
   })

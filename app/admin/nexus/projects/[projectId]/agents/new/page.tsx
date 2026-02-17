@@ -14,22 +14,19 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { ArrowLeft, CheckCircle2 } from 'lucide-react'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import { Badge } from '@/components/ui/badge'
+import { ArrowLeft, CheckCircle2, ChevronDown, Loader2 } from 'lucide-react'
 import { useCreateAgent } from '@/lib/nexus/hooks/use-agents'
+import { useProject } from '@/lib/nexus/hooks/use-projects'
+import { useIntegrations } from '@/lib/nexus/hooks/use-integrations'
+import { ChannelSelector } from '@/components/nexus/channel-selector'
+import { AVAILABLE_TOOLS } from '@/lib/nexus/constants'
 import { toast } from 'sonner'
-
-// ─── Available Tools ──────────────────────────────────────────────
-
-const AVAILABLE_TOOLS = [
-  { id: 'calculator', label: 'Calculator', description: 'Operaciones matemáticas' },
-  { id: 'date-time', label: 'Date/Time', description: 'Fecha y hora actual' },
-  { id: 'send-notification', label: 'Notificaciones', description: 'Enviar notificaciones' },
-  { id: 'catalog-search', label: 'Catálogo', description: 'Buscar en catálogo de productos' },
-  { id: 'http-request', label: 'HTTP Request', description: 'Llamadas HTTP externas' },
-  { id: 'propose-scheduled-task', label: 'Proponer Tarea', description: 'Proponer tareas programadas' },
-]
-
-// ─── Component ────────────────────────────────────────────────────
 
 export default function NewAgentPage() {
   const router = useRouter()
@@ -37,15 +34,19 @@ export default function NewAgentPage() {
   const projectId = params.projectId as string
 
   const createAgent = useCreateAgent(projectId)
+  const { data: project } = useProject(projectId)
+  const { data: integrations } = useIntegrations(projectId)
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [selectedChannels, setSelectedChannels] = useState<string[]>([])
   const [identityPrompt, setIdentityPrompt] = useState('')
   const [instructionsPrompt, setInstructionsPrompt] = useState('')
   const [safetyPrompt, setSafetyPrompt] = useState('')
   const [selectedTools, setSelectedTools] = useState<string[]>(['calculator', 'date-time'])
   const [maxTurns, setMaxTurns] = useState(20)
   const [budgetPerDay, setBudgetPerDay] = useState(5)
+  const [limitsOpen, setLimitsOpen] = useState(false)
 
   function toggleTool(toolId: string) {
     if (selectedTools.includes(toolId)) {
@@ -53,6 +54,29 @@ export default function NewAgentPage() {
     } else {
       setSelectedTools([...selectedTools, toolId])
     }
+  }
+
+  // Get available channels from project integrations
+  const availableChannels = integrations
+    ? [...new Set(integrations.map((i) => i.provider))]
+    : undefined
+
+  // Group tools by category
+  type ToolItem = (typeof AVAILABLE_TOOLS)[number]
+  const toolsByCategory = AVAILABLE_TOOLS.reduce<Record<string, ToolItem[]>>((acc, tool) => {
+    const cat = tool.category
+    if (!acc[cat]) acc[cat] = []
+    acc[cat].push(tool)
+    return acc
+  }, {})
+
+  const categoryLabels: Record<string, string> = {
+    utility: 'Utilidades',
+    integration: 'Integración',
+    memory: 'Memoria',
+    communication: 'Comunicación',
+    data: 'Datos',
+    scheduling: 'Programación',
   }
 
   async function handleCreate() {
@@ -67,7 +91,7 @@ export default function NewAgentPage() {
     }
 
     try {
-      const agent = await createAgent.mutateAsync({
+      await createAgent.mutateAsync({
         name: name.trim(),
         description: description.trim() || undefined,
         promptConfig: {
@@ -76,6 +100,9 @@ export default function NewAgentPage() {
           safety: safetyPrompt.trim(),
         },
         toolAllowlist: selectedTools,
+        channelConfig: selectedChannels.length > 0
+          ? { allowedChannels: selectedChannels, defaultChannel: selectedChannels[0] }
+          : undefined,
         limits: {
           maxTurns,
           budgetPerDayUsd: budgetPerDay,
@@ -83,7 +110,7 @@ export default function NewAgentPage() {
       })
 
       toast.success('Agente creado exitosamente')
-      router.push(`/admin/nexus/projects/${projectId}/agents`)
+      router.push(`/admin/nexus/projects/${projectId}?tab=agentes`)
     } catch (error) {
       console.error('Error creating agent:', error)
       toast.error('Error al crear agente')
@@ -91,10 +118,10 @@ export default function NewAgentPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href={`/admin/nexus/projects/${projectId}/agents`}>
+        <Link href={`/admin/nexus/projects/${projectId}?tab=agentes`}>
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
@@ -111,13 +138,11 @@ export default function NewAgentPage() {
       <Card>
         <CardHeader>
           <CardTitle>Información Básica</CardTitle>
-          <CardDescription>Nombre y descripción del agente</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Nombre del Agente *</Label>
+            <Label>Nombre del Agente *</Label>
             <Input
-              id="name"
               placeholder="ej. Asistente de Ventas"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -125,9 +150,8 @@ export default function NewAgentPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Descripción</Label>
+            <Label>Rol / Descripción</Label>
             <Textarea
-              id="description"
               placeholder="Descripción del agente..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -137,17 +161,35 @@ export default function NewAgentPage() {
         </CardContent>
       </Card>
 
-      {/* Prompt Config */}
+      {/* Channels */}
       <Card>
         <CardHeader>
-          <CardTitle>Configuración de Prompts</CardTitle>
-          <CardDescription>Define la identidad, instrucciones y límites de seguridad</CardDescription>
+          <CardTitle>Canales de Despliegue</CardTitle>
+          <CardDescription>
+            Seleccioná dónde va a estar disponible este agente
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ChannelSelector
+            selectedChannels={selectedChannels}
+            onChange={setSelectedChannels}
+            availableChannels={availableChannels}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Identity & Behavior */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Identidad y Comportamiento</CardTitle>
+          <CardDescription>
+            Define quién es, qué hace y qué no debe hacer
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="identity">Identidad (quién es) *</Label>
+            <Label>Identidad (quién es) *</Label>
             <Textarea
-              id="identity"
               placeholder="Sos un asistente virtual especializado en..."
               value={identityPrompt}
               onChange={(e) => setIdentityPrompt(e.target.value)}
@@ -156,24 +198,25 @@ export default function NewAgentPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="instructions">Instrucciones (qué debe hacer)</Label>
+            <Label>Instrucciones (qué debe hacer)</Label>
             <Textarea
-              id="instructions"
               placeholder="1. Cuando el usuario pregunte por...\n2. Si solicita..."
               value={instructionsPrompt}
               onChange={(e) => setInstructionsPrompt(e.target.value)}
-              rows={6}
+              rows={5}
             />
+            <p className="text-xs text-muted-foreground">
+              Podés completar las instrucciones más tarde
+            </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="safety">Seguridad (qué NO debe hacer)</Label>
+            <Label>Seguridad (qué NO debe hacer)</Label>
             <Textarea
-              id="safety"
               placeholder="Nunca proporciones información confidencial.\nNo compartas datos de otros usuarios."
               value={safetyPrompt}
               onChange={(e) => setSafetyPrompt(e.target.value)}
-              rows={4}
+              rows={3}
             />
           </div>
         </CardContent>
@@ -182,84 +225,133 @@ export default function NewAgentPage() {
       {/* Tools */}
       <Card>
         <CardHeader>
-          <CardTitle>Herramientas Disponibles</CardTitle>
-          <CardDescription>Seleccioná las herramientas que el agente puede usar</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-3 md:grid-cols-2">
-            {AVAILABLE_TOOLS.map((tool) => {
-              const selected = selectedTools.includes(tool.id)
-              return (
-                <button
-                  key={tool.id}
-                  className={`text-left p-4 rounded-lg border-2 transition-all ${
-                    selected
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-muted-foreground/30'
-                  }`}
-                  onClick={() => toggleTool(tool.id)}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium font-mono text-sm">{tool.id}</span>
-                    {selected && <CheckCircle2 className="h-4 w-4 text-primary" />}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {tool.description}
-                  </p>
-                </button>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Limits */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Límites</CardTitle>
-          <CardDescription>Configurá los límites de uso y costo</CardDescription>
+          <CardTitle>Herramientas</CardTitle>
+          <CardDescription>
+            Herramientas que el agente puede usar
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="maxTurns">Max Turns por Sesión</Label>
-              <Input
-                id="maxTurns"
-                type="number"
-                min={1}
-                max={100}
-                value={maxTurns}
-                onChange={(e) => setMaxTurns(parseInt(e.target.value) || 20)}
-              />
+          {Object.entries(toolsByCategory).map(([category, tools]) => (
+            <div key={category} className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                {categoryLabels[category] || category}
+              </p>
+              <div className="grid gap-2 md:grid-cols-2">
+                {tools.map((tool) => {
+                  const selected = selectedTools.includes(tool.id)
+                  return (
+                    <button
+                      key={tool.id}
+                      type="button"
+                      className={`text-left p-3 rounded-lg border-2 transition-all ${
+                        selected
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:border-muted-foreground/30'
+                      }`}
+                      onClick={() => toggleTool(tool.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">{tool.label}</span>
+                        {selected && <CheckCircle2 className="h-4 w-4 text-primary" />}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {tool.description}
+                      </p>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
+          ))}
 
+          {project?.config?.mcpServers && project.config.mcpServers.length > 0 && (
             <div className="space-y-2">
-              <Label htmlFor="budget">Presupuesto Diario (USD)</Label>
-              <Input
-                id="budget"
-                type="number"
-                min={0}
-                step={0.5}
-                value={budgetPerDay}
-                onChange={(e) => setBudgetPerDay(parseFloat(e.target.value) || 0)}
-              />
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                MCP Servers
+              </p>
+              <div className="space-y-2">
+                {project.config.mcpServers.map((mcp) => (
+                  <div
+                    key={mcp.name}
+                    className="p-3 rounded-lg border bg-muted/50"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="font-mono text-xs">
+                        {mcp.name}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {mcp.transport}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Las herramientas de este MCP estarán disponibles automáticamente
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
+      {/* Limits (Collapsible) */}
+      <Collapsible open={limitsOpen} onOpenChange={setLimitsOpen}>
+        <Card>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Límites</CardTitle>
+                  <CardDescription>Turns y presupuesto diario</CardDescription>
+                </div>
+                <ChevronDown
+                  className={`h-5 w-5 text-muted-foreground transition-transform ${
+                    limitsOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </div>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Max Turns por Sesión</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={maxTurns}
+                    onChange={(e) => setMaxTurns(parseInt(e.target.value) || 20)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Presupuesto Diario (USD)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    value={budgetPerDay}
+                    onChange={(e) => setBudgetPerDay(parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
       {/* Actions */}
-      <div className="flex justify-between">
-        <Link href={`/admin/nexus/projects/${projectId}/agents`}>
+      <div className="flex justify-end gap-3">
+        <Link href={`/admin/nexus/projects/${projectId}?tab=agentes`}>
           <Button variant="outline">Cancelar</Button>
         </Link>
-
         <Button
-          onClick={handleCreate}
+          onClick={() => void handleCreate()}
           disabled={createAgent.isPending || !name.trim() || !identityPrompt.trim()}
         >
-          {createAgent.isPending ? 'Creando...' : 'Crear Agente'}
-          <CheckCircle2 className="ml-2 h-4 w-4" />
+          {createAgent.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Crear Agente
         </Button>
       </div>
     </div>

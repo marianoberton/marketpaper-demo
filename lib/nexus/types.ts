@@ -1,9 +1,20 @@
 // ─── Nexus Core API Types ─────────────────────────────────────────
 
+export interface PaginatedResponse<T> {
+  items: T[]
+  data?: T[]
+  total: number
+  limit: number
+  offset: number
+}
+
 export interface NexusProject {
   id: string
   name: string
   description: string | null
+  environment?: 'development' | 'staging' | 'production'
+  owner: string
+  tags?: string[]
   status: 'active' | 'paused' | 'archived'
   config: NexusProjectConfig
   createdAt: string
@@ -168,6 +179,10 @@ export interface CreateAgentPayload {
     safety: string
   }
   toolAllowlist?: string[]
+  channelConfig?: {
+    allowedChannels: string[]
+    defaultChannel?: string
+  }
   limits?: {
     maxTurns?: number
     maxTokensPerTurn?: number
@@ -303,4 +318,53 @@ export interface AgentStats {
 export interface CreateSessionPayload {
   agentId?: string
   metadata?: Record<string, unknown>
+}
+
+// ─── Channel Integrations ────────────────────────────────────────
+
+export interface ChannelIntegration {
+  id: string
+  projectId: string
+  provider: 'chatwoot' | 'telegram' | 'whatsapp' | 'slack'
+  config: Record<string, unknown>
+  status: 'active' | 'paused'
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateIntegrationPayload {
+  provider: string
+  config: Record<string, unknown>
+}
+
+// ─── Secrets ─────────────────────────────────────────────────────
+
+export interface SecretMetadata {
+  id: string
+  projectId: string
+  key: string
+  description?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CreateSecretPayload {
+  key: string
+  value: string
+  description?: string
+}
+
+// ─── Tool Catalog ────────────────────────────────────────────────
+
+export interface ToolCatalogEntry {
+  id: string
+  name: string
+  description: string
+  category: string
+  riskLevel: 'low' | 'medium' | 'high' | 'critical'
+  requiresApproval: boolean
+  sideEffects: boolean
+  supportsDryRun: boolean
+  inputSchema?: Record<string, unknown>
+  outputSchema?: Record<string, unknown>
 }

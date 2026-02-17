@@ -20,7 +20,7 @@ export function useProjects() {
     queryKey: projectKeys.lists(),
     queryFn: async () => {
       const result = await nexusApi.listProjects()
-      return result.data
+      return result.items || result.data || []
     },
   })
 }

@@ -41,7 +41,7 @@ export default function TasksPage() {
   useEffect(() => {
     nexusApi
       .listScheduledTasks(projectId)
-      .then((res) => setTasks(res.data))
+      .then((res) => setTasks(res.items || res.data || []))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [projectId])

@@ -15,7 +15,7 @@ export function useTemplates(projectId: string, enabled = true) {
     queryKey: templateKeys.list(projectId),
     queryFn: async () => {
       const result = await nexusApi.listTemplates(projectId)
-      return result.data
+      return result.items || result.data || []
     },
     enabled: !!projectId && enabled,
   })

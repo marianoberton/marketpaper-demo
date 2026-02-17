@@ -30,8 +30,9 @@ export async function POST(
       return NextResponse.json({ error: error.message }, { status: res.status })
     }
 
-    const data = await res.json()
-    return NextResponse.json(data)
+    const response = await res.json()
+    // Unwrap the fomo-core response format { success: true, data: {...} }
+    return NextResponse.json(response.data || response)
   } catch (error) {
     console.error('Error in POST /api/admin/nexus/approvals/[id]/resolve:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

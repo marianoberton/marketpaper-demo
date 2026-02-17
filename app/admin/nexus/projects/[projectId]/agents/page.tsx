@@ -40,6 +40,9 @@ import {
   Pause,
   Play,
   Plus,
+  Send,
+  Hash,
+  Globe,
 } from 'lucide-react'
 import { useAgents, useDeleteAgent, usePauseAgent, useResumeAgent } from '@/lib/nexus/hooks/use-agents'
 import type { NexusAgent } from '@/lib/nexus/types'
@@ -97,7 +100,7 @@ export default function AgentsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link href={`/admin/nexus/projects/${projectId}`}>
+          <Link href={`/admin/nexus/projects/${projectId}?tab=agentes`}>
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -278,12 +281,19 @@ function AgentCard({ agent, projectId, onDelete, onPause, onResume }: AgentCardP
               <span>{agent.config.toolAllowlist.length} tools</span>
             </div>
           )}
-          {agent.config?.channelConfig?.channels && (
-            <div className="flex items-center gap-2">
+          {agent.config?.channelConfig?.channels && agent.config.channelConfig.channels.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
               <Plug2 className="h-3 w-3" />
-              <span>
-                Canales: {agent.config.channelConfig.channels.join(', ')}
-              </span>
+              {agent.config.channelConfig.channels.map((ch: string) => {
+                const icons: Record<string, React.ElementType> = { whatsapp: MessageSquare, telegram: Send, slack: Hash, chatwoot: Globe }
+                const Icon = icons[ch] || Plug2
+                return (
+                  <Badge key={ch} variant="outline" className="text-[10px] gap-1 py-0 px-1.5">
+                    <Icon className="h-2.5 w-2.5" />
+                    {ch}
+                  </Badge>
+                )
+              })}
             </div>
           )}
         </div>

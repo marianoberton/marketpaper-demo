@@ -27,8 +27,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const data = await res.json()
-    return NextResponse.json(data)
+    const response = await res.json()
+    // Unwrap the fomo-core response format { success: true, data: {...} }
+    return NextResponse.json(response.data || response)
   } catch (error) {
     console.error('Error in /api/admin/nexus/stats:', error)
     return NextResponse.json(

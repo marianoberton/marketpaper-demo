@@ -31,7 +31,7 @@ export default function ProjectsPage() {
   useEffect(() => {
     nexusApi
       .listProjects()
-      .then((res) => setProjects(res.data))
+      .then((res) => setProjects(res.items || res.data || []))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])

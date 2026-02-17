@@ -15,7 +15,7 @@ export function useContacts(projectId: string, enabled = true) {
     queryKey: contactKeys.list(projectId),
     queryFn: async () => {
       const result = await nexusApi.listContacts(projectId)
-      return result.data
+      return result.items || result.data || []
     },
     enabled: !!projectId && enabled,
   })

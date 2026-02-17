@@ -21,8 +21,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: res.status })
     }
 
-    const data = await res.json()
-    return NextResponse.json(data)
+    const response = await res.json()
+    // Unwrap the fomo-core response format { success: true, data: {...} }
+    return NextResponse.json(response.data || response)
   } catch (error) {
     console.error('Error in GET /api/admin/nexus/projects:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
@@ -46,12 +47,24 @@ export async function POST(request: NextRequest) {
     })
 
     if (!res.ok) {
-      const error = await res.json().catch(() => ({ message: 'Nexus server error' }))
-      return NextResponse.json({ error: error.message }, { status: res.status })
+      const errorText = await res.text()
+      console.error('Fomo-core POST /projects error:', {
+        status: res.status,
+        statusText: res.statusText,
+        body: errorText,
+        sentBody: body,
+      })
+      try {
+        const error = JSON.parse(errorText)
+        return NextResponse.json({ error: error.message || error.error }, { status: res.status })
+      } catch {
+        return NextResponse.json({ error: errorText || 'Nexus server error' }, { status: res.status })
+      }
     }
 
-    const data = await res.json()
-    return NextResponse.json(data)
+    const response = await res.json()
+    // Unwrap the fomo-core response format { success: true, data: {...} }
+    return NextResponse.json(response.data || response)
   } catch (error) {
     console.error('Error in POST /api/admin/nexus/projects:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

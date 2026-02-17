@@ -41,11 +41,11 @@ export default function CostsPage() {
   useEffect(() => {
     Promise.all([
       nexusApi.getProject(projectId),
-      nexusApi.getUsage(projectId).catch(() => ({ data: [] })),
+      nexusApi.getUsage(projectId).catch(() => ({ items: [], data: [] })),
     ])
       .then(([proj, usageRes]) => {
         setProject(proj)
-        setUsage(usageRes.data)
+        setUsage(usageRes.items || usageRes.data || [])
       })
       .catch(() => {})
       .finally(() => setLoading(false))

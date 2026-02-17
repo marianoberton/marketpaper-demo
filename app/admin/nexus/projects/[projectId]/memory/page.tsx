@@ -84,7 +84,7 @@ export default function MemoryPage() {
     setIsSearching(true)
     try {
       const result = await searchMemory.mutateAsync({ query: searchQuery, limit: 20 })
-      setSearchResults(result.data)
+      setSearchResults(result.items || result.data || [])
     } catch {
       toast.error('Error en búsqueda semántica')
     } finally {

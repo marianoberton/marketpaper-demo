@@ -62,11 +62,12 @@ export default function PromptsPage() {
     nexusApi
       .listPromptLayers(projectId)
       .then((res) => {
-        setLayers(res.data)
+        const data = res.items || res.data || []
+        setLayers(data)
         // Initialize edit content with active layers
         const content: Record<string, string> = {}
         for (const type of LAYER_TYPES) {
-          const active = res.data.find((l) => l.layerType === type.key && l.isActive)
+          const active = data.find((l) => l.layerType === type.key && l.isActive)
           content[type.key] = active?.content || ''
         }
         setEditContent(content)
@@ -96,7 +97,7 @@ export default function PromptsPage() {
       setChangeReason('')
       // Reload
       const res = await nexusApi.listPromptLayers(projectId)
-      setLayers(res.data)
+      setLayers(res.items || res.data || [])
     } catch {
       toast.error('Error al guardar')
     } finally {

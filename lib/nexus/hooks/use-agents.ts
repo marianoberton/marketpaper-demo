@@ -20,7 +20,7 @@ export function useAgents(projectId: string, enabled = true) {
     queryKey: agentKeys.list(projectId),
     queryFn: async () => {
       const result = await nexusApi.listAgents(projectId)
-      return result.data
+      return result.items || result.data || []
     },
     enabled: !!projectId && enabled,
   })

@@ -26,8 +26,9 @@ export async function GET(
       return NextResponse.json({ error: error.message }, { status: res.status })
     }
 
-    const data = await res.json()
-    return NextResponse.json(data)
+    const response = await res.json()
+    // Unwrap the fomo-core response format { success: true, data: {...} }
+    return NextResponse.json(response.data || response)
   } catch (error) {
     console.error('Error in GET /api/admin/nexus/projects/[projectId]/sessions/[sessionId]:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

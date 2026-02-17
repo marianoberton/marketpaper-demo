@@ -15,7 +15,7 @@ export function useSessions(projectId: string, filters?: Record<string, string>,
     queryKey: [...sessionKeys.list(projectId), filters],
     queryFn: async () => {
       const result = await nexusApi.listSessions(projectId, filters)
-      return result.data
+      return result.items || result.data || []
     },
     enabled: !!projectId && enabled,
   })
@@ -34,7 +34,7 @@ export function useSessionTraces(projectId: string, sessionId: string, limit?: n
     queryKey: sessionKeys.traces(sessionId),
     queryFn: async () => {
       const result = await nexusApi.getSessionTraces(projectId, sessionId, limit)
-      return result.data
+      return result.items || result.data || []
     },
     enabled: !!projectId && !!sessionId && enabled,
   })

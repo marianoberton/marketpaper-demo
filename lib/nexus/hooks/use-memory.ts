@@ -16,7 +16,7 @@ export function useMemory(projectId: string, filters?: Record<string, string>, e
     queryKey: [...memoryKeys.list(projectId), filters],
     queryFn: async () => {
       const result = await nexusApi.listMemory(projectId, filters)
-      return result.data
+      return result.items || result.data || []
     },
     enabled: !!projectId && enabled,
   })

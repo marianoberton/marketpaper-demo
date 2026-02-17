@@ -28,7 +28,7 @@ export default function ApprovalsPage() {
   useEffect(() => {
     nexusApi
       .listApprovals('pending')
-      .then((res) => setApprovals(res.data))
+      .then((res) => setApprovals(res.items || (res as any).data || []))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])

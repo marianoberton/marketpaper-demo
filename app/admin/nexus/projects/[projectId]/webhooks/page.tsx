@@ -74,8 +74,8 @@ export default function WebhooksPage() {
 
   useEffect(() => {
     nexusApi
-      .get<{ data: ProjectWebhook[] }>(`/projects/${projectId}/webhooks`)
-      .then((res) => setWebhooks(res.data))
+      .get<{ items?: ProjectWebhook[]; data?: ProjectWebhook[] }>(`/projects/${projectId}/webhooks`)
+      .then((res) => setWebhooks(res.items || res.data || []))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [projectId])

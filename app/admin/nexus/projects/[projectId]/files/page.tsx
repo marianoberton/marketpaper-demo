@@ -64,8 +64,8 @@ export default function FilesPage() {
 
   useEffect(() => {
     nexusApi
-      .get<{ data: ProjectFile[] }>(`/projects/${projectId}/files`)
-      .then((res) => setFiles(res.data))
+      .get<{ items?: ProjectFile[]; data?: ProjectFile[] }>(`/projects/${projectId}/files`)
+      .then((res) => setFiles(res.items || res.data || []))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [projectId])

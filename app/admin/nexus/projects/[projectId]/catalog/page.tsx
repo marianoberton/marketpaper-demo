@@ -56,7 +56,7 @@ export default function CatalogPage() {
     setIsSearching(true)
     try {
       const result = await searchCatalog.mutateAsync(searchQuery)
-      setSearchResults(result.data)
+      setSearchResults(result.items || result.data || [])
     } catch {
       toast.error('Error en búsqueda')
     } finally {

@@ -41,10 +41,10 @@ export default function NexusDashboard() {
         ])
 
         if (projectsRes.status === 'fulfilled') {
-          setProjects(projectsRes.value.data)
+          setProjects(projectsRes.value.items || projectsRes.value.data || [])
         }
         if (approvalsRes.status === 'fulfilled') {
-          setApprovals(approvalsRes.value.data)
+          setApprovals(approvalsRes.value.items || approvalsRes.value.data || [])
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to connect to Nexus Core')
