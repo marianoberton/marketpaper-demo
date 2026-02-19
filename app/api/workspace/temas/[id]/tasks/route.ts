@@ -68,14 +68,16 @@ export async function POST(
     }
 
     const body = await request.json()
-    const { 
-      title, 
-      description, 
-      assigned_to, 
+    const {
+      title,
+      description,
+      assigned_to,
       due_date,
       depends_on,
       is_sequential,
-      sort_order
+      sort_order,
+      task_type,
+      checklist
     } = body
 
     if (!title?.trim()) {
@@ -99,19 +101,23 @@ export async function POST(
       finalSortOrder = (lastTask?.sort_order || 0) + 1
     }
 
+    const insertData: Record<string, any> = {
+      tema_id: temaId,
+      title: title.trim(),
+      description: description?.trim() || null,
+      assigned_to: assigned_to || null,
+      due_date: due_date || null,
+      depends_on: depends_on || [],
+      is_sequential: is_sequential !== false,
+      sort_order: finalSortOrder,
+      created_by: user.id
+    }
+    if (task_type) insertData.task_type = task_type
+    if (checklist) insertData.checklist = checklist
+
     const { data: task, error: createError } = await supabase
       .from('tema_tasks')
-      .insert({
-        tema_id: temaId,
-        title: title.trim(),
-        description: description?.trim() || null,
-        assigned_to: assigned_to || null,
-        due_date: due_date || null,
-        depends_on: depends_on || [],
-        is_sequential: is_sequential !== false,
-        sort_order: finalSortOrder,
-        created_by: user.id
-      })
+      .insert(insertData)
       .select(`
         *,
         assigned_user:user_profiles!tema_tasks_assigned_to_fkey(id, full_name, email, avatar_url)

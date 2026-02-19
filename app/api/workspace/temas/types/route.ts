@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!['admin', 'owner', 'super_admin'].includes(profile?.role || '')) {
+    if (!['company_admin', 'company_owner', 'super_admin', 'manager'].includes(profile?.role || '')) {
       return NextResponse.json(
         { success: false, error: 'Sin permisos para crear tipos' },
         { status: 403 }
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, description, color, icon } = body
+    const { name, description, color, icon, tareas_template, campos_custom_schema, categoria, gerencia } = body
 
     if (!name?.trim()) {
       return NextResponse.json(
@@ -97,15 +97,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const insertData: Record<string, any> = {
+      company_id: profile.company_id,
+      name: name.trim(),
+      description: description?.trim() || null,
+      color: color || '#6B7280',
+      icon: icon || 'folder'
+    }
+    if (tareas_template) insertData.tareas_template = tareas_template
+    if (campos_custom_schema) insertData.campos_custom_schema = campos_custom_schema
+    if (categoria) insertData.categoria = categoria.trim()
+    if (gerencia) insertData.gerencia = gerencia
+
     const { data: type, error: createError } = await supabase
       .from('tema_types')
-      .insert({
-        company_id: profile.company_id,
-        name: name.trim(),
-        description: description?.trim() || null,
-        color: color || '#6B7280',
-        icon: icon || 'folder'
-      })
+      .insert(insertData)
       .select()
       .single()
 

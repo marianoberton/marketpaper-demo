@@ -5,8 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import {
     Card,
     CardContent,
-    CardHeader,
-    CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -19,14 +17,22 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import {
     CheckCircle2,
     Clock,
     ListTodo,
     RefreshCw,
     Calendar,
-    ArrowRight,
     CircleDot,
-    AlertTriangle
+    AlertTriangle,
+    ChevronDown,
+    ChevronRight,
+    FolderOpen,
+    UserCheck,
 } from 'lucide-react'
 
 interface Task {
@@ -34,6 +40,7 @@ interface Task {
     title: string
     description: string | null
     status: string
+    task_type: string | null
     due_date: string | null
     sort_order: number
     created_at: string
@@ -45,6 +52,7 @@ interface Task {
         status: string
         priority: string
         type: { id: string; name: string; color: string } | null
+        project: { id: string; name: string } | null
     } | null
 }
 
@@ -55,10 +63,43 @@ interface Stats {
     completadas: number
 }
 
+type UrgencyGroup = 'overdue' | 'today' | 'this_week' | 'upcoming'
+
+interface UrgencySection {
+    key: UrgencyGroup
+    label: string
+    icon: React.ReactNode
+    headerClass: string
+    countClass: string
+    tasks: Task[]
+}
+
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-    pendiente: { label: 'Pendiente', color: 'bg-muted text-muted-foreground' },
-    en_progreso: { label: 'En Progreso', color: 'bg-primary/20 text-primary border border-primary/30' },
-    completada: { label: 'Completada', color: 'bg-foreground/10 text-foreground/70' },
+    pending: { label: 'Pendiente', color: 'bg-muted text-muted-foreground' },
+    in_progress: { label: 'En Progreso', color: 'bg-primary/20 text-primary border border-primary/30' },
+    completed: { label: 'Completada', color: 'bg-foreground/10 text-foreground/70' },
+    blocked: { label: 'Bloqueada', color: 'bg-destructive/10 text-destructive border border-destructive/20' },
+}
+
+function getToday(): Date {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate())
+}
+
+function classifyTask(task: Task): UrgencyGroup {
+    if (!task.due_date) return 'upcoming'
+
+    const today = getToday()
+    const due = new Date(task.due_date + 'T00:00:00')
+    const dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate())
+
+    const diffMs = dueDay.getTime() - today.getTime()
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
+
+    if (diffDays < 0) return 'overdue'
+    if (diffDays === 0) return 'today'
+    if (diffDays <= 7) return 'this_week'
+    return 'upcoming'
 }
 
 export default function TareasClientPage() {
@@ -72,6 +113,7 @@ export default function TareasClientPage() {
     const [statusFilter, setStatusFilter] = useState<string>('all')
     const [showCompleted, setShowCompleted] = useState(false)
     const [updatingTask, setUpdatingTask] = useState<string | null>(null)
+    const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
 
     const fetchTasks = async () => {
         try {
@@ -100,7 +142,7 @@ export default function TareasClientPage() {
     const toggleTaskComplete = async (taskId: string, currentStatus: string) => {
         setUpdatingTask(taskId)
         try {
-            const newStatus = currentStatus === 'completada' ? 'pendiente' : 'completada'
+            const newStatus = currentStatus === 'completed' ? 'pending' : 'completed'
             const response = await fetch('/api/workspace/tareas', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
@@ -118,40 +160,78 @@ export default function TareasClientPage() {
         }
     }
 
-    const getDueDateStatus = (dueDate: string | null) => {
-        if (!dueDate) return null
-
-        const due = new Date(dueDate)
-        const now = new Date()
-        const diffDays = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-
-        if (diffDays < 0) return { status: 'overdue', label: 'Vencida', color: 'text-destructive' }
-        if (diffDays === 0) return { status: 'today', label: 'Hoy', color: 'text-primary' }
-        if (diffDays <= 2) return { status: 'soon', label: `${diffDays}d`, color: 'text-accent-foreground' }
-        return { status: 'ok', label: `${diffDays}d`, color: 'text-muted-foreground' }
+    const toggleSection = (key: string) => {
+        setCollapsedSections(prev => ({ ...prev, [key]: !prev[key] }))
     }
 
     const formatDate = (dateStr: string | null) => {
-        if (!dateStr) return '-'
-        return new Date(dateStr).toLocaleDateString('es-AR', {
+        if (!dateStr) return 'Sin fecha'
+        return new Date(dateStr + 'T00:00:00').toLocaleDateString('es-AR', {
             day: '2-digit',
-            month: 'short'
+            month: 'short',
         })
     }
 
-    // Agrupar tareas por tema
-    const groupedTasks = useMemo(() => {
-        const groups: Record<string, { tema: Task['tema'], tasks: Task[] }> = {}
+    const getDueDateColorClass = (task: Task): string => {
+        if (!task.due_date) return 'text-muted-foreground'
+        const group = classifyTask(task)
+        switch (group) {
+            case 'overdue': return 'text-destructive'
+            case 'today': return 'text-accent-foreground'
+            case 'this_week': return 'text-primary'
+            default: return 'text-muted-foreground'
+        }
+    }
+
+    const urgencySections: UrgencySection[] = useMemo(() => {
+        const groups: Record<UrgencyGroup, Task[]> = {
+            overdue: [],
+            today: [],
+            this_week: [],
+            upcoming: [],
+        }
 
         tasks.forEach(task => {
-            const temaId = task.tema?.id || 'sin-tema'
-            if (!groups[temaId]) {
-                groups[temaId] = { tema: task.tema, tasks: [] }
-            }
-            groups[temaId].tasks.push(task)
+            const group = classifyTask(task)
+            groups[group].push(task)
         })
 
-        return Object.values(groups)
+        const sections: UrgencySection[] = [
+            {
+                key: 'overdue',
+                label: 'Vencidas',
+                icon: <AlertTriangle className="h-4 w-4" />,
+                headerClass: 'bg-destructive/10 text-destructive border-destructive/20',
+                countClass: 'bg-destructive/20 text-destructive',
+                tasks: groups.overdue,
+            },
+            {
+                key: 'today',
+                label: 'Hoy',
+                icon: <Clock className="h-4 w-4" />,
+                headerClass: 'bg-accent/10 text-accent-foreground border-accent/20',
+                countClass: 'bg-accent/20 text-accent-foreground',
+                tasks: groups.today,
+            },
+            {
+                key: 'this_week',
+                label: 'Esta semana',
+                icon: <Calendar className="h-4 w-4" />,
+                headerClass: 'bg-primary/10 text-primary border-primary/20',
+                countClass: 'bg-primary/20 text-primary',
+                tasks: groups.this_week,
+            },
+            {
+                key: 'upcoming',
+                label: 'Proximas',
+                icon: <Calendar className="h-4 w-4" />,
+                headerClass: 'bg-muted text-muted-foreground border-border',
+                countClass: 'bg-muted text-muted-foreground',
+                tasks: groups.upcoming,
+            },
+        ]
+
+        return sections.filter(s => s.tasks.length > 0)
     }, [tasks])
 
     return (
@@ -233,9 +313,9 @@ export default function TareasClientPage() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Todas</SelectItem>
-                                <SelectItem value="pendiente">Pendientes</SelectItem>
-                                <SelectItem value="en_progreso">En Progreso</SelectItem>
-                                <SelectItem value="completada">Completadas</SelectItem>
+                                <SelectItem value="pending">Pendientes</SelectItem>
+                                <SelectItem value="in_progress">En Progreso</SelectItem>
+                                <SelectItem value="completed">Completadas</SelectItem>
                             </SelectContent>
                         </Select>
                         <div className="flex items-center gap-2">
@@ -255,7 +335,7 @@ export default function TareasClientPage() {
                 </CardContent>
             </Card>
 
-            {/* Task List */}
+            {/* Task List grouped by urgency */}
             {loading ? (
                 <div className="flex items-center justify-center py-12">
                     <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -264,87 +344,135 @@ export default function TareasClientPage() {
                 <Card>
                     <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                         <CheckCircle2 className="h-12 w-12 mb-4 text-primary/50" />
-                        <p className="text-lg font-medium text-foreground">¡Sin tareas pendientes!</p>
-                        <p className="text-sm">No tenés tareas asignadas en este momento</p>
+                        <p className="text-lg font-medium text-foreground">Sin tareas pendientes</p>
+                        <p className="text-sm">No tenes tareas asignadas en este momento</p>
                     </CardContent>
                 </Card>
             ) : (
-                <div className="space-y-6">
-                    {groupedTasks.map((group) => (
-                        <Card key={group.tema?.id || 'sin-tema'}>
-                            <CardHeader className="pb-3">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        {group.tema?.type && (
-                                            <Badge variant="outline" style={{ borderColor: group.tema.type.color, color: group.tema.type.color }}>
-                                                {group.tema.type.name}
-                                            </Badge>
-                                        )}
-                                        <CardTitle className="text-base font-medium">
-                                            {group.tema?.title || 'Sin tema asociado'}
-                                        </CardTitle>
-                                    </div>
-                                    {group.tema && (
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="text-xs"
-                                            onClick={() => router.push(`/workspace/temas/${group.tema!.id}${companyId ? `?company_id=${companyId}` : ''}`)}
-                                        >
-                                            Ver tema
-                                            <ArrowRight className="h-3 w-3 ml-1" />
-                                        </Button>
-                                    )}
-                                </div>
-                            </CardHeader>
-                            <CardContent className="pt-0">
-                                <div className="space-y-2">
-                                    {group.tasks.map((task) => {
-                                        const dueDateStatus = getDueDateStatus(task.due_date)
-                                        const isCompleted = task.status === 'completada'
-                                        const isUpdating = updatingTask === task.id
+                <div className="space-y-4">
+                    {urgencySections.map((section) => {
+                        const isCollapsed = collapsedSections[section.key] ?? false
 
-                                        return (
-                                            <div
-                                                key={task.id}
-                                                className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${isCompleted
-                                                        ? 'bg-muted/50 border-border opacity-70'
-                                                        : 'bg-card border-border hover:border-primary/50 hover:bg-primary/5'
-                                                    }`}
-                                            >
-                                                <Checkbox
-                                                    checked={isCompleted}
-                                                    disabled={isUpdating}
-                                                    onCheckedChange={() => toggleTaskComplete(task.id, task.status)}
-                                                    className={isUpdating ? 'opacity-50' : ''}
-                                                />
-                                                <div className="flex-1 min-w-0">
-                                                    <p className={`text-sm font-medium ${isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
-                                                        {task.title}
-                                                    </p>
-                                                    {task.description && (
-                                                        <p className="text-xs text-muted-foreground truncate mt-0.5">
-                                                            {task.description}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                                {task.due_date && (
-                                                    <div className={`flex items-center gap-1 text-xs ${dueDateStatus?.color || 'text-muted-foreground'}`}>
-                                                        {dueDateStatus?.status === 'overdue' && <AlertTriangle className="h-3 w-3" />}
-                                                        <Calendar className="h-3 w-3" />
-                                                        <span>{formatDate(task.due_date)}</span>
-                                                    </div>
+                        return (
+                            <Collapsible
+                                key={section.key}
+                                open={!isCollapsed}
+                                onOpenChange={() => toggleSection(section.key)}
+                            >
+                                <div className="rounded-xl border border-border overflow-hidden">
+                                    {/* Section Header */}
+                                    <CollapsibleTrigger asChild>
+                                        <button
+                                            className={`w-full flex items-center justify-between px-4 py-3 border-b ${section.headerClass} transition-colors hover:opacity-90`}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                {isCollapsed ? (
+                                                    <ChevronRight className="h-4 w-4" />
+                                                ) : (
+                                                    <ChevronDown className="h-4 w-4" />
                                                 )}
-                                                <Badge className={STATUS_CONFIG[task.status]?.color || 'bg-muted text-muted-foreground'}>
-                                                    {STATUS_CONFIG[task.status]?.label || task.status}
-                                                </Badge>
+                                                {section.icon}
+                                                <span className="font-semibold text-sm">
+                                                    {section.label}
+                                                </span>
                                             </div>
-                                        )
-                                    })}
+                                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${section.countClass}`}>
+                                                {section.tasks.length}
+                                            </span>
+                                        </button>
+                                    </CollapsibleTrigger>
+
+                                    {/* Section Content */}
+                                    <CollapsibleContent>
+                                        <div className="divide-y divide-border bg-card">
+                                            {section.tasks.map((task) => {
+                                                const isCompleted = task.status === 'completed'
+                                                const isUpdating = updatingTask === task.id
+                                                const dueDateColor = getDueDateColorClass(task)
+
+                                                return (
+                                                    <div
+                                                        key={task.id}
+                                                        className={`flex items-center gap-3 px-4 py-3 transition-colors ${
+                                                            isCompleted
+                                                                ? 'opacity-60'
+                                                                : 'hover:bg-muted/50'
+                                                        }`}
+                                                    >
+                                                        {/* Checkbox */}
+                                                        <Checkbox
+                                                            checked={isCompleted}
+                                                            disabled={isUpdating}
+                                                            onCheckedChange={() => toggleTaskComplete(task.id, task.status)}
+                                                            className={`shrink-0 ${isUpdating ? 'opacity-50' : ''}`}
+                                                        />
+
+                                                        {/* Task info */}
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2 flex-wrap">
+                                                                <span className={`text-sm font-medium ${
+                                                                    isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'
+                                                                }`}>
+                                                                    {task.title}
+                                                                </span>
+                                                                {task.task_type === 'esperando_cliente' && (
+                                                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-accent/40 text-accent-foreground">
+                                                                        <UserCheck className="h-3 w-3 mr-1" />
+                                                                        Esperando cliente
+                                                                    </Badge>
+                                                                )}
+                                                            </div>
+                                                            {/* Tema context row */}
+                                                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                                                {task.tema && (
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation()
+                                                                            router.push(`/workspace/temas/${task.tema!.id}${companyId ? `?company_id=${companyId}` : ''}`)
+                                                                        }}
+                                                                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                                                                    >
+                                                                        <FolderOpen className="h-3 w-3 shrink-0" />
+                                                                        <span className="truncate max-w-[200px]">{task.tema.title}</span>
+                                                                    </button>
+                                                                )}
+                                                                {task.tema?.type && (
+                                                                    <Badge
+                                                                        variant="outline"
+                                                                        className="text-[10px] px-1.5 py-0 h-4"
+                                                                        style={{ borderColor: task.tema.type.color, color: task.tema.type.color }}
+                                                                    >
+                                                                        {task.tema.type.name}
+                                                                    </Badge>
+                                                                )}
+                                                                {task.tema?.project && (
+                                                                    <span className="text-[10px] text-muted-foreground truncate max-w-[150px]">
+                                                                        {task.tema.project.name}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Due date */}
+                                                        <div className={`flex items-center gap-1 text-xs shrink-0 ${dueDateColor}`}>
+                                                            {classifyTask(task) === 'overdue' && <AlertTriangle className="h-3 w-3" />}
+                                                            <Calendar className="h-3 w-3" />
+                                                            <span>{formatDate(task.due_date)}</span>
+                                                        </div>
+
+                                                        {/* Status badge */}
+                                                        <Badge className={`shrink-0 text-[10px] ${STATUS_CONFIG[task.status]?.color || 'bg-muted text-muted-foreground'}`}>
+                                                            {STATUS_CONFIG[task.status]?.label || task.status}
+                                                        </Badge>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </CollapsibleContent>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    ))}
+                            </Collapsible>
+                        )
+                    })}
                 </div>
             )}
         </div>

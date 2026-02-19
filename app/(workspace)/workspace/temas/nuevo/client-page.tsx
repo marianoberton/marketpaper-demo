@@ -21,6 +21,9 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
+import { toast } from 'sonner'
+import { TemasNav } from '../components/temas-nav'
 import {
     ArrowLeft,
     Save,
@@ -29,14 +32,40 @@ import {
     Users,
     FolderOpen,
     Building2,
-    Star
+    Star,
+    ListChecks,
+    FolderKanban,
+    CheckCircle2,
+    FileCode2,
 } from 'lucide-react'
+
+interface TemplateTask {
+    orden: number
+    titulo: string
+    tipo?: string
+    asignado_default?: string
+    checklist?: string[]
+    dias_estimados?: number
+    assigned_to?: string
+    due_date?: string
+    enabled: boolean
+}
 
 interface TemaType {
     id: string
     name: string
     color: string
     area_id?: string
+    tareas_template?: TemplateTask[]
+    gerencia?: string
+    categoria?: string
+}
+
+interface Project {
+    id: string
+    name: string
+    client_id?: string
+    gerencia?: string
 }
 
 interface TemaArea {
@@ -94,6 +123,7 @@ export default function NuevoTemaClientPage() {
     const [areas, setAreas] = useState<TemaArea[]>([])
     const [users, setUsers] = useState<User[]>([])
     const [clients, setClients] = useState<Client[]>([])
+    const [projects, setProjects] = useState<Project[]>([])
     const [loadingData, setLoadingData] = useState(true)
 
     // Form state
@@ -111,10 +141,39 @@ export default function NuevoTemaClientPage() {
     const [expedienteNumber, setExpedienteNumber] = useState('')
     const [organismo, setOrganismo] = useState('')
     const [clientId, setClientId] = useState('')
+    const [projectId, setProjectId] = useState(searchParams.get('project_id') || '')
+    const [dependsOnTemaId, setDependsOnTemaId] = useState('')
+    const [projectTemas, setProjectTemas] = useState<{ id: string; title: string; sequential_order: number | null }[]>([])
+
+    // Template tasks state
+    const [templateTasks, setTemplateTasks] = useState<TemplateTask[]>([])
+    // Track if title was auto-filled from template (to allow replacement when switching)
+    const [titleAutoFilled, setTitleAutoFilled] = useState(false)
 
     useEffect(() => {
         fetchInitialData()
     }, [])
+
+    // Fetch project temas when project changes (for dependency selector)
+    useEffect(() => {
+        if (projectId && projectId !== 'none') {
+            fetch(`/api/workspace/temas/projects/${projectId}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.project?.temas) {
+                        setProjectTemas(data.project.temas.map((t: any) => ({
+                            id: t.id,
+                            title: t.title,
+                            sequential_order: t.sequential_order
+                        })))
+                    }
+                })
+                .catch(() => setProjectTemas([]))
+        } else {
+            setProjectTemas([])
+            setDependsOnTemaId('')
+        }
+    }, [projectId])
 
     const fetchInitialData = async () => {
         try {
@@ -147,11 +206,60 @@ export default function NuevoTemaClientPage() {
             if (clientsData.success) {
                 setClients(clientsData.clients || [])
             }
+
+            // Fetch projects
+            const projectsResponse = await fetch('/api/workspace/temas/projects')
+            const projectsData = await projectsResponse.json()
+            if (projectsData.success) {
+                setProjects(projectsData.projects || [])
+            }
         } catch (error) {
             console.error('Error fetching initial data:', error)
         } finally {
             setLoadingData(false)
         }
+    }
+
+    const handleTypeChange = (newTypeId: string) => {
+        setTypeId(newTypeId)
+        const selectedType = types.find(t => t.id === newTypeId)
+        if (selectedType) {
+            // Auto-fill title from template name if empty or was previously auto-filled
+            if (!title.trim() || titleAutoFilled) {
+                setTitle(selectedType.name)
+                setTitleAutoFilled(true)
+            }
+            if (selectedType.tareas_template && selectedType.tareas_template.length > 0) {
+                setTemplateTasks(selectedType.tareas_template.map(t => ({
+                    ...t,
+                    enabled: true
+                })))
+            } else {
+                setTemplateTasks([])
+            }
+        } else {
+            setTemplateTasks([])
+        }
+    }
+
+    const handleTitleChange = (val: string) => {
+        setTitle(val)
+        // Once user manually edits, stop auto-filling
+        if (titleAutoFilled && val !== types.find(t => t.id === typeId)?.name) {
+            setTitleAutoFilled(false)
+        }
+    }
+
+    const toggleTemplateTask = (index: number) => {
+        setTemplateTasks(prev => prev.map((t, i) =>
+            i === index ? { ...t, enabled: !t.enabled } : t
+        ))
+    }
+
+    const updateTemplateTaskAssignee = (index: number, userId: string) => {
+        setTemplateTasks(prev => prev.map((t, i) =>
+            i === index ? { ...t, assigned_to: userId === 'unassigned' ? undefined : userId } : t
+        ))
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -181,7 +289,20 @@ export default function NuevoTemaClientPage() {
                     notes,
                     assignee_ids: selectedAssignees,
                     lead_assignee_id: leadAssignee || null,
-                    client_id: clientId && clientId.length > 0 ? clientId : null
+                    client_id: clientId && clientId.length > 0 ? clientId : null,
+                    project_id: (projectId && projectId !== 'none') ? projectId : null,
+                    depends_on_tema_id: dependsOnTemaId || null,
+                    sequential_order: projectTemas.length > 0 ? projectTemas.length + 1 : null,
+                    tasks_from_template: templateTasks
+                        .filter(t => t.enabled)
+                        .map(t => ({
+                            titulo: t.titulo,
+                            tipo: t.tipo,
+                            orden: t.orden,
+                            checklist: t.checklist || [],
+                            assigned_to: t.assigned_to || null,
+                            due_date: t.due_date || null
+                        }))
                 })
             })
 
@@ -193,11 +314,11 @@ export default function NuevoTemaClientPage() {
                 // Tema created but no id returned - go to list
                 router.push(`/workspace/temas${companyId ? `?company_id=${companyId}` : ''}`)
             } else {
-                alert(data.error || 'Error al crear el tema')
+                toast.error(data.error || 'Error al crear el tema')
             }
         } catch (error) {
             console.error('Error creating tema:', error)
-            alert('Error al crear el tema')
+            toast.error('Error al crear el tema')
         } finally {
             setLoading(false)
         }
@@ -217,6 +338,7 @@ export default function NuevoTemaClientPage() {
 
     return (
         <div className="p-6 max-w-4xl mx-auto">
+            <TemasNav />
             {/* Header */}
             <div className="flex items-center gap-4 mb-6">
                 <Button
@@ -234,6 +356,87 @@ export default function NuevoTemaClientPage() {
 
             <form onSubmit={handleSubmit}>
                 <div className="grid gap-6">
+                    {/* Catálogo de Templates */}
+                    {types.length > 0 && (
+                        <Card>
+                            <CardHeader className="pb-3">
+                                <CardTitle className="flex items-center gap-2 text-base">
+                                    <FileCode2 className="h-5 w-5" />
+                                    Seleccionar Template de Trámite
+                                </CardTitle>
+                                <p className="text-sm text-muted-foreground">
+                                    Elegí un template para cargar las tareas automáticamente, o completá el formulario sin template.
+                                </p>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {types.map((type) => {
+                                        const taskCount = Array.isArray(type.tareas_template) ? type.tareas_template.length : 0
+                                        const isSelected = typeId === type.id
+                                        return (
+                                            <button
+                                                key={type.id}
+                                                type="button"
+                                                onClick={() => handleTypeChange(type.id)}
+                                                className={`relative text-left p-4 rounded-lg border-2 transition-all hover:border-primary/50 focus:outline-none ${
+                                                    isSelected
+                                                        ? 'border-primary bg-primary/5'
+                                                        : 'border-border bg-card hover:bg-muted/30'
+                                                }`}
+                                            >
+                                                {isSelected && (
+                                                    <CheckCircle2 className="absolute top-3 right-3 h-4 w-4 text-primary" />
+                                                )}
+                                                <div className="flex items-start gap-3">
+                                                    <div
+                                                        className="w-3 h-3 rounded-full mt-1 flex-shrink-0"
+                                                        style={{ backgroundColor: type.color || '#6B7280' }}
+                                                    />
+                                                    <div className="min-w-0">
+                                                        <p className={`font-medium text-sm leading-tight ${isSelected ? 'text-primary' : 'text-foreground'}`}>
+                                                            {type.name}
+                                                        </p>
+                                                        <div className="flex flex-wrap gap-1 mt-1.5">
+                                                            {type.gerencia && (
+                                                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
+                                                                    {type.gerencia}
+                                                                </Badge>
+                                                            )}
+                                                            {taskCount > 0 && (
+                                                                <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                                                                    <ListChecks className="h-2.5 w-2.5" />
+                                                                    {taskCount} tareas
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        )
+                                    })}
+                                    {/* Sin template option */}
+                                    <button
+                                        type="button"
+                                        onClick={() => { setTypeId(''); setTemplateTasks([]); setTitleAutoFilled(false) }}
+                                        className={`text-left p-4 rounded-lg border-2 transition-all hover:border-border focus:outline-none ${
+                                            typeId === ''
+                                                ? 'border-border bg-muted/30'
+                                                : 'border-border/50 bg-card hover:bg-muted/20'
+                                        }`}
+                                    >
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-3 h-3 rounded-full mt-1 bg-muted-foreground/30 flex-shrink-0" />
+                                            <div>
+                                                <p className="font-medium text-sm text-muted-foreground">Sin template</p>
+                                                <p className="text-[10px] text-muted-foreground mt-0.5">Crear tema manualmente</p>
+                                            </div>
+                                        </div>
+                                    </button>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
                     {/* Información básica */}
                     <Card>
                         <CardHeader>
@@ -250,7 +453,7 @@ export default function NuevoTemaClientPage() {
                                         id="title"
                                         placeholder="Nombre del tema o expediente"
                                         value={title}
-                                        onChange={(e) => setTitle(e.target.value)}
+                                        onChange={(e) => handleTitleChange(e.target.value)}
                                         required
                                     />
                                 </div>
@@ -263,28 +466,6 @@ export default function NuevoTemaClientPage() {
                                         value={referenceCode}
                                         onChange={(e) => setReferenceCode(e.target.value)}
                                     />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="type">Tipo</Label>
-                                    <Select value={typeId} onValueChange={setTypeId}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Seleccionar tipo..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {types.map((type) => (
-                                                <SelectItem key={type.id} value={type.id}>
-                                                    <div className="flex items-center gap-2">
-                                                        <div
-                                                            className="w-3 h-3 rounded-full"
-                                                            style={{ backgroundColor: type.color }}
-                                                        />
-                                                        {type.name}
-                                                    </div>
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
                                 </div>
 
                                 <div className="space-y-2">
@@ -352,6 +533,45 @@ export default function NuevoTemaClientPage() {
                                         </SelectContent>
                                     </Select>
                                 </div>
+
+                                <div className="space-y-2">
+                                    <Label htmlFor="project">Proyecto</Label>
+                                    <Select value={projectId} onValueChange={setProjectId}>
+                                        <SelectTrigger>
+                                            <FolderKanban className="h-4 w-4 mr-2 text-muted-foreground" />
+                                            <SelectValue placeholder="Sin proyecto..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">Sin proyecto</SelectItem>
+                                            {projects.map((project) => (
+                                                <SelectItem key={project.id} value={project.id}>
+                                                    {project.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Dependency selector - only shown when project is selected */}
+                                {projectId && projectId !== 'none' && projectTemas.length > 0 && (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="depends_on">Tema anterior (dependencia)</Label>
+                                        <Select value={dependsOnTemaId} onValueChange={setDependsOnTemaId}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Sin dependencia..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">Sin dependencia</SelectItem>
+                                                {projectTemas.map((t) => (
+                                                    <SelectItem key={t.id} value={t.id}>
+                                                        {t.sequential_order ? `#${t.sequential_order} ` : ''}{t.title}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <p className="text-xs text-muted-foreground">Este tema no podra iniciar hasta que el tema seleccionado se complete</p>
+                                    </div>
+                                )}
 
                                 <div className="md:col-span-2 space-y-2">
                                     <Label htmlFor="description">Descripción</Label>
@@ -496,6 +716,83 @@ export default function NuevoTemaClientPage() {
                             )}
                         </CardContent>
                     </Card>
+
+                    {/* Template Tasks Preview */}
+                    {templateTasks.length > 0 && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <ListChecks className="h-5 w-5" />
+                                    Tareas del Template ({templateTasks.filter(t => t.enabled).length}/{templateTasks.length})
+                                </CardTitle>
+                                <CardDescription>
+                                    Estas tareas se crean automaticamente. Podes desactivar o asignar cada una.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-2">
+                                    {templateTasks.map((task, index) => (
+                                        <div
+                                            key={index}
+                                            className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+                                                task.enabled
+                                                    ? 'bg-card border-border'
+                                                    : 'bg-muted/30 border-border/50 opacity-60'
+                                            }`}
+                                        >
+                                            <Checkbox
+                                                checked={task.enabled}
+                                                onCheckedChange={() => toggleTemplateTask(index)}
+                                            />
+                                            <span className="text-sm text-muted-foreground w-6">
+                                                {task.orden}.
+                                            </span>
+                                            <div className="flex-1 min-w-0">
+                                                <p className={`text-sm font-medium ${task.enabled ? 'text-foreground' : 'text-muted-foreground line-through'}`}>
+                                                    {task.titulo}
+                                                </p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    {task.tipo === 'esperando_cliente' && (
+                                                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 border-accent-foreground/30 text-accent-foreground">
+                                                            Esperando cliente
+                                                        </Badge>
+                                                    )}
+                                                    {task.checklist && task.checklist.length > 0 && (
+                                                        <span className="text-[10px] text-muted-foreground">
+                                                            {task.checklist.length} items checklist
+                                                        </span>
+                                                    )}
+                                                    {task.dias_estimados && (
+                                                        <span className="text-[10px] text-muted-foreground">
+                                                            ~{task.dias_estimados}d
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            {task.enabled && (
+                                                <Select
+                                                    value={task.assigned_to || 'unassigned'}
+                                                    onValueChange={(v) => updateTemplateTaskAssignee(index, v)}
+                                                >
+                                                    <SelectTrigger className="w-[150px] h-8 text-xs">
+                                                        <SelectValue placeholder="Asignar..." />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="unassigned">Sin asignar</SelectItem>
+                                                        {users.map((u) => (
+                                                            <SelectItem key={u.id} value={u.id}>
+                                                                {u.full_name || u.email}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
 
                     {/* Actions */}
                     <div className="flex justify-end gap-3">

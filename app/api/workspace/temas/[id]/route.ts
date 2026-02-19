@@ -95,22 +95,55 @@ export async function PATCH(
       )
     }
 
+    // Permission check
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || !['super_admin', 'company_owner', 'company_admin', 'manager'].includes(profile.role)) {
+      return NextResponse.json(
+        { success: false, error: 'Sin permisos para editar temas' },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
-    const { 
-      title, 
-      description, 
+    const {
+      title,
+      description,
       reference_code,
-      type_id, 
+      type_id,
       area_id,
       expediente_number,
       organismo,
-      status, 
-      priority, 
+      status,
+      priority,
       due_date,
       notes,
       assignee_ids,
-      lead_assignee_id
+      lead_assignee_id,
+      depends_on_tema_id,
+      sequential_order,
+      observation_notes
     } = body
+
+    // Priority changes restricted to owner/admin only
+    if (priority !== undefined && !['super_admin', 'company_owner', 'company_admin'].includes(profile.role)) {
+      return NextResponse.json(
+        { success: false, error: 'Solo administradores pueden cambiar la prioridad' },
+        { status: 403 }
+      )
+    }
+
+    // Fetch current status for activity log
+    const { data: currentTema } = await supabase
+      .from('temas')
+      .select('status')
+      .eq('id', id)
+      .single()
+    const oldStatus = currentTema?.status
 
     // Construir objeto de actualización
     const updateData: Record<string, any> = {}
@@ -125,6 +158,8 @@ export async function PATCH(
     if (priority !== undefined) updateData.priority = priority
     if (due_date !== undefined) updateData.due_date = due_date || null
     if (notes !== undefined) updateData.notes = notes?.trim() || null
+    if (depends_on_tema_id !== undefined) updateData.depends_on_tema_id = depends_on_tema_id || null
+    if (sequential_order !== undefined) updateData.sequential_order = sequential_order
 
     // Marcar completado si el estado es finalizado
     if (status === 'finalizado' || status === 'completado') {
@@ -146,6 +181,43 @@ export async function PATCH(
       )
     }
 
+    // Auto-crear tarea de subsanación cuando el estado cambia a "observado"
+    if (status === 'observado') {
+      const { data: lastTasks } = await supabase
+        .from('tema_tasks')
+        .select('sort_order')
+        .eq('tema_id', id)
+        .order('sort_order', { ascending: false })
+        .limit(1)
+
+      const nextOrder = ((lastTasks && lastTasks[0]?.sort_order) || 0) + 1
+
+      await supabase
+        .from('tema_tasks')
+        .insert({
+          tema_id: id,
+          title: 'Subsanar observaciones',
+          description: observation_notes?.trim() || null,
+          task_type: 'interna',
+          sort_order: nextOrder,
+          created_by: user.id
+        })
+    }
+
+    // Registrar cambio de estado en actividad
+    if (status !== undefined && status !== oldStatus) {
+      await supabase
+        .from('tema_activity')
+        .insert({
+          tema_id: id,
+          user_id: user.id,
+          action: 'status_changed',
+          old_value: oldStatus || null,
+          new_value: status,
+          comment: status === 'observado' && observation_notes?.trim() ? observation_notes.trim() : null
+        })
+    }
+
     // Actualizar asignados si se proporcionaron
     if (assignee_ids !== undefined) {
       // Eliminar asignaciones anteriores
@@ -160,6 +232,7 @@ export async function PATCH(
           tema_id: id,
           user_id: userId,
           role: 'responsable',
+          is_lead: lead_assignee_id ? userId === lead_assignee_id : false,
           assigned_by: user.id
         }))
 
@@ -223,7 +296,7 @@ export async function DELETE(
       .eq('id', user.id)
       .single()
 
-    if (!profile || !['admin', 'owner', 'super_admin'].includes(profile.role)) {
+    if (!profile || !['company_admin', 'company_owner', 'super_admin'].includes(profile.role)) {
       return NextResponse.json(
         { success: false, error: 'Sin permisos para eliminar' },
         { status: 403 }

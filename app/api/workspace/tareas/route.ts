@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status') // pendiente, en_progreso, completada
+    const status = searchParams.get('status') // pending, in_progress, completed
     const showCompleted = searchParams.get('show_completed') === 'true'
 
     // Obtener tareas asignadas al usuario actual
@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
         title,
         description,
         status,
+        task_type,
         due_date,
         sort_order,
         created_at,
@@ -36,7 +37,8 @@ export async function GET(request: NextRequest) {
           reference_code,
           status,
           priority,
-          type:tema_types(id, name, color)
+          type:tema_types(id, name, color),
+          project:tema_projects(id, name)
         )
       `)
       .eq('assigned_to', user.id)
@@ -47,7 +49,7 @@ export async function GET(request: NextRequest) {
       query = query.eq('status', status)
     } else if (!showCompleted) {
       // Por defecto, no mostrar completadas
-      query = query.neq('status', 'completada')
+      query = query.neq('status', 'completed')
     }
 
     const { data: tasks, error } = await query
@@ -68,9 +70,9 @@ export async function GET(request: NextRequest) {
 
     const stats = {
       total: allTasks?.length || 0,
-      pendientes: allTasks?.filter(t => t.status === 'pendiente').length || 0,
-      enProgreso: allTasks?.filter(t => t.status === 'en_progreso').length || 0,
-      completadas: allTasks?.filter(t => t.status === 'completada').length || 0,
+      pendientes: allTasks?.filter(t => t.status === 'pending').length || 0,
+      enProgreso: allTasks?.filter(t => t.status === 'in_progress').length || 0,
+      completadas: allTasks?.filter(t => t.status === 'completed').length || 0,
     }
 
     return NextResponse.json({
@@ -127,7 +129,7 @@ export async function PATCH(request: NextRequest) {
 
     // Actualizar la tarea
     const updateData: any = { status }
-    if (status === 'completada') {
+    if (status === 'completed') {
       updateData.completed_at = new Date().toISOString()
       updateData.completed_by = user.id
     } else {
@@ -156,7 +158,7 @@ export async function PATCH(request: NextRequest) {
       .insert({
         tema_id: existingTask.tema_id,
         user_id: user.id,
-        action: status === 'completada' ? 'task_completed' : 'task_status_changed',
+        action: status === 'completed' ? 'task_completed' : 'task_status_changed',
         new_value: status
       })
 

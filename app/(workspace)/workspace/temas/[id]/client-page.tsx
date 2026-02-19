@@ -24,6 +24,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
     ArrowLeft,
     RefreshCw,
     Calendar,
@@ -40,7 +46,12 @@ import {
     Paperclip,
     Clock,
     AlertTriangle,
-    Trash2
+    Trash2,
+    ExternalLink,
+    Link as LinkIcon,
+    ChevronDown,
+    ChevronRight,
+    MoreHorizontal,
 } from 'lucide-react'
 import { formatDistanceToNow, format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -56,15 +67,23 @@ interface User {
     avatar_url?: string
 }
 
+interface ChecklistItem {
+    id: string
+    label: string
+    checked: boolean
+}
+
 interface Task {
     id: string
     title: string
     description: string | null
-    status: 'pendiente' | 'en_progreso' | 'completada' | 'cancelada'
+    status: 'pending' | 'in_progress' | 'completed' | 'blocked'
     sort_order: number
     due_date: string | null
     completed_at: string | null
     assigned_user: User | null
+    checklist: ChecklistItem[] | null
+    task_type: 'interna' | 'esperando_cliente' | null
 }
 
 interface Comment {
@@ -120,6 +139,15 @@ interface Tema {
     tasks: Task[]
     activity: Activity[]
     client: Client | null
+}
+
+interface Attachment {
+    id: string
+    url: string
+    original_filename: string | null
+    description: string | null
+    uploaded_by: User | null
+    created_at: string
 }
 
 // =========================
@@ -193,13 +221,31 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
     const [users, setUsers] = useState<User[]>([])
     const [comments, setComments] = useState<Comment[]>([])
 
+    // Attachments state
+    const [attachments, setAttachments] = useState<Attachment[]>([])
+    const [newAttachmentUrl, setNewAttachmentUrl] = useState('')
+    const [newAttachmentDesc, setNewAttachmentDesc] = useState('')
+    const [addingAttachment, setAddingAttachment] = useState(false)
+    const [deletingAttachmentId, setDeletingAttachmentId] = useState<string | null>(null)
+
     // Inline editing state
     const [newTaskTitle, setNewTaskTitle] = useState('')
     const [newTaskAssignee, setNewTaskAssignee] = useState('')
     const [newTaskDueDate, setNewTaskDueDate] = useState('')
+    const [newTaskType, setNewTaskType] = useState<string>('interna')
     const [newComment, setNewComment] = useState('')
     const [addingTask, setAddingTask] = useState(false)
     const [submittingComment, setSubmittingComment] = useState(false)
+
+    // Checklist UI state
+    const [expandedChecklists, setExpandedChecklists] = useState<Set<string>>(new Set())
+
+    // Observado modal state
+    const [observadoModal, setObservadoModal] = useState<{ open: boolean; notes: string }>({ open: false, notes: '' })
+
+    // Delete modal state
+    const [deleteModal, setDeleteModal] = useState(false)
+    const [deletingTema, setDeletingTema] = useState(false)
 
     // =========================
     // DATA FETCHING
@@ -245,11 +291,24 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
         }
     }, [temaId])
 
+    const fetchAttachments = useCallback(async () => {
+        try {
+            const response = await fetch(`/api/workspace/temas/${temaId}/attachments`)
+            const data = await response.json()
+            if (data.success) {
+                setAttachments(data.attachments || [])
+            }
+        } catch (error) {
+            console.error('Error fetching attachments:', error)
+        }
+    }, [temaId])
+
     useEffect(() => {
         fetchTema()
         fetchUsers()
         fetchComments()
-    }, [fetchTema, fetchUsers, fetchComments])
+        fetchAttachments()
+    }, [fetchTema, fetchUsers, fetchComments, fetchAttachments])
 
     // =========================
     // INLINE UPDATE HANDLERS
@@ -281,6 +340,57 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
     }
 
     // =========================
+    // STATUS CHANGE HANDLERS
+    // =========================
+
+    const handleStatusChange = (value: string) => {
+        if (value === 'observado') {
+            setObservadoModal({ open: true, notes: '' })
+        } else {
+            updateTema('status', value)
+        }
+    }
+
+    const handleConfirmObservado = async () => {
+        if (!tema) return
+        const notes = observadoModal.notes
+        setObservadoModal({ open: false, notes: '' })
+
+        setSaving(true)
+        try {
+            const response = await fetch(`/api/workspace/temas/${temaId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'observado', observation_notes: notes })
+            })
+            const data = await response.json()
+            if (data.success) {
+                setTema(prev => prev ? { ...prev, status: 'observado' } : null)
+                setTimeout(() => fetchTema(), 500)
+            }
+        } catch (error) {
+            console.error('Error marking as observado:', error)
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    const handleDeleteTema = async () => {
+        setDeletingTema(true)
+        try {
+            const response = await fetch(`/api/workspace/temas/${temaId}`, { method: 'DELETE' })
+            const data = await response.json()
+            if (data.success) {
+                router.push(`/workspace/temas${companyId ? `?company_id=${companyId}` : ''}`)
+            }
+        } catch (error) {
+            console.error('Error deleting tema:', error)
+        } finally {
+            setDeletingTema(false)
+        }
+    }
+
+    // =========================
     // TASK HANDLERS
     // =========================
 
@@ -295,7 +405,8 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                 body: JSON.stringify({
                     title: newTaskTitle,
                     assigned_to: (newTaskAssignee && newTaskAssignee !== 'unassigned') ? newTaskAssignee : null,
-                    due_date: newTaskDueDate || null
+                    due_date: newTaskDueDate || null,
+                    task_type: newTaskType || 'interna'
                 })
             })
 
@@ -304,6 +415,7 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                 setNewTaskTitle('')
                 setNewTaskAssignee('')
                 setNewTaskDueDate('')
+                setNewTaskType('interna')
                 fetchTema()
             }
         } catch (error) {
@@ -319,7 +431,7 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    status: completed ? 'completada' : 'pendiente'
+                    status: completed ? 'completed' : 'pending'
                 })
             })
 
@@ -344,6 +456,98 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
             }
         } catch (error) {
             console.error('Error updating task:', error)
+        }
+    }
+
+    // =========================
+    // CHECKLIST HANDLERS
+    // =========================
+
+    const toggleChecklistItem = async (task: Task, itemId: string) => {
+        if (!task.checklist) return
+        const updatedChecklist = task.checklist.map(item =>
+            item.id === itemId ? { ...item, checked: !item.checked } : item
+        )
+        // Optimistic update
+        setTema(prev => {
+            if (!prev) return null
+            return {
+                ...prev,
+                tasks: prev.tasks.map(t =>
+                    t.id === task.id ? { ...t, checklist: updatedChecklist } : t
+                )
+            }
+        })
+        try {
+            await fetch(`/api/workspace/temas/${temaId}/tasks/${task.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ checklist: updatedChecklist })
+            })
+        } catch (error) {
+            console.error('Error updating checklist:', error)
+            fetchTema() // Revert on error
+        }
+    }
+
+    const toggleChecklistExpanded = (taskId: string) => {
+        setExpandedChecklists(prev => {
+            const next = new Set(prev)
+            if (next.has(taskId)) {
+                next.delete(taskId)
+            } else {
+                next.add(taskId)
+            }
+            return next
+        })
+    }
+
+    // =========================
+    // ATTACHMENT HANDLERS
+    // =========================
+
+    const addAttachment = async () => {
+        if (!newAttachmentUrl.trim()) return
+
+        setAddingAttachment(true)
+        try {
+            const response = await fetch(`/api/workspace/temas/${temaId}/attachments`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    url: newAttachmentUrl,
+                    description: newAttachmentDesc || null,
+                    original_filename: newAttachmentUrl
+                })
+            })
+
+            const data = await response.json()
+            if (data.success) {
+                setNewAttachmentUrl('')
+                setNewAttachmentDesc('')
+                fetchAttachments()
+            }
+        } catch (error) {
+            console.error('Error adding attachment:', error)
+        } finally {
+            setAddingAttachment(false)
+        }
+    }
+
+    const deleteAttachment = async (attachmentId: string) => {
+        setDeletingAttachmentId(attachmentId)
+        try {
+            const response = await fetch(
+                `/api/workspace/temas/${temaId}/attachments?attachment_id=${attachmentId}`,
+                { method: 'DELETE' }
+            )
+            if (response.ok) {
+                fetchAttachments()
+            }
+        } catch (error) {
+            console.error('Error deleting attachment:', error)
+        } finally {
+            setDeletingAttachmentId(null)
         }
     }
 
@@ -405,7 +609,7 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
     const priorityConfig = PRIORITY_CONFIG[tema.priority] || PRIORITY_CONFIG.media
     const dueDateStatus = getDueDateStatus(tema.due_date)
     const leadAssignee = tema.assignees.find(a => a.is_lead)
-    const completedTasks = tema.tasks?.filter(t => t.status === 'completada').length || 0
+    const completedTasks = tema.tasks?.filter(t => t.status === 'completed').length || 0
     const totalTasks = tema.tasks?.length || 0
 
     return (
@@ -422,6 +626,24 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                     >
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
+                    <div className="ml-auto">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive gap-2"
+                                    onClick={() => setDeleteModal(true)}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    Eliminar tema
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
                     <div className="flex-1">
                         <div className="flex items-center gap-3 flex-wrap">
                             {/* Type badge */}
@@ -487,7 +709,7 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                     {/* Status selector (inline) */}
                     <Select
                         value={tema.status}
-                        onValueChange={(value) => updateTema('status', value)}
+                        onValueChange={handleStatusChange}
                     >
                         <SelectTrigger className={`w-auto ${statusConfig.color} border`}>
                             <SelectValue />
@@ -538,6 +760,19 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                 </div>
             </div>
 
+            {/* ==================== OBSERVADO BANNER ==================== */}
+            {tema.status === 'observado' && (
+                <div className="mb-6 p-4 bg-destructive/10 border border-destructive/30 rounded-lg flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+                    <div>
+                        <p className="font-semibold text-destructive text-sm">Tema Observado</p>
+                        <p className="text-sm text-destructive/80 mt-0.5">
+                            Este tema tiene observaciones pendientes de subsanación. Revisá la pestaña de Tareas para ver el detalle.
+                        </p>
+                    </div>
+                </div>
+            )}
+
             {/* ==================== MAIN CONTENT ==================== */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* LEFT COLUMN - Main content */}
@@ -561,9 +796,9 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                         </CardContent>
                     </Card>
 
-                    {/* Tabs for Tasks, Comments, Activity */}
+                    {/* Tabs for Tasks, Comments, Activity, Documents */}
                     <Tabs defaultValue="tasks" className="w-full">
-                        <TabsList className="grid w-full grid-cols-3">
+                        <TabsList className="grid w-full grid-cols-4">
                             <TabsTrigger value="tasks" className="flex items-center gap-2">
                                 <CheckCircle2 className="h-4 w-4" />
                                 Tareas {totalTasks > 0 && `(${completedTasks}/${totalTasks})`}
@@ -571,6 +806,10 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                             <TabsTrigger value="comments" className="flex items-center gap-2">
                                 <MessageSquare className="h-4 w-4" />
                                 Comentarios {comments.length > 0 && `(${comments.length})`}
+                            </TabsTrigger>
+                            <TabsTrigger value="documents" className="flex items-center gap-2">
+                                <Paperclip className="h-4 w-4" />
+                                Documentos {attachments.length > 0 && `(${attachments.length})`}
                             </TabsTrigger>
                             <TabsTrigger value="activity" className="flex items-center gap-2">
                                 <History className="h-4 w-4" />
@@ -582,65 +821,81 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                         <TabsContent value="tasks" className="mt-4">
                             <Card>
                                 <CardContent className="pt-6">
-                                    {/* Add task form - expanded */}
-                                    <div className="space-y-3 mb-6 p-4 bg-muted/50 rounded-lg border border-dashed border-border">
+                                    {/* Add task form */}
+                                    <div className="mb-5 space-y-2">
                                         <div className="flex gap-2">
                                             <Input
-                                                placeholder="Título de la nueva tarea..."
+                                                placeholder="+ Escribir título de tarea..."
                                                 value={newTaskTitle}
                                                 onChange={(e) => setNewTaskTitle(e.target.value)}
                                                 disabled={addingTask}
                                                 className="flex-1"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' && newTaskTitle.trim()) addTask()
+                                                    if (e.key === 'Escape') setNewTaskTitle('')
+                                                }}
                                             />
-                                        </div>
-                                        <div className="flex gap-2 items-center flex-wrap">
-                                            {/* User selector for new task */}
-                                            <Select
-                                                value={newTaskAssignee || 'unassigned'}
-                                                onValueChange={setNewTaskAssignee}
-                                            >
-                                                <SelectTrigger className="w-[200px]">
-                                                    <Users className="h-4 w-4 mr-2 text-muted-foreground" />
-                                                    <SelectValue placeholder="Asignar a..." />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="unassigned">Sin asignar</SelectItem>
-                                                    {users.map((user) => (
-                                                        <SelectItem key={user.id} value={user.id}>
-                                                            <div className="flex items-center gap-2">
-                                                                <Avatar className="h-5 w-5">
-                                                                    <AvatarImage src={user.avatar_url} />
-                                                                    <AvatarFallback className="text-xs">
-                                                                        {getInitials(user.full_name)}
-                                                                    </AvatarFallback>
-                                                                </Avatar>
-                                                                {user.full_name}
-                                                            </div>
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-
-                                            {/* Due date for new task */}
-                                            <Input
-                                                type="date"
-                                                value={newTaskDueDate}
-                                                onChange={(e) => setNewTaskDueDate(e.target.value)}
-                                                className="w-[160px]"
-                                            />
-
                                             <Button
                                                 onClick={addTask}
                                                 disabled={addingTask || !newTaskTitle.trim()}
+                                                size="sm"
+                                                className="gap-1.5"
                                             >
                                                 {addingTask ? (
-                                                    <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                                                    <RefreshCw className="h-4 w-4 animate-spin" />
                                                 ) : (
-                                                    <Plus className="h-4 w-4 mr-2" />
+                                                    <Plus className="h-4 w-4" />
                                                 )}
                                                 Agregar
                                             </Button>
                                         </div>
+                                        {newTaskTitle.trim() !== '' && (
+                                            <div className="flex gap-2 items-center flex-wrap pl-1">
+                                                <Select
+                                                    value={newTaskAssignee || 'unassigned'}
+                                                    onValueChange={setNewTaskAssignee}
+                                                >
+                                                    <SelectTrigger className="h-7 w-[160px] text-xs">
+                                                        <Users className="h-3 w-3 mr-1.5 text-muted-foreground" />
+                                                        <SelectValue placeholder="Asignar..." />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="unassigned">Sin asignar</SelectItem>
+                                                        {users.map((user) => (
+                                                            <SelectItem key={user.id} value={user.id}>
+                                                                <div className="flex items-center gap-2">
+                                                                    <Avatar className="h-5 w-5">
+                                                                        <AvatarImage src={user.avatar_url} />
+                                                                        <AvatarFallback className="text-xs">
+                                                                            {getInitials(user.full_name)}
+                                                                        </AvatarFallback>
+                                                                    </Avatar>
+                                                                    {user.full_name}
+                                                                </div>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <Input
+                                                    type="date"
+                                                    value={newTaskDueDate}
+                                                    onChange={(e) => setNewTaskDueDate(e.target.value)}
+                                                    className="h-7 w-[140px] text-xs"
+                                                />
+                                                <Select
+                                                    value={newTaskType}
+                                                    onValueChange={setNewTaskType}
+                                                >
+                                                    <SelectTrigger className="h-7 w-[160px] text-xs">
+                                                        <SelectValue placeholder="Tipo..." />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="interna">Interna</SelectItem>
+                                                        <SelectItem value="esperando_cliente">Esperando cliente</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Task list */}
@@ -650,76 +905,146 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                                                 .sort((a, b) => a.sort_order - b.sort_order)
                                                 .map((task) => {
                                                     const taskDueStatus = getDueDateStatus(task.due_date)
+                                                    const checklistChecked = task.checklist?.filter(i => i.checked).length || 0
+                                                    const checklistTotal = task.checklist?.length || 0
+                                                    const isChecklistExpanded = expandedChecklists.has(task.id)
                                                     return (
                                                         <div
                                                             key={task.id}
-                                                            className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${task.status === 'completada'
-                                                                ? 'bg-muted/50 border-border opacity-70'
-                                                                : 'bg-card border-border hover:border-primary/50 hover:bg-primary/5'
+                                                            className={`group rounded-lg border transition-colors ${task.status === 'completed'
+                                                                ? 'bg-muted/30 border-border/50'
+                                                                : 'bg-card border-border hover:border-primary/40 hover:bg-primary/5'
                                                                 }`}
                                                         >
-                                                            <Checkbox
-                                                                checked={task.status === 'completada'}
-                                                                onCheckedChange={(checked) =>
-                                                                    toggleTask(task.id, checked as boolean)
-                                                                }
-                                                                className="mt-1"
-                                                            />
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className={`text-sm font-medium ${task.status === 'completada'
-                                                                    ? 'text-muted-foreground line-through'
-                                                                    : 'text-foreground'
-                                                                    }`}>
-                                                                    {task.title}
-                                                                </p>
-                                                                <div className="flex items-center gap-3 mt-1 flex-wrap">
-                                                                    {/* Assignee selector inline */}
-                                                                    <Select
-                                                                        value={task.assigned_user?.id || 'unassigned'}
-                                                                        onValueChange={(value) => updateTask(task.id, 'assigned_to', value === 'unassigned' ? null : value)}
-                                                                    >
-                                                                        <SelectTrigger className="h-7 w-[140px] text-xs border-dashed">
-                                                                            {task.assigned_user ? (
-                                                                                <div className="flex items-center gap-1">
-                                                                                    <Avatar className="h-4 w-4">
-                                                                                        <AvatarImage src={task.assigned_user.avatar_url} />
-                                                                                        <AvatarFallback className="text-[8px]">
-                                                                                            {getInitials(task.assigned_user.full_name)}
-                                                                                        </AvatarFallback>
-                                                                                    </Avatar>
-                                                                                    <span className="truncate">{task.assigned_user.full_name.split(' ')[0]}</span>
-                                                                                </div>
-                                                                            ) : (
-                                                                                <span className="text-muted-foreground">Asignar...</span>
-                                                                            )}
-                                                                        </SelectTrigger>
-                                                                        <SelectContent>
-                                                                            <SelectItem value="unassigned">Sin asignar</SelectItem>
-                                                                            {users.map((user) => (
-                                                                                <SelectItem key={user.id} value={user.id}>
-                                                                                    {user.full_name}
-                                                                                </SelectItem>
-                                                                            ))}
-                                                                        </SelectContent>
-                                                                    </Select>
+                                                            <div className="flex items-start gap-3 p-3">
+                                                                <Checkbox
+                                                                    checked={task.status === 'completed'}
+                                                                    onCheckedChange={(checked) =>
+                                                                        toggleTask(task.id, checked as boolean)
+                                                                    }
+                                                                    className="mt-0.5"
+                                                                />
+                                                                <div className="flex-1 min-w-0">
+                                                                    {/* Fila 1: título + badges */}
+                                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                                        <p className={`text-sm font-medium leading-snug ${task.status === 'completed'
+                                                                            ? 'text-muted-foreground line-through'
+                                                                            : 'text-foreground'
+                                                                            }`}>
+                                                                            {task.title}
+                                                                        </p>
+                                                                        {task.task_type === 'esperando_cliente' && (
+                                                                            <Badge
+                                                                                variant="outline"
+                                                                                className="text-[10px] px-1.5 py-0 bg-accent-foreground/10 text-accent-foreground border-accent-foreground/20"
+                                                                            >
+                                                                                Esperando cliente
+                                                                            </Badge>
+                                                                        )}
+                                                                        {checklistTotal > 0 && (
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => toggleChecklistExpanded(task.id)}
+                                                                                className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                                                                            >
+                                                                                {isChecklistExpanded ? (
+                                                                                    <ChevronDown className="h-3 w-3" />
+                                                                                ) : (
+                                                                                    <ChevronRight className="h-3 w-3" />
+                                                                                )}
+                                                                                <CheckCircle2 className="h-3 w-3" />
+                                                                                {checklistChecked}/{checklistTotal}
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
 
-                                                                    {/* Due date inline */}
-                                                                    <div className="flex items-center gap-1">
+                                                                    {/* Fila 2a: info compacta — visible cuando NO hay hover */}
+                                                                    <div className="flex items-center gap-3 mt-0.5 group-hover:hidden">
+                                                                        {task.assigned_user ? (
+                                                                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                                                                <Avatar className="h-4 w-4">
+                                                                                    <AvatarImage src={task.assigned_user.avatar_url} />
+                                                                                    <AvatarFallback className="text-[8px]">
+                                                                                        {getInitials(task.assigned_user.full_name)}
+                                                                                    </AvatarFallback>
+                                                                                </Avatar>
+                                                                                {task.assigned_user.full_name.split(' ')[0]}
+                                                                            </span>
+                                                                        ) : null}
+                                                                        {task.due_date ? (
+                                                                            <span className={`text-xs flex items-center gap-1 ${taskDueStatus?.status === 'overdue' ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                                                                <Calendar className="h-3 w-3" />
+                                                                                {new Date(task.due_date).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
+                                                                                {taskDueStatus?.status === 'overdue' && <AlertTriangle className="h-3 w-3" />}
+                                                                            </span>
+                                                                        ) : null}
+                                                                        {!task.assigned_user && !task.due_date && task.status !== 'completed' && (
+                                                                            <span className="text-[11px] text-muted-foreground/40">Sin asignar</span>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* Fila 2b: controles edit — solo visibles en hover */}
+                                                                    <div className="hidden group-hover:flex items-center gap-2 mt-1 flex-wrap">
+                                                                        <Select
+                                                                            value={task.assigned_user?.id || 'unassigned'}
+                                                                            onValueChange={(value) => updateTask(task.id, 'assigned_to', value === 'unassigned' ? null : value)}
+                                                                        >
+                                                                            <SelectTrigger className="h-7 w-[140px] text-xs">
+                                                                                {task.assigned_user ? (
+                                                                                    <div className="flex items-center gap-1">
+                                                                                        <Avatar className="h-4 w-4">
+                                                                                            <AvatarImage src={task.assigned_user.avatar_url} />
+                                                                                            <AvatarFallback className="text-[8px]">
+                                                                                                {getInitials(task.assigned_user.full_name)}
+                                                                                            </AvatarFallback>
+                                                                                        </Avatar>
+                                                                                        <span className="truncate">{task.assigned_user.full_name.split(' ')[0]}</span>
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <span className="text-muted-foreground">Asignar...</span>
+                                                                                )}
+                                                                            </SelectTrigger>
+                                                                            <SelectContent>
+                                                                                <SelectItem value="unassigned">Sin asignar</SelectItem>
+                                                                                {users.map((user) => (
+                                                                                    <SelectItem key={user.id} value={user.id}>
+                                                                                        {user.full_name}
+                                                                                    </SelectItem>
+                                                                                ))}
+                                                                            </SelectContent>
+                                                                        </Select>
                                                                         <Input
                                                                             type="date"
                                                                             value={task.due_date ? task.due_date.split('T')[0] : ''}
                                                                             onChange={(e) => updateTask(task.id, 'due_date', e.target.value || null)}
-                                                                            className={`h-7 w-[130px] text-xs border-dashed ${taskDueStatus?.status === 'overdue' ? 'border-destructive/50 bg-destructive/5' : ''
-                                                                                }`}
+                                                                            className={`h-7 w-[130px] text-xs ${taskDueStatus?.status === 'overdue' ? 'border-destructive/50 bg-destructive/5' : ''}`}
                                                                         />
-                                                                        {taskDueStatus && taskDueStatus.status !== 'ok' && (
-                                                                            <span className={`text-xs ${taskDueStatus.color}`}>
-                                                                                {taskDueStatus.status === 'overdue' ? '⚠️' : ''}
-                                                                            </span>
-                                                                        )}
                                                                     </div>
                                                                 </div>
                                                             </div>
+                                                            {/* Collapsible checklist */}
+                                                            {checklistTotal > 0 && isChecklistExpanded && (
+                                                                <div className="px-3 pb-3 pl-10 space-y-1.5 border-t border-border/50 pt-2 mx-3 mb-1">
+                                                                    {task.checklist!.map((item) => (
+                                                                        <label
+                                                                            key={item.id}
+                                                                            className="flex items-center gap-2 cursor-pointer group"
+                                                                        >
+                                                                            <Checkbox
+                                                                                checked={item.checked}
+                                                                                onCheckedChange={() => toggleChecklistItem(task, item.id)}
+                                                                                className="h-3.5 w-3.5"
+                                                                            />
+                                                                            <span className={`text-xs ${item.checked
+                                                                                ? 'text-muted-foreground line-through'
+                                                                                : 'text-foreground group-hover:text-foreground'
+                                                                                }`}>
+                                                                                {item.label}
+                                                                            </span>
+                                                                        </label>
+                                                                    ))}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )
                                                 })}
@@ -796,6 +1121,108 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                                     ) : (
                                         <p className="text-center text-muted-foreground py-8">
                                             No hay comentarios. Sé el primero en comentar.
+                                        </p>
+                                    )}
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        {/* ===== DOCUMENTS TAB ===== */}
+                        <TabsContent value="documents" className="mt-4">
+                            <Card>
+                                <CardContent className="pt-6">
+                                    {/* Add link form */}
+                                    <div className="space-y-3 mb-6 p-4 bg-muted/50 rounded-lg border border-dashed border-border">
+                                        <div className="flex gap-2">
+                                            <div className="relative flex-1">
+                                                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    placeholder="https://..."
+                                                    value={newAttachmentUrl}
+                                                    onChange={(e) => setNewAttachmentUrl(e.target.value)}
+                                                    disabled={addingAttachment}
+                                                    className="pl-9"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2 items-center">
+                                            <Input
+                                                placeholder="Descripcion (opcional)"
+                                                value={newAttachmentDesc}
+                                                onChange={(e) => setNewAttachmentDesc(e.target.value)}
+                                                disabled={addingAttachment}
+                                                className="flex-1"
+                                            />
+                                            <Button
+                                                onClick={addAttachment}
+                                                disabled={addingAttachment || !newAttachmentUrl.trim()}
+                                            >
+                                                {addingAttachment ? (
+                                                    <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                                                ) : (
+                                                    <Plus className="h-4 w-4 mr-2" />
+                                                )}
+                                                Agregar link
+                                            </Button>
+                                        </div>
+                                    </div>
+
+                                    {/* Attachments list */}
+                                    {attachments.length > 0 ? (
+                                        <div className="space-y-2">
+                                            {attachments.map((attachment) => (
+                                                <div
+                                                    key={attachment.id}
+                                                    className="flex items-start gap-3 p-3 rounded-lg border border-border bg-card hover:border-primary/50 transition-colors"
+                                                >
+                                                    <div className="p-1.5 rounded bg-primary/10 mt-0.5">
+                                                        <ExternalLink className="h-4 w-4 text-primary" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <a
+                                                            href={attachment.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-sm font-medium text-foreground hover:text-primary transition-colors underline-offset-4 hover:underline truncate block"
+                                                        >
+                                                            {attachment.original_filename || attachment.url}
+                                                        </a>
+                                                        {attachment.description && (
+                                                            <p className="text-xs text-muted-foreground mt-0.5">
+                                                                {attachment.description}
+                                                            </p>
+                                                        )}
+                                                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                                                            {attachment.uploaded_by && (
+                                                                <span>{attachment.uploaded_by.full_name}</span>
+                                                            )}
+                                                            <span>
+                                                                {formatDistanceToNow(new Date(attachment.created_at), {
+                                                                    addSuffix: true,
+                                                                    locale: es
+                                                                })}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                                        onClick={() => deleteAttachment(attachment.id)}
+                                                        disabled={deletingAttachmentId === attachment.id}
+                                                    >
+                                                        {deletingAttachmentId === attachment.id ? (
+                                                            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                                                        ) : (
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-center text-muted-foreground py-8">
+                                            No hay documentos. Agrega un link arriba.
                                         </p>
                                     )}
                                 </CardContent>
@@ -967,6 +1394,87 @@ export default function TemaDetailClientPage({ temaId }: TemaDetailClientPagePro
                     </Card>
                 </div>
             </div>
+
+            {/* ==================== DELETE MODAL ==================== */}
+            {deleteModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-card border border-border rounded-xl shadow-xl w-full max-w-sm p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 rounded-lg bg-destructive/10">
+                                <Trash2 className="h-5 w-5 text-destructive" />
+                            </div>
+                            <div>
+                                <h3 className="font-semibold text-foreground">Eliminar tema</h3>
+                                <p className="text-sm text-muted-foreground">Esta acción no se puede deshacer</p>
+                            </div>
+                        </div>
+                        <p className="text-sm text-foreground mb-5">
+                            Se eliminarán también todas las tareas, actividad y adjuntos de este tema.
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <Button variant="outline" onClick={() => setDeleteModal(false)} disabled={deletingTema}>
+                                Cancelar
+                            </Button>
+                            <Button
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
+                                onClick={handleDeleteTema}
+                                disabled={deletingTema}
+                            >
+                                {deletingTema ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                                Eliminar
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ==================== OBSERVADO MODAL ==================== */}
+            {observadoModal.open && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-card border border-border rounded-xl shadow-xl w-full max-w-md">
+                        <div className="p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="p-2 rounded-lg bg-destructive/10">
+                                    <AlertTriangle className="h-5 w-5 text-destructive" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold text-foreground">Marcar como Observado</h3>
+                                    <p className="text-sm text-muted-foreground">Se creará una tarea "Subsanar observaciones" automáticamente</p>
+                                </div>
+                            </div>
+                            <div className="space-y-2 mb-6">
+                                <label className="text-sm font-medium text-foreground">
+                                    Descripción de la observación
+                                    <span className="text-muted-foreground font-normal ml-1">(opcional)</span>
+                                </label>
+                                <Textarea
+                                    placeholder="Ej: Faltan los planos As-Built en formato DWG, las encomiendas profesionales están vencidas..."
+                                    value={observadoModal.notes}
+                                    onChange={(e) => setObservadoModal(prev => ({ ...prev, notes: e.target.value }))}
+                                    rows={4}
+                                    className="resize-none"
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="flex justify-end gap-3">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setObservadoModal({ open: false, notes: '' })}
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    onClick={handleConfirmObservado}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                    <AlertTriangle className="h-4 w-4 mr-2" />
+                                    Confirmar Observación
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

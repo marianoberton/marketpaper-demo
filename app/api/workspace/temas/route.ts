@@ -182,6 +182,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Permission check: only owner, admin, manager can create temas
+    if (!['super_admin', 'company_owner', 'company_admin', 'manager'].includes(profile.role)) {
+      return NextResponse.json(
+        { success: false, error: 'Sin permisos para crear temas' },
+        { status: 403 }
+      )
+    }
+
     // Determine company_id - super_admin may not have one assigned
     let targetCompanyId: string | null = profile?.company_id || null
 
@@ -229,7 +237,11 @@ export async function POST(request: NextRequest) {
       notes,
       assignee_ids, // Array de user IDs
       lead_assignee_id,
-      client_id
+      client_id,
+      project_id,
+      depends_on_tema_id,
+      sequential_order,
+      tasks_from_template // Array of task objects from template
     } = body
 
     // Validaciones
@@ -260,6 +272,9 @@ export async function POST(request: NextRequest) {
     if (expediente_number) insertData.expediente_number = expediente_number.trim()
     if (organismo) insertData.organismo = organismo
     if (client_id) insertData.client_id = client_id
+    if (project_id) insertData.project_id = project_id
+    if (depends_on_tema_id) insertData.depends_on_tema_id = depends_on_tema_id
+    if (sequential_order !== undefined) insertData.sequential_order = sequential_order
 
     // Crear el tema
     const { data: tema, error: createError } = await supabase
@@ -289,6 +304,29 @@ export async function POST(request: NextRequest) {
       await supabase
         .from('tema_assignees')
         .insert(assigneeRecords)
+    }
+
+    // Crear tareas desde template si se proporcionaron
+    if (tasks_from_template?.length > 0) {
+      const taskRecords = tasks_from_template.map((t: any, index: number) => ({
+        tema_id: tema.id,
+        title: t.titulo || t.title,
+        description: t.descripcion || t.description || null,
+        task_type: t.tipo || t.task_type || null,
+        assigned_to: t.assigned_to || null,
+        due_date: t.due_date || null,
+        checklist: (t.checklist || []).map((item: string, i: number) => ({
+          id: `${Date.now()}-${i}`,
+          label: item,
+          checked: false
+        })),
+        sort_order: t.orden || index + 1,
+        created_by: user.id
+      }))
+
+      await supabase
+        .from('tema_tasks')
+        .insert(taskRecords)
     }
 
     // Registrar actividad de creación

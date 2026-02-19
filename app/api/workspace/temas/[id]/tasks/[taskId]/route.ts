@@ -19,12 +19,14 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const { 
-      title, 
-      description, 
+    const {
+      title,
+      description,
       status,
-      assigned_to, 
-      due_date
+      assigned_to,
+      due_date,
+      task_type,
+      checklist
     } = body
 
     // Obtener tarea actual para comparar
@@ -48,6 +50,8 @@ export async function PATCH(
     if (status !== undefined) updateData.status = status
     if (assigned_to !== undefined) updateData.assigned_to = assigned_to || null
     if (due_date !== undefined) updateData.due_date = due_date || null
+    if (task_type !== undefined) updateData.task_type = task_type || null
+    if (checklist !== undefined) updateData.checklist = checklist
 
     // Si se marca como completada
     if (status === 'completed' && currentTask.status !== 'completed') {

@@ -114,6 +114,32 @@ export async function POST(
         comment: content.trim().substring(0, 100) + (content.length > 100 ? '...' : '')
       })
 
+    // Create notifications for mentioned users
+    if (mentioned_users?.length > 0) {
+      const { data: mentioner } = await supabase
+        .from('user_profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single()
+
+      const notifications = mentioned_users
+        .filter((uid: string) => uid !== user.id)
+        .map((uid: string) => ({
+          user_id: uid,
+          type: 'mention',
+          title: 'Te mencionaron en un comentario',
+          message: `${mentioner?.full_name || 'Alguien'} te mencionó: "${content.trim().substring(0, 80)}${content.length > 80 ? '...' : ''}"`,
+          link: `/workspace/temas/${id}`,
+          tema_id: id
+        }))
+
+      if (notifications.length > 0) {
+        await supabase
+          .from('notifications')
+          .insert(notifications)
+      }
+    }
+
     return NextResponse.json({
       success: true,
       comment

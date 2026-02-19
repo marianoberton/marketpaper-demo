@@ -6,8 +6,6 @@ import Link from 'next/link'
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,6 +25,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   FolderOpen,
@@ -38,11 +42,13 @@ import {
   CheckCircle2,
   Clock,
   FileCheck,
-  Filter,
   Building2,
   Star,
-  Activity
+  MoreHorizontal,
+  Trash2,
 } from 'lucide-react'
+import { toast } from 'sonner'
+import { TemasNav } from './components/temas-nav'
 
 interface Tema {
   id: string
@@ -99,6 +105,8 @@ export default function TemasClientPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [priorityFilter, setPriorityFilter] = useState<string>('all')
   const [areaFilter, setAreaFilter] = useState<string>('all')
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   const fetchTemas = async () => {
     try {
@@ -124,6 +132,26 @@ export default function TemasClientPage() {
       }
     } catch (error) {
       console.error('Error fetching areas:', error)
+    }
+  }
+
+  const deleteTema = async (id: string) => {
+    setDeleting(true)
+    try {
+      const response = await fetch(`/api/workspace/temas/${id}`, { method: 'DELETE' })
+      const data = await response.json()
+      if (data.success) {
+        setTemas(prev => prev.filter(t => t.id !== id))
+        toast.success('Tema eliminado')
+      } else {
+        toast.error(data.error || 'Error al eliminar')
+      }
+    } catch (error) {
+      console.error('Error deleting tema:', error)
+      toast.error('Error al eliminar')
+    } finally {
+      setDeleting(false)
+      setConfirmingDeleteId(null)
     }
   }
 
@@ -168,43 +196,33 @@ export default function TemasClientPage() {
     })
   }
 
-  // Traffic light for last activity
   const getActivityStatus = (updatedAt: string) => {
-    if (!updatedAt) return { color: 'bg-muted-foreground', label: 'Sin actividad', textColor: 'text-muted-foreground' }
-
-    const updated = new Date(updatedAt)
-    const now = new Date()
-    const diffHours = (now.getTime() - updated.getTime()) / (1000 * 60 * 60)
-    const diffDays = diffHours / 24
-
-    if (diffHours < 24) {
-      return { color: 'bg-primary', label: 'Hoy', textColor: 'text-primary' }
-    } else if (diffDays <= 3) {
-      return { color: 'bg-primary/60', label: `${Math.floor(diffDays)}d`, textColor: 'text-primary' }
-    } else if (diffDays <= 7) {
-      return { color: 'bg-accent-foreground', label: `${Math.floor(diffDays)}d`, textColor: 'text-accent-foreground' }
-    } else {
-      return { color: 'bg-destructive', label: `${Math.floor(diffDays)}d`, textColor: 'text-destructive' }
-    }
+    if (!updatedAt) return { color: 'bg-muted-foreground', textColor: 'text-muted-foreground' }
+    const diffDays = (Date.now() - new Date(updatedAt).getTime()) / (1000 * 60 * 60 * 24)
+    if (diffDays < 1) return { color: 'bg-primary', textColor: 'text-primary' }
+    if (diffDays <= 3) return { color: 'bg-primary/60', textColor: 'text-primary' }
+    if (diffDays <= 7) return { color: 'bg-accent-foreground', textColor: 'text-accent-foreground' }
+    return { color: 'bg-destructive', textColor: 'text-destructive' }
   }
 
   const formatTimeAgo = (dateStr: string) => {
     if (!dateStr) return '-'
-    const date = new Date(dateStr)
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffMins = Math.floor(diffMs / (1000 * 60))
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-
+    const diffMs = Date.now() - new Date(dateStr).getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
     if (diffMins < 60) return `${diffMins}min`
     if (diffHours < 24) return `${diffHours}h`
     if (diffDays < 7) return `${diffDays}d`
     return formatDate(dateStr)
   }
 
+  const confirmingTema = confirmingDeleteId ? temas.find(t => t.id === confirmingDeleteId) : null
+
   return (
     <div className="p-6 space-y-6">
+      <TemasNav />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -223,120 +241,86 @@ export default function TemasClientPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-primary">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total</p>
-                <p className="text-3xl font-bold text-foreground">{stats.total}</p>
-              </div>
-              <div className="p-2 rounded-lg bg-primary/10">
-                <FolderOpen className="h-8 w-8 text-primary" />
-              </div>
-            </div>
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs text-muted-foreground">Total</p>
+            <p className="text-2xl font-bold text-foreground">{stats.total}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Nuevos</p>
-                <p className="text-3xl font-bold text-primary">{stats.nuevos}</p>
-              </div>
-              <div className="p-2 rounded-lg bg-primary/10">
-                <FileCheck className="h-8 w-8 text-primary" />
-              </div>
-            </div>
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs text-muted-foreground">Nuevos</p>
+            <p className="text-2xl font-bold text-primary">{stats.nuevos}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">En Curso</p>
-                <p className="text-3xl font-bold text-accent-foreground">{stats.enCurso}</p>
-              </div>
-              <div className="p-2 rounded-lg bg-accent-foreground/10">
-                <Clock className="h-8 w-8 text-accent-foreground" />
-              </div>
-            </div>
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs text-muted-foreground">En Curso</p>
+            <p className="text-2xl font-bold text-accent-foreground">{stats.enCurso}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Completados</p>
-                <p className="text-3xl font-bold text-foreground/70">{stats.completados}</p>
-              </div>
-              <div className="p-2 rounded-lg bg-foreground/5">
-                <CheckCircle2 className="h-8 w-8 text-foreground/50" />
-              </div>
-            </div>
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs text-muted-foreground">Completados</p>
+            <p className="text-2xl font-bold text-foreground/60">{stats.completados}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex-1 min-w-[200px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por título, referencia o expediente..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los estados</SelectItem>
-                {Object.entries(STATUS_CONFIG).map(([value, config]) => (
-                  <SelectItem key={value} value={value}>{config.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Prioridad" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                {Object.entries(PRIORITY_CONFIG).map(([value, config]) => (
-                  <SelectItem key={value} value={value}>{config.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={areaFilter} onValueChange={setAreaFilter}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Área" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las áreas</SelectItem>
-                {areas.map((area) => (
-                  <SelectItem key={area.id} value={area.id}>
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-3 w-3" style={{ color: area.color }} />
-                      {area.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" size="icon" onClick={fetchTemas}>
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex-1 min-w-[200px] relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por título, referencia o expediente..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Estado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los estados</SelectItem>
+            {Object.entries(STATUS_CONFIG).map(([value, config]) => (
+              <SelectItem key={value} value={value}>{config.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+          <SelectTrigger className="w-[130px]">
+            <SelectValue placeholder="Prioridad" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas</SelectItem>
+            {Object.entries(PRIORITY_CONFIG).map(([value, config]) => (
+              <SelectItem key={value} value={value}>{config.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={areaFilter} onValueChange={setAreaFilter}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Área" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas las áreas</SelectItem>
+            {areas.map((area) => (
+              <SelectItem key={area.id} value={area.id}>
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-3 w-3" style={{ color: area.color }} />
+                  {area.name}
+                </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button variant="outline" size="icon" onClick={fetchTemas}>
+          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        </Button>
+      </div>
 
       {/* Table */}
       <Card>
@@ -361,100 +345,109 @@ export default function TemasClientPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Título</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Prioridad</TableHead>
-                  <TableHead>Organismo</TableHead>
-                  <TableHead>Responsables</TableHead>
-                  <TableHead>Última Actividad</TableHead>
-                  <TableHead>Vencimiento</TableHead>
+                  <TableHead className="w-[35%]">Título</TableHead>
+                  <TableHead className="w-[130px]">Estado</TableHead>
+                  <TableHead className="w-[90px]">Prioridad</TableHead>
+                  <TableHead className="hidden lg:table-cell">Organismo</TableHead>
+                  <TableHead className="w-[100px]">Equipo</TableHead>
+                  <TableHead className="hidden md:table-cell w-[90px]">Actividad</TableHead>
+                  <TableHead className="hidden md:table-cell w-[110px]">Vencimiento</TableHead>
+                  <TableHead className="w-10" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredTemas.map((tema) => {
                   const statusConfig = STATUS_CONFIG[tema.status] || STATUS_CONFIG.nuevo_expediente
                   const priorityConfig = PRIORITY_CONFIG[tema.priority] || PRIORITY_CONFIG.media
+                  const activityStatus = getActivityStatus(tema.updated_at)
                   return (
                     <TableRow
                       key={tema.id}
-                      className="cursor-pointer hover:bg-muted"
+                      className="cursor-pointer hover:bg-muted/50"
                       onClick={() => router.push(`/workspace/temas/${tema.id}${companyId ? `?company_id=${companyId}` : ''}`)}
                     >
                       <TableCell>
-                        <div>
-                          <p className="font-medium">{tema.title}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            {tema.expediente_number && (
-                              <span>Exp: {tema.expediente_number}</span>
-                            )}
-                            {tema.reference_code && (
-                              <span>• Ref: {tema.reference_code}</span>
-                            )}
-                            {tema.type && (
-                              <Badge variant="outline" className="text-xs" style={{ borderColor: tema.type.color, color: tema.type.color }}>
-                                {tema.type.name}
-                              </Badge>
-                            )}
-                          </div>
+                        <p className="font-medium text-sm leading-snug">{tema.title}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                          {tema.type && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4" style={{ borderColor: tema.type.color, color: tema.type.color }}>
+                              {tema.type.name}
+                            </Badge>
+                          )}
+                          {tema.expediente_number && (
+                            <span className="text-[10px] text-muted-foreground">Exp: {tema.expediente_number}</span>
+                          )}
+                          {tema.reference_code && (
+                            <span className="text-[10px] text-muted-foreground">#{tema.reference_code}</span>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge className={statusConfig.color}>
+                        <Badge className={`text-xs ${statusConfig.color}`}>
                           {statusConfig.label}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge className={priorityConfig.color}>
+                        <Badge className={`text-xs ${priorityConfig.color}`}>
                           {priorityConfig.label}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        {tema.organismo ? (
-                          <span className="text-sm font-medium">{tema.organismo}</span>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
+                      <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
+                        {tema.organismo || '-'}
                       </TableCell>
                       <TableCell>
-                        <div className="flex -space-x-2">
+                        <div className="flex -space-x-1.5">
                           {tema.assignees?.slice(0, 3).map((assignee) => (
                             <div key={assignee.id} className="relative">
-                              <Avatar className="h-8 w-8 border-2 border-white">
+                              <Avatar className="h-7 w-7 border-2 border-background">
                                 <AvatarImage src={assignee.user?.avatar_url} />
-                                <AvatarFallback className="text-xs">
+                                <AvatarFallback className="text-[10px]">
                                   {getInitials(assignee.user?.full_name)}
                                 </AvatarFallback>
                               </Avatar>
                               {assignee.is_lead && (
-                                <Star className="absolute -top-1 -right-1 h-3 w-3 text-yellow-500 fill-yellow-500" />
+                                <Star className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 text-yellow-500 fill-yellow-500" />
                               )}
                             </div>
                           ))}
                           {(tema.assignees?.length || 0) > 3 && (
-                            <div className="flex items-center justify-center h-8 w-8 rounded-full bg-muted border-2 border-background text-xs font-medium">
+                            <div className="flex items-center justify-center h-7 w-7 rounded-full bg-muted border-2 border-background text-[10px] font-medium">
                               +{tema.assignees.length - 3}
                             </div>
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        {(() => {
-                          const activityStatus = getActivityStatus(tema.updated_at)
-                          return (
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2.5 h-2.5 rounded-full ${activityStatus.color}`} />
-                              <span className={`text-xs font-medium ${activityStatus.textColor}`}>
-                                {formatTimeAgo(tema.updated_at)}
-                              </span>
-                            </div>
-                          )
-                        })()}
+                      <TableCell className="hidden md:table-cell">
+                        <div className="flex items-center gap-1.5">
+                          <div className={`w-2 h-2 rounded-full ${activityStatus.color}`} />
+                          <span className={`text-xs ${activityStatus.textColor}`}>
+                            {formatTimeAgo(tema.updated_at)}
+                          </span>
+                        </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1 text-sm">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <TableCell className="hidden md:table-cell">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Calendar className="h-3.5 w-3.5" />
                           {formatDate(tema.due_date)}
                         </div>
+                      </TableCell>
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive gap-2"
+                              onClick={() => setConfirmingDeleteId(tema.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Eliminar
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   )
@@ -464,6 +457,41 @@ export default function TemasClientPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete confirmation modal */}
+      {confirmingDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-card border border-border rounded-xl shadow-xl w-full max-w-sm p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 rounded-lg bg-destructive/10">
+                <Trash2 className="h-5 w-5 text-destructive" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground">Eliminar tema</h3>
+                <p className="text-sm text-muted-foreground">Esta acción no se puede deshacer</p>
+              </div>
+            </div>
+            {confirmingTema && (
+              <p className="text-sm text-foreground mb-5">
+                ¿Eliminar <span className="font-medium">"{confirmingTema.title}"</span>? Se borrarán también sus tareas, actividad y adjuntos.
+              </p>
+            )}
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setConfirmingDeleteId(null)} disabled={deleting}>
+                Cancelar
+              </Button>
+              <Button
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 gap-2"
+                onClick={() => deleteTema(confirmingDeleteId)}
+                disabled={deleting}
+              >
+                {deleting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                Eliminar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
